@@ -2,7 +2,7 @@
 
 from datetime import timedelta
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
 from ..core.security import hash_password, hash_token, new_token, password_problem, utcnow, verify_password
@@ -59,6 +59,8 @@ def authenticate(db: Session, email: str, password: str) -> User:
     s = get_settings()
     user = get_by_email(db, email)
     now = utcnow()
+    # A locked account answers 423 so the UI can show the locked-out screen. That reveals the account
+    # exists; accepted on purpose (see PHASE-1-REPORT Assumptions) and softened by the per-IP limit.
     if user and user.locked_until and user.locked_until > now:
         minutes = max(1, int((user.locked_until - now).total_seconds() // 60) + 1)
         raise AuthError(f"Too many attempts. Try again in {minutes} min.", 423)
@@ -194,8 +196,22 @@ def accept_invite(db: Session, token: str, *, email: str, display_name: str, pas
     invite = peek_invite(db, token)
     if invite.email and normalise_email(email) != invite.email:
         raise AuthError("This invite was made for a different email address.", 403)
-    user = create_user(db, email=email, display_name=display_name, password=password, role=invite.role)
-    invite.used_at = utcnow()
+    # Claim the invite atomically so two browsers can't both use one link.
+    now = utcnow()
+    claimed = db.execute(
+        update(Invite)
+        .where(Invite.id == invite.id, Invite.used_at.is_(None), Invite.expires_at > now)
+        .values(used_at=now)
+    ).rowcount
+    if claimed != 1:
+        db.rollback()
+        raise AuthError("This invite link has already been used.", 410)
+    try:
+        user = create_user(db, email=email, display_name=display_name, password=password, role=invite.role)
+    except AuthError:
+        db.rollback()
+        raise
+    db.refresh(invite)
     invite.used_by_id = user.id
     audit.record(db, "invite.accepted", actor=user, target_type="invite", target_id=invite.id)
     db.commit()
