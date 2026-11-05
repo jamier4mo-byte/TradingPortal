@@ -8,7 +8,7 @@ prompt's branch. If a prompt stops part-way, the next run continues from the fir
 ### 0. Preflight
 - [x] Clean `main`; only `docs/build/masterprompts/` and `.claude/settings.local.json` untracked
 - [x] Branch `build/01-foundations`; `.claude/settings.local.json` git-ignored; masterprompts committed
-- [x] Baseline: `make setup` OK · `make test` 2 passed · `make lint` clean · `make smoke` (see report)
+- [x] Baseline: `make setup` OK · `make test` 2 passed · `make lint` clean · `make smoke` 10/10
 - [x] MCP: context7 and github connected; playwright, chrome-devtools, flyctl pending approval
 - [x] `docs/build/PROGRESS.md` created
 
@@ -35,28 +35,28 @@ prompt's branch. If a prompt stops part-way, the next run continues from the fir
 - [x] `tags` table, admin CRUD + merge, member proposals, `resolve_tag`, seed migration, tests
 
 ### 5. Front-end foundation
-- [ ] TanStack Query + typed `api` client (CSRF, 401 → login); protected routes; role-aware UI
-- [ ] Auth screens: login (password/passkey), accept invite, reset, locked-out
-- [ ] App shell per device: sidebar / rail / bottom tabs, top bar (Cmd+K, clock, session, bell, avatar), safe areas
-- [ ] Shared components + `/dev/components` gallery
-- [ ] 8 owner colour tokens in `@theme` + tokens skill table
-- [ ] Admin pages: Users, Tags
-- [ ] Settings: profile, password, passkeys, API keys, motion, breakeven threshold
-- [ ] Motion foundation: `motion`, route transitions, presets
-- [ ] PWA basics: icons script, manifest, head tags
-- [ ] Bundle budget `scripts/check-bundle.mjs` in `make lint` and CI; lazy routes
+- [x] TanStack Query + typed `api` client (CSRF, 401 → login); protected routes; role-aware UI
+- [x] Auth screens: login (password/passkey), accept invite, reset, locked-out
+- [x] App shell per device: sidebar / rail / bottom tabs, top bar (Cmd+K, clock, session, bell, avatar), safe areas
+- [x] Shared components + `/dev/components` gallery
+- [x] 8 owner colour tokens in `@theme` + tokens skill table
+- [x] Admin pages: Users, Tags
+- [x] Settings: profile, password, passkeys, API keys, motion, breakeven threshold
+- [x] Motion foundation: `motion`, route transitions, presets
+- [x] PWA basics: icons script, manifest, head tags
+- [x] Bundle budget `scripts/check-bundle.mjs` in `make lint` and CI; lazy routes
 
 ### 6. Dev experience
 - [x] `make seed-dev`
-- [ ] e2e: sign-in helper, auth flows, new routes in `capture.mjs`
-- [ ] `CLAUDE.md` → Commands updated
+- [x] e2e: sign-in helper, auth flows, new routes in `capture.mjs`
+- [x] `CLAUDE.md` → Commands updated
 
 ### 7. Gate 1
-- [ ] Admin signs in; member accepts invite in a second context
-- [ ] Member gets 403 on admin's records; read-only banner shown
-- [ ] Deactivation signs out and blocks sign-in; lockout after 5 failures
-- [ ] `make lint`, `make test`, `make smoke` green; axe on every route
-- [ ] `/check-devices` clean at 360/375/430/768/1440/1920; nav per device
-- [ ] design-reviewer: no blockers or majors
-- [ ] Bundle budget passes
-- [ ] `docs/build/PHASE-1-REPORT.md` written; merged to local `main`
+- [x] Admin signs in; member accepts invite in a second context
+- [x] Member gets 403 on admin's records; read-only banner shown
+- [x] Deactivation signs out and blocks sign-in; lockout after 5 failures
+- [x] `make lint`, `make test`, `make smoke` green; axe on every route
+- [x] `/check-devices` clean at 360/375/430/768/1440/1920; nav per device
+- [x] design-reviewer: no blockers or majors
+- [x] Bundle budget passes
+- [x] `docs/build/PHASE-1-REPORT.md` written; merged to local `main`
