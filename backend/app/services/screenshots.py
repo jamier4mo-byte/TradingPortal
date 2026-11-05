@@ -56,12 +56,9 @@ def _open(data: bytes) -> Image.Image:
         if width > MAX_EDGE or height > MAX_EDGE or width * height > MAX_PIXELS:
             raise ScreenshotError(f"Images are limited to {MAX_EDGE}px on an edge.", 413)
         img.load()
-    except (
-        UnidentifiedImageError,
-        OSError,
-        Image.DecompressionBombError,
-        Image.DecompressionBombWarning,
-    ) as exc:
+    except (Image.DecompressionBombError, Image.DecompressionBombWarning) as exc:
+        raise ScreenshotError(f"Images are limited to {MAX_EDGE}px on an edge.", 413) from exc
+    except (UnidentifiedImageError, OSError) as exc:
         raise ScreenshotError("That image can't be read.", 415) from exc
     return ImageOps.exif_transpose(img) or img
 
