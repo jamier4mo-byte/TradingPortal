@@ -60,3 +60,45 @@ prompt's branch. If a prompt stops part-way, the next run continues from the fir
 - [x] design-reviewer: no blockers or majors
 - [x] Bundle budget passes
 - [x] `docs/build/PHASE-1-REPORT.md` written; merged to local `main`
+
+## Prompt 2 — Replay Journal loop (branch `build/02-journal-loop`)
+
+### 0. Preflight
+- [x] Clean `main`; branch `build/02-journal-loop`; `/Samples/` git-ignored (Jamie's real files, read only)
+- [x] Baseline: `make test` 136 passed · `make lint` clean · `make smoke` run
+- [ ] Old importer summarised; sample CSV header and screenshot names noted
+
+### 1. Data model
+- [ ] Migration `0004_journal`: instruments, strategies, trade_sessions, trades, trade_tags, screenshots
+- [ ] Models + mixins; coverage/unlock constants in one module
+- [ ] Instrument seed: FX majors, XAUUSD, BTCUSD, GER40, NAS100
+
+### 2. CSV importer
+- [ ] Parser: 22 columns, BOM, quoting, dates, empty cells, tags; timezone → UTC; market date; session label
+- [ ] Preview → confirm → Session; Ideal (winners only) / Backtest (all); duplicates skipped and reported
+- [ ] Undo session (soft delete) and restore
+- [ ] Fixture CSV + tests: DST, duplicates, breakeven ±2, winners-only, undo, malformed rows
+
+### 3. Screenshots and matcher
+- [ ] `Storage` interface + `LocalStorage`; upload API (magic bytes, size, path-safe keys, thumbnail); authenticated serving
+- [ ] Matcher: filename patterns → capture time → sequence; unit tests
+- [ ] Browser pipeline: paste / drop / picker → WebP full + thumbnail; bulk matcher grid; phone list
+
+### 4. Annotate mode
+- [ ] Full-screen stepper, Cmd+V flow, J/K/Esc, template fields, rulebook, tags autocomplete, MAE/MFE, autosave
+- [ ] Session inbox on the strategy page with Finish annotating
+
+### 5. Strategy screens
+- [ ] Overview grid + New strategy form; ViewScopeToggle; phone single column
+- [ ] Strategy page tabs; Ideal Trades tab (list, quick log, coverage tracker, trade detail gallery)
+- [ ] Strategy profile; Backtest tab (locked / open early, profile, list, manual entry, import)
+- [ ] Session recap card; pre-session brief; missed setups; Trash; `GET /api/journal/summary`
+
+### 6. Gate 2
+- [ ] Real CSV: Ideal (winners only), Backtest (all), third import all duplicates, undo + restore
+- [ ] Screenshots match ≥ 90% automatically; rest fixable in the grid
+- [ ] Keyboard-only Annotate mode completes 8 trades (Playwright)
+- [ ] Coverage/unlock unit tests (gap month, year boundary, midnight UK, deleted, exactly 6)
+- [ ] Member 403 + read-only banner
+- [ ] `make lint`, `make test`, `make smoke` green; `/check-devices` clean; design-reviewer no blockers/majors
+- [ ] `docs/build/PHASE-2-REPORT.md`; merged to local `main`
