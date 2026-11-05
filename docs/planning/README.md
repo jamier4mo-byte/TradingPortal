@@ -11,4 +11,4 @@ Export notes:
 - The four brand images are dropped from the Foundations export. They are in `frontend/public/brand/` (`tradingportal-logo.png`, `t-tile.png`, `replayjournal-logo.png`, `newsroom-logo.png`).
 - The "Build order · 6 phases, 5 gates" diagram in the Review & Build Kit is an embed. It only shows in the live doc.
 
-**Heads-up:** the Review & Build Kit was written when the plan was to reuse the old Replay Journal code. Its "Decisions" row ("Moved into Desktop/Trading Portal; new look, same code base") and top action 1 ("re-skin the existing repo") are superseded. This repo is a fresh start, so the importer, analytics, auth and export it calls "already built" need building here.
+**Revised 5 Nov for the fresh start.** The Review & Build Kit now says that this is a new repo. The importer, analytics, auth and export are rebuilt here, with the old Replay Journal (`~/Desktop/Replay Journal`) kept only as a reference.

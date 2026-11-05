@@ -6,15 +6,15 @@ A review of [Trading Portal Foundations](https://claude.ai/artifact/1mZQfVkYcQWe
 
 ## Top 10 actions
 
-Updated 5 Nov with your decisions and a read of the existing repo. The current Replay Journal already has the FX Replay importer, analytics, coverage tracker, AI export and sign-in, so the work is extending and re-skinning it, not starting again. Ranked by impact ÷ effort.
+Updated 5 Nov with your decisions and a read of the old repo. Revised 5 Nov: the Trading Portal is now a fresh repo (jamier4mo-byte/TradingPortal), not a re-skin of the old Replay Journal. The old app's importer, analytics, coverage tracker, AI export and sign-in show how each worked, but all of them are rebuilt here. Ranked by impact ÷ effort.
 
-1. **Keep the FastAPI + React repo as the base and re-skin it to the new look**: importer, metrics, coverage, export, auth and sharing are already built. *Critic + Repos · —*
+1. **Build in the fresh TradingPortal repo (same FastAPI + React stack)**: skeleton, design tokens, app shell and Claude tooling are in place; importer, metrics, coverage, export, auth and sharing are rebuilt phase by phase, using the old repo only as a reference. *Critic + Repos · —*
 2. **Per-user Twelve Data keys**: each user pastes their own free key (800 credits/day); stored encrypted server-side, with a per-user credit meter and cache (F1, F13). *Critic · S–M*
-3. **Add admin/member roles, invite links and Deactivate** to the existing sign-in, with server-side checks that members edit only their own work; no strategy duplication (F6, F11, F12). *Critic · M*
+3. **Add admin/member roles, invite links and Deactivate** to a new sign-in (the old app's is the reference), with server-side checks that members edit only their own work; no strategy duplication (F6, F11, F12). *Critic · M*
 4. **Build the bulk screenshot matcher first**: you upload FX Replay `/screenshot` files after the CSV import, so drop them all at once and match to trades (U3). *UX · M*
 5. **Encode the unlock rule in the coverage tracker**: 6+ trades in total across 6 consecutive months (F9). *Critic · S*
 6. **Set breakeven to ±2 of zero** (assumed $) as the default threshold everywhere (F16). *Critic · S*
-7. **Run the masterprompt** to install Playwright MCP, frontend-design, Context7 and the rest. *Tools · S*
+7. **Run scripts/claude-setup.sh** to install Playwright MCP, frontend-design, Context7 and the rest. *Tools · S*
 8. **Litestream to Tigris** for off-machine backups of the database and screenshots, on one small always-on machine that also sends the push alerts (F2, F5, F7). *Critic + Repos · M*
 9. **Free-only news tagging**: tag backtests where JBlanked history exists and mark the rest "No news data"; no Apify (F4). *Critic · S*
 10. **One shared ICT/SMC tag vocabulary** with synonyms, plus the structured reasoning template (U5). *UX · M*
@@ -47,7 +47,7 @@ Nineteen fixes, each left as a comment (F1–F19; 12 have a 5 Nov update reply) 
 
 ## Build kit (repos)
 
-The current Replay Journal is FastAPI + SQLAlchemy/Alembic + SQLite, with a React 19 + Vite + Tailwind 4 front end that already uses ECharts, Lightweight Charts, Radix and Playwright, so most of this kit slots straight in. Better Auth does not: it is JavaScript-only. Stars and last-commit dates checked 5 Nov 2026 (stars approximate).
+The new TradingPortal repo uses the same stack as the old Replay Journal: FastAPI + SQLAlchemy/Alembic + SQLite, with a React 19 + Vite + Tailwind 4 front end, plus ECharts, Radix and Playwright (Lightweight Charts only if real candles are wanted), so most of this kit slots straight in. Better Auth does not: it is JavaScript-only. Stars and last-commit dates checked 5 Nov 2026 (stars approximate).
 
 | Repo | Replaces in the doc | Licence | Stars | Last commit | Stack | Fit |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -66,7 +66,7 @@ The current Replay Journal is FastAPI + SQLAlchemy/Alembic + SQLite, with a Reac
 
 ## Claude skills and tools
 
-The first five are worth installing before the first screen is built; all are free or have a usable free tier. Install commands are for Claude Code; a masterprompt that installs and verifies all of them is in the repo at docs/claude-setup/MASTERPROMPT.md.
+The first five are worth installing before the first screen is built; all are free or have a usable free tier. Install commands are for Claude Code; the TradingPortal repo already holds the project-level ones (.mcp.json, .claude/), and scripts/claude-setup.sh installs the rest on the Mac (see docs/claude-setup/SETUP-REPORT.md).
 
 | Tool | What it does for this project | Cost | Install |
 | --- | --- | --- | --- |
@@ -118,15 +118,15 @@ Your answers from 5 Nov; all questions are now settled.
 
 | Question | Your decision | What it changes |
 | --- | --- | --- |
-| Fresh start or move the repo? | Moved into Desktop/Trading Portal; new look, same code base | Build kit fits FastAPI + SQLite + React/Vite; Better Auth dropped |
+| Fresh start or move the repo? | Fresh start (revised 5 Nov): new repo jamier4mo-byte/TradingPortal in Desktop/Trading Portal; the old code stays in Desktop/Replay Journal as a reference | Build kit fits FastAPI + SQLite + React/Vite; Better Auth dropped |
 | Twelve Data display rights | Each user enters their own free API key (800 credits/day) | F1, F13: per-user keys, meters and caches; no shared budget |
-| FX Replay CSV | Confirmed by your 8-trade NAS100 file (02/11/26), same 22 columns as the repo's importer expects: id, dateStart, dateEnd, pair, rPnL, side, entryPrice, initialSL, maxTP, idealTP, avgRiskReward, tags… | F3 is already built (backend/app/importer.py) |
+| FX Replay CSV | Confirmed by your 8-trade NAS100 file (02/11/26), same 22 columns as the old repo's importer expected: id, dateStart, dateEnd, pair, rPnL, side, entryPrice, initialSL, maxTP, idealTP, avgRiskReward, tags… | F3 is rebuilt in the new repo; the old Replay Journal's backend/app/importer.py is the reference |
 | Hosting budget | fly.io pay-as-you-go | Aim under $5/month; needs the machine to auto-stop (F2) |
 | Ideal trades from FX Replay? | Yes; only winners are imported for ideal trades | Ideal Trades import filters to winners |
 | Coverage rule | 6+ trades in total across 6 consecutive months | F9 |
 | Privacy between mates | Everything visible by default; strategies can't be duplicated | F12, F15: no copy button |
 | Screenshots | FX Replay `/screenshot`, uploaded after the CSV import | U3 (bulk matcher) comes before U4 |
-| AI tool for the export | Claude, if needed | Existing export zip is enough; size images for Claude |
+| AI tool for the export | Claude, if needed | Rebuild the old app's export zip (it was enough); size images for Claude |
 | Apify backfill | No | F4: tag only where free history exists |
 | Tag vocabulary | One shared list | U5 |
 | Breakeven threshold | Anything around 0, out to ±2 | Default threshold 2 (assumed $; say if it's pips) |
