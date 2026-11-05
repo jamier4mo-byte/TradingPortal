@@ -7,6 +7,9 @@
 #   make run      one process serving API + built UI on :8765
 #   make smoke    end-to-end smoke suite (builds, throw-away backend, Playwright)
 #   make migrate  apply database migrations
+#   make dev-secrets   write a random TRADING_PORTAL_SECRET_KEY into .env if it's missing
+#   make create-admin  create the first admin (asks for email and password)
+#   make seed-dev      fill /tmp/tp-dev with an admin, two members and sample records
 #
 # Data lives in $TRADING_PORTAL_DATA_DIR (default ~/TradingPortal/data), never in the repo.
 
@@ -14,7 +17,7 @@ PYTHON ?= python3
 PORT   ?= 8765
 VENV   := backend/.venv
 
-.PHONY: setup setup-backend setup-frontend dev dev-backend dev-frontend test lint fmt build run migrate smoke smoke-browser clean
+.PHONY: setup setup-backend setup-frontend dev dev-backend dev-frontend test lint fmt build run migrate smoke smoke-browser clean dev-secrets create-admin seed-dev
 
 setup: setup-backend setup-frontend
 
@@ -51,6 +54,16 @@ build:
 
 migrate:
 	cd backend && .venv/bin/alembic upgrade head
+
+dev-secrets:
+	@grep -q '^TRADING_PORTAL_SECRET_KEY=.\+' .env 2>/dev/null && echo ".env already has TRADING_PORTAL_SECRET_KEY" || \
+	  (printf 'TRADING_PORTAL_SECRET_KEY=%s\n' "$$($(PYTHON) -c 'import secrets;print(secrets.token_urlsafe(48))')" >> .env && echo "Wrote TRADING_PORTAL_SECRET_KEY to .env")
+
+create-admin:
+	cd backend && .venv/bin/python -m app.cli create-admin
+
+seed-dev:
+	cd backend && TRADING_PORTAL_DATA_DIR=/tmp/tp-dev .venv/bin/python -m app.cli seed-dev
 
 run:
 	cd backend && .venv/bin/alembic upgrade head && .venv/bin/uvicorn app.main:app --host 0.0.0.0 --port $(PORT)

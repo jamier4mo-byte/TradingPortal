@@ -13,26 +13,26 @@ prompt's branch. If a prompt stops part-way, the next run continues from the fir
 - [x] `docs/build/PROGRESS.md` created
 
 ### 1. Backend structure
-- [ ] `app/models`, `app/schemas`, `app/api`, `app/services`, `app/core` laid out
-- [ ] pydantic-settings; `TRADING_PORTAL_SECRET_KEY`; `make dev-secrets`; production refuses to start without it
-- [ ] Mixins: timestamps, soft delete, owner
-- [ ] `audit_log` table
-- [ ] Test fixtures: temp data dir, migrations, factories
+- [x] `app/models`, `app/schemas`, `app/api`, `app/services`, `app/core` laid out
+- [x] pydantic-settings; `TRADING_PORTAL_SECRET_KEY`; `make dev-secrets`; production refuses to start without it
+- [x] Mixins: timestamps, soft delete, owner
+- [x] `audit_log` table
+- [x] Test fixtures: temp data dir, migrations, factories
 
 ### 2. Users, sign-in and roles
-- [ ] Tables: users, sessions, invites, password_resets, passkeys (migration)
-- [ ] Endpoints: login, logout, me, accept invite, forgot/reset, change password
-- [ ] Passkey register and login
-- [ ] Admin: invites, list users, change role, deactivate/reactivate
-- [ ] `make create-admin`
-- [ ] `require_admin`, `require_owner_or_admin`, scope filter
-- [ ] Tests: role × action matrix, lockout, invites, deactivated, CSRF, sliding session
+- [x] Tables: users, sessions, invites, password_resets, passkeys (migration)
+- [x] Endpoints: login, logout, me, accept invite, forgot/reset, change password
+- [x] Passkey register and login
+- [x] Admin: invites, list users, change role, deactivate/reactivate
+- [x] `make create-admin`
+- [x] `require_admin`, `require_owner_or_admin`, scope filter
+- [x] Tests: role × action matrix, lockout, invites, deactivated, CSRF, sliding session
 
 ### 3. Per-user key vault
-- [ ] `user_api_keys` table, Fernet, set/delete/test endpoints, tests
+- [x] `user_api_keys` table, Fernet, set/delete/test endpoints, tests
 
 ### 4. Shared tag vocabulary
-- [ ] `tags` table, admin CRUD + merge, member proposals, `resolve_tag`, seed migration, tests
+- [x] `tags` table, admin CRUD + merge, member proposals, `resolve_tag`, seed migration, tests
 
 ### 5. Front-end foundation
 - [ ] TanStack Query + typed `api` client (CSRF, 401 → login); protected routes; role-aware UI
@@ -47,7 +47,7 @@ prompt's branch. If a prompt stops part-way, the next run continues from the fir
 - [ ] Bundle budget `scripts/check-bundle.mjs` in `make lint` and CI; lazy routes
 
 ### 6. Dev experience
-- [ ] `make seed-dev`
+- [x] `make seed-dev`
 - [ ] e2e: sign-in helper, auth flows, new routes in `capture.mjs`
 - [ ] `CLAUDE.md` → Commands updated
 
