@@ -2,6 +2,7 @@ import { ArrowUpRight, CalendarDays, Newspaper } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import Card from "../components/Card.tsx";
+import { useAuth } from "../lib/auth.tsx";
 import { greeting, session, ukClock, ukDate } from "../lib/time.ts";
 import { useNow } from "../lib/useNow.ts";
 
@@ -9,6 +10,7 @@ import { useNow } from "../lib/useNow.ts";
 export default function Hub() {
   const now = useNow();
   const sess = session(now);
+  const { user } = useAuth();
   return (
     <div className="grid grid-cols-4 gap-4 tablet:grid-cols-8 laptop:grid-cols-12 laptop:gap-6">
       {/* Hero greeting — the only place atmosphere is allowed */}
@@ -16,17 +18,10 @@ export default function Hub() {
         aria-label="Greeting"
         className="relative col-span-full overflow-hidden rounded-card border border-border bg-surface-1 p-5 tablet:p-8"
       >
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-60"
-          style={{
-            background:
-              "radial-gradient(700px 260px at 85% -20%, rgba(139,92,246,0.28), transparent 70%), radial-gradient(600px 240px at 10% 120%, rgba(47,123,255,0.22), transparent 70%)",
-          }}
-        />
+        <div aria-hidden className="hero-atmosphere pointer-events-none absolute inset-0 opacity-60" />
         <div className="relative">
           <p className="text-label uppercase tracking-[0.08em] text-muted">{ukDate(now)}</p>
-          <h1 className="mt-2 text-heading font-semibold tablet:text-hero">{greeting(now)}, Jamie</h1>
+          <h1 className="mt-2 text-heading font-semibold tablet:text-hero">{greeting(now)}, {user?.display_name ?? "there"}</h1>
           <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-body text-muted">
             <span className="inline-flex items-center gap-2">
               <span

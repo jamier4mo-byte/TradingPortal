@@ -2,7 +2,8 @@
 #   make setup    first-time install: Python venv (backend/.venv) and front-end packages
 #   make dev      API with auto-reload on :8765 + Vite dev server on :5173 (open :5173)
 #   make test     backend tests
-#   make lint     ruff + oxlint + TypeScript check
+#   make lint     ruff + oxlint + TypeScript check + Hub bundle budget (200KB gzip)
+#   make icons    regenerate favicons, apple-touch-icon and site.webmanifest from the T tile
 #   make build    compile the front end into frontend/dist
 #   make run      one process serving API + built UI on :8765
 #   make smoke    end-to-end smoke suite (builds, throw-away backend, Playwright)
@@ -17,7 +18,7 @@ PYTHON ?= python3
 PORT   ?= 8765
 VENV   := backend/.venv
 
-.PHONY: setup setup-backend setup-frontend dev dev-backend dev-frontend test lint fmt build run migrate smoke smoke-browser clean dev-secrets create-admin seed-dev
+.PHONY: icons setup setup-backend setup-frontend dev dev-backend dev-frontend test lint fmt build run migrate smoke smoke-browser clean dev-secrets create-admin seed-dev
 
 setup: setup-backend setup-frontend
 
@@ -42,9 +43,12 @@ dev-frontend:
 test:
 	cd backend && .venv/bin/pytest
 
-lint:
+lint: build
 	cd backend && .venv/bin/ruff check . && .venv/bin/ruff format --check .
-	cd frontend && npm run lint && npx tsc -b
+	cd frontend && npm run lint && npx tsc -b && npm run check-bundle
+
+icons:
+	cd frontend && npm run icons
 
 fmt:
 	cd backend && .venv/bin/ruff format . && .venv/bin/ruff check --fix .

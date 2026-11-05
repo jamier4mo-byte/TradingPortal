@@ -13,7 +13,9 @@ A multi-tool web app for Jamie and a few mates: a **Hub**, the **Replay Journal*
 - Deploy: Docker → Fly.io from GitHub Actions on push to `main`. Deploys are skipped until the `FLY_API_TOKEN` secret exists.
 
 ## Commands
-`make setup` · `make dev` (open :5173) · `make test` · `make lint` · `make build` · `make run` · `make smoke` · `make migrate`
+`make setup` · `make dev` (open :5173) · `make test` · `make lint` (ruff, oxlint, tsc, bundle budget) · `make build` · `make run` · `make smoke` · `make migrate`
+`make dev-secrets` (writes `TRADING_PORTAL_SECRET_KEY` into `.env`) · `make create-admin` · `make seed-dev` (fills `/tmp/tp-dev`: jamie/sam/alex, password `password-dev-1`) · `make icons`
+Dev gallery of every shared component: `/dev/components`. Auth screens: `/login`, `/invite/:token`, `/reset/:token`.
 
 ## Rules
 - Data lives in `TRADING_PORTAL_DATA_DIR` (default `~/TradingPortal/data`), never in the repo. Test runs use `/tmp/...`.
