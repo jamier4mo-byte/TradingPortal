@@ -13,6 +13,7 @@
   --color-surface-2: #182036;   /* inner panels, inputs */
   --color-border: rgba(255, 255, 255, 0.08);
   --color-border-strong: rgba(255, 255, 255, 0.14);
+  --color-border-input: rgba(255, 255, 255, 0.35); /* form-control boundary: ≥ 3:1 (WCAG 1.4.11) */
 
   /* ---- ink ---- */
   --color-text: #eef1f8;
@@ -37,6 +38,17 @@
   --color-impact-low: #f5d547;
   --color-live: #2fd27f;
   --color-stale: #8f99ad;
+
+  /* ---- owner colours (proposed): calendar owners and "logged by" chips only. Distinct from
+     win/loss/impact and the accent; every one is ≥ 7:1 on surface-1 ---- */
+  --color-owner-0: #2ec4b6;   /* teal */
+  --color-owner-1: #8fa3ff;   /* periwinkle */
+  --color-owner-2: #ff7ac6;   /* pink */
+  --color-owner-3: #d4b483;   /* sand */
+  --color-owner-4: #c9a7f5;   /* lilac */
+  --color-owner-5: #6fd3f2;   /* sky */
+  --color-owner-6: #c2d94a;   /* chartreuse */
+  --color-owner-7: #d98cb3;   /* mauve */
 
   /* ---- type ---- */
   --font-sans: "Inter Variable", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
@@ -110,10 +122,12 @@ body {
 }
 
 /* The one card pattern: title top-left, controls top-right, content below. */
-.card {
-  background: var(--color-surface-1);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-card);
+@layer components {
+  .card {
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+  }
 }
 
 /* Brand gradient: brand marks and hero moments only. */
@@ -126,11 +140,111 @@ body {
   outline-offset: 2px;
 }
 
+/* Motion: the device setting and the in-app Full / Reduced / Off setting (data-motion on <html>). */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  ::before,
-  ::after {
+  :root:not([data-motion="full"]) *,
+  :root:not([data-motion="full"]) ::before,
+  :root:not([data-motion="full"]) ::after {
     animation-duration: 1ms !important;
     transition-duration: 1ms !important;
   }
+  :root:not([data-motion="full"]) ::view-transition-new(page) {
+    animation-name: page-enter-fade;
+  }
+}
+:root[data-motion="off"] *,
+:root[data-motion="off"] ::before,
+:root[data-motion="off"] ::after {
+  animation-duration: 1ms !important;
+  transition-duration: 1ms !important;
+}
+
+/* Skeleton shimmer: opacity only, so it holds 60fps. */
+@keyframes shimmer {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+@layer components {
+  .skeleton {
+    background: var(--color-surface-2);
+    border-radius: var(--radius-panel);
+    animation: shimmer 1.4s ease-in-out infinite;
+  }
+}
+
+/* Live dot pulse: opacity only. */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+@layer components {
+  .pulse { animation: pulse-dot 2s ease-in-out infinite; }
+}
+
+/* Route change: content fades with a slight rise while the shell stays still. */
+::view-transition-old(page) {
+  animation: var(--dur-standard) var(--ease-out-leave) both page-leave;
+}
+::view-transition-new(page) {
+  animation: var(--dur-standard) var(--ease-in-enter) both page-enter;
+}
+@keyframes page-enter { from { opacity: 0; transform: translateY(10px); } }
+@keyframes page-leave { to { opacity: 0; } }
+:root[data-motion="reduced"] ::view-transition-new(page) { animation-name: page-enter-fade; }
+@keyframes page-enter-fade { from { opacity: 0; } }
+
+/* Component classes live in the components layer so Tailwind utilities can still override them. */
+@layer components {
+/* Safe areas on phones with a notch or home bar. */
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+.safe-top { padding-top: env(safe-area-inset-top); }
+
+/* Form controls share one look. */
+.input {
+  width: 100%;
+  min-height: var(--tap);
+  padding: 0 12px;
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  font: inherit;
+}
+.input::placeholder { color: var(--color-muted); }
+.input:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 0; border-color: transparent; }
+.input[aria-invalid="true"] { border-color: var(--color-loss); }
+
+.btn {
+  display: inline-flex;
+  white-space: nowrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--tap);
+  padding: 0 16px;
+  border-radius: var(--radius-panel);
+  font-weight: 500;
+  border: 1px solid transparent;
+  transition: background-color var(--dur-quick), border-color var(--dur-quick), transform var(--dur-quick) var(--ease-in-enter);
+}
+.btn:active { transform: translateY(1px); }
+.btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.btn-primary { background: var(--color-accent); color: var(--color-on-accent); }
+.btn-primary:hover:not(:disabled) { background: var(--color-accent-hover); }
+.btn-secondary { background: var(--color-surface-2); color: var(--color-text); border-color: var(--color-border-strong); }
+.btn-secondary:hover:not(:disabled) { border-color: var(--color-muted); }
+.btn-ghost { color: var(--color-muted); }
+.btn-ghost:hover:not(:disabled) { color: var(--color-text); background: var(--color-surface-2); }
+.btn-danger { background: transparent; color: var(--color-loss); border-color: var(--color-loss); }
+.btn-danger:hover:not(:disabled) { background: color-mix(in srgb, var(--color-loss) 12%, transparent); }
+
+/* Hub hero card: the only atmospheric surface. */
+.hero-atmosphere {
+  background:
+    radial-gradient(700px 260px at 85% -20%, color-mix(in srgb, var(--color-violet) 28%, transparent), transparent 70%),
+    radial-gradient(600px 240px at 10% 120%, color-mix(in srgb, var(--color-accent) 22%, transparent), transparent 70%);
+}
+
+/* Brand hairline: a 2px rule under the logo on the auth screens only (a brand moment). Pair with .brand-gradient. */
+.brand-hairline { height: 2px; border-radius: 1px; }
 }

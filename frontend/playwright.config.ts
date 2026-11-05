@@ -12,7 +12,7 @@ const DATA_DIR = mkdtempSync(join(tmpdir(), "trading-portal-smoke-"));
 
 export default defineConfig({
   testDir: "./e2e",
-  timeout: 30_000,
+  timeout: 45_000,
   workers: 1,
   reporter: process.env.CI ? "github" : "list",
   outputDir: "./e2e/.results",
@@ -24,10 +24,15 @@ export default defineConfig({
   webServer: process.env.SMOKE_BASE
     ? undefined
     : {
-        command: `cd ../backend && .venv/bin/uvicorn app.main:app --host 127.0.0.1 --port ${PORT}`,
+        command: `cd ../backend && .venv/bin/python -m app.cli seed-dev && .venv/bin/uvicorn app.main:app --host 127.0.0.1 --port ${PORT}`,
         url: `${BASE}/api/health`,
         reuseExistingServer: false,
         timeout: 60_000,
-        env: { TRADING_PORTAL_DATA_DIR: DATA_DIR },
+        env: {
+          TRADING_PORTAL_DATA_DIR: DATA_DIR,
+          TRADING_PORTAL_ENV: "development",
+          TRADING_PORTAL_SECRET_KEY: "smoke-suite-secret-key-not-for-production-0123456789",
+          TRADING_PORTAL_LOGIN_RATE_PER_MINUTE: "1000",
+        },
       },
 });

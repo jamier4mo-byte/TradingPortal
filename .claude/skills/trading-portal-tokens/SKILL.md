@@ -20,13 +20,14 @@ Values marked **proposed** weren't given in the Foundations doc; they're startin
 | `--color-surface-1` | `#121829` | Cards |
 | `--color-surface-2` | `#182036` | Inner panels, inputs, hovers |
 | `--color-border` / `-strong` | `rgba(255,255,255,.08)` / `.14` | Crisp 1px borders instead of heavy shadows |
+| `--color-border-input` | `rgba(255,255,255,.35)` | Form-control boundary (`.input`): ≥ 3:1 for WCAG 1.4.11. Not for cards |
 | `--color-text` | `#EEF1F8` | Primary text |
 | `--color-muted` | `#AAB3C7` | Secondary text. Must stay clearly readable (≥ 4.5:1 on surface-1) |
 | `--color-subtle` | `#7F8AA3` | Icons and decoration only, **never text** |
 | `--color-accent` | `#2F7BFF` | The one brand accent: active states, primary buttons, selected toggles, focus rings |
 | `--color-accent-hover` / `-soft` | `#4B8DFF` / `rgba(47,123,255,.14)` | Hover; selected-row fill |
 | `--color-on-accent` | `#0B0F1A` | Text on accent fills (4.9:1). White on `#2F7BFF` is only 3.9:1 and fails WCAG AA for normal text. **Open question for Jamie:** keep dark ink, or darken the button fill so white passes |
-| `--color-violet` | `#8B5CF6` | Brand gradient end. **Gradient `#2F7BFF → #8B5CF6` is for brand marks and hero moments only** (`.brand-gradient`) |
+| `--color-violet` | `#8B5CF6` | Brand gradient end. **Gradient `#2F7BFF → #8B5CF6` is for brand marks and hero moments only** (`.brand-gradient`; the Hub hero `.hero-atmosphere`; and `.brand-hairline`, a 2px rule under the logo on the auth screens only) |
 | `--color-news` | `#C45BFF` | News Room's own colour: violet `#8B5CF6` → purple `#C45BFF` |
 | `--color-data-2` | `#5CC8FF` | Second data series; never reads as the brand |
 | `--color-win` | `#2FD27F` (proposed) | Win / profit / positive R. **Reserved** |
@@ -34,7 +35,7 @@ Values marked **proposed** weren't given in the Foundations doc; they're startin
 | `--color-breakeven` | `#8F99AD` (proposed) | Breakeven (≈0, out to ±2). **Reserved** |
 | `--color-impact-high / -medium / -low` | `#FF5A66` / `#FF9F43` / `#F5D547` (proposed) | News impact red/orange/yellow. **Reserved**, always with a High/Med/Low label |
 | `--color-live` / `--color-stale` | `#2FD27F` / `#8F99AD` (proposed) | Live dot; paused/stale |
-| Owner colours | not yet defined | A fixed set of distinct hues for calendar owners and "logged by" chips |
+| `--color-owner-0` … `-7` | `#2EC4B6` teal · `#8FA3FF` periwinkle · `#FF7AC6` pink · `#D4B483` sand · `#C9A7F5` lilac · `#6FD3F2` sky · `#C2D94A` chartreuse · `#D98CB3` mauve (proposed) | Calendar owners and "logged by" chips **only** (`OwnerChip`, `ownerBg(index)`). Each user has a fixed `colour_index` 0–7. All ≥ 7:1 on `surface-1`; none is a reserved or brand hue |
 
 Reserved colours mean one thing and are used for nothing else. Colour is never the only signal: wins and losses carry +/− or an icon.
 
@@ -80,10 +81,11 @@ Card pattern (`components/Card.tsx`): title and optional subtitle top-left, cont
 Rules:
 
 - Animate only `transform` and `opacity`.
-- `prefers-reduced-motion` is honoured globally. An in-app Full / Reduced / Off setting comes later.
+- `prefers-reduced-motion` is honoured globally, and so is the per-user Full / Reduced / Off setting (`data-motion` on `<html>`, from `user.motion_pref`). Read `motionLevel()` from `src/lib/motion.ts` before animating; use the presets there (`pageVariants`, `panelVariants`, `spring`). `motion` is the only animation library.
 - First-load stagger is 30–50ms apart, on first load only.
 - Launch loaders run for at least about 600ms and exit as soon as the tool is ready.
-- No looping motion at the screen edge.
+- No looping motion at the screen edge. `.pulse` (2s, opacity only) is for cards fed by live data, never the shell. `.skeleton` shimmers at 1.4s. Both are loader rhythms outside the 150/250/500 tokens on purpose.
+- The in-app Full setting overrides the OS reduce-motion preference on purpose (a user choice); Reduced and the default follow the OS.
 
 ## Not allowed on working screens
 
