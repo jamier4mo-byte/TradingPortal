@@ -13,6 +13,7 @@ dependencies = [
   "cryptography>=43",
   "webauthn>=2.4",
   "python-multipart>=0.0.12",
+  "pillow>=11.3",
 ]
 
 [build-system]
