@@ -34,3 +34,6 @@ docs/claude-setup/setup-run.log
 
 # macOS
 .DS_Store
+
+# Per-machine Claude Code permissions
+.claude/settings.local.json
