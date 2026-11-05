@@ -567,3 +567,43 @@ def test_member_cannot_see_nothing_but_can_see_everything_read_only(member, admi
     c = make_client()
     sign_in(c, member.email)
     assert len(c.get(f"/api/strategies/{s['id']}/trades").json()) == 10
+
+
+def test_huge_declared_dimensions_are_refused_before_decoding(admin_client):
+    s = new_strategy(admin_client)
+    t = do_import(admin_client, s["id"], "ideal")["trades"][0]
+    # A PNG header claiming 30000×30000 pixels with no real data behind it
+    import struct
+    import zlib
+
+    ihdr = struct.pack(">IIBBBBB", 30000, 30000, 8, 2, 0, 0, 0)
+    chunk = b"IHDR" + ihdr
+    bomb = (
+        b"\x89PNG\r\n\x1a\n"
+        + struct.pack(">I", 13)
+        + chunk
+        + struct.pack(">I", zlib.crc32(chunk) & 0xFFFFFFFF)
+    )
+    res = admin_client.post(
+        f"/api/trades/{t['id']}/screenshots",
+        files={"file": ("bomb.png", bomb, "image/png")},
+        data={"slot": "entry"},
+    )
+    assert res.status_code == 413
+
+
+def test_session_id_must_belong_to_the_strategy_and_the_actor(admin_client, member_client):
+    mine = new_strategy(admin_client, "Jamie's")
+    sams = new_strategy(member_client, "Sam's")
+    sam_session = do_import(member_client, sams["id"], "backtest")["session"]
+    body = {
+        "kind": "ideal",
+        "instrument": "NAS100",
+        "side": "buy",
+        "opened_at": "2026-02-02T10:00:00Z",
+        "session_id": sam_session["id"],
+    }
+    assert admin_client.post(f"/api/strategies/{mine['id']}/trades", json=body).status_code == 404
+    jamie_session = do_import(admin_client, mine["id"], "ideal")["session"]
+    body["session_id"] = jamie_session["id"]
+    assert member_client.post(f"/api/strategies/{mine['id']}/trades", json=body).status_code == 403

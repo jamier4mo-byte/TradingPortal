@@ -2,6 +2,7 @@
 
 import io
 import secrets
+import warnings
 from datetime import datetime
 
 from PIL import Image, ImageOps, UnidentifiedImageError
@@ -17,6 +18,10 @@ MAX_BYTES = 12 * 1024 * 1024
 MAX_THUMB_BYTES = 1024 * 1024
 THUMB_EDGE = 400
 FULL_EDGE = 1920
+MAX_EDGE = 12_000  # a 5K screen is 5120 wide; anything bigger isn't a chart screenshot
+MAX_PIXELS = 50_000_000
+Image.MAX_IMAGE_PIXELS = MAX_PIXELS
+warnings.simplefilter("error", Image.DecompressionBombWarning)
 
 MAGIC = (
     (b"\x89PNG\r\n\x1a\n", "image/png", "png"),
@@ -44,10 +49,19 @@ def sniff(data: bytes) -> tuple[str, str]:
 
 
 def _open(data: bytes) -> Image.Image:
+    """Check the declared size before decoding a single pixel (decompression-bomb guard)."""
     try:
         img = Image.open(io.BytesIO(data))
+        width, height = img.size
+        if width > MAX_EDGE or height > MAX_EDGE or width * height > MAX_PIXELS:
+            raise ScreenshotError(f"Images are limited to {MAX_EDGE}px on an edge.", 413)
         img.load()
-    except (UnidentifiedImageError, OSError) as exc:
+    except (
+        UnidentifiedImageError,
+        OSError,
+        Image.DecompressionBombError,
+        Image.DecompressionBombWarning,
+    ) as exc:
         raise ScreenshotError("That image can't be read.", 415) from exc
     return ImageOps.exif_transpose(img) or img
 

@@ -209,10 +209,16 @@ def create_trade(
     r_multiple = fields.pop("r_multiple", None)
     if r_multiple is None and entry is not None and sl is not None:
         r_multiple = fx.realised_r(side, entry, sl, exit_price)
+    session_id = fields.pop("session_id", None)
+    if session_id is not None:
+        session = db.get(JournalSession, session_id)
+        if not session or session.deleted_at or session.strategy_id != strategy.id:
+            raise JournalError("That session doesn't belong to this strategy.", 404)
+        require_owner_or_admin(session, actor)
     trade = Trade(
         owner_id=strategy.owner_id if actor.is_admin and strategy.owner_id != actor.id else actor.id,
         strategy_id=strategy.id,
-        session_id=fields.pop("session_id", None),
+        session_id=session_id,
         kind=kind,
         instrument=pair,
         side=side,
@@ -501,7 +507,7 @@ def get_session(db: Session, session_id: int, *, include_deleted: bool = False) 
 
 
 def session_trades(db: Session, session: JournalSession, *, include_deleted: bool = False) -> list[Trade]:
-    stmt = select(Trade).where(Trade.session_id == session.id)
+    stmt = select(Trade).where(Trade.session_id == session.id, Trade.strategy_id == session.strategy_id)
     if not include_deleted:
         stmt = stmt.where(Trade.deleted_at.is_(None))
     return list(db.scalars(stmt.order_by(Trade.opened_at.asc(), Trade.id.asc())))
