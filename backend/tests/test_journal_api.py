@@ -570,26 +570,28 @@ def test_member_cannot_see_nothing_but_can_see_everything_read_only(member, admi
 
 
 def test_huge_declared_dimensions_are_refused_before_decoding(admin_client):
-    s = new_strategy(admin_client)
-    t = do_import(admin_client, s["id"], "ideal")["trades"][0]
-    # A PNG header claiming 30000×30000 pixels with no real data behind it
     import struct
     import zlib
 
+    s = new_strategy(admin_client)
+    t = do_import(admin_client, s["id"], "ideal")["trades"][0]
+    # A real 1×1 PNG whose header is patched to claim 30000×30000 pixels (CRC recomputed)
+    real = png_bytes(1, 1)
     ihdr = struct.pack(">IIBBBBB", 30000, 30000, 8, 2, 0, 0, 0)
     chunk = b"IHDR" + ihdr
-    bomb = (
-        b"\x89PNG\r\n\x1a\n"
+    patched = (
+        real[:8]
         + struct.pack(">I", 13)
         + chunk
         + struct.pack(">I", zlib.crc32(chunk) & 0xFFFFFFFF)
+        + real[33:]
     )
     res = admin_client.post(
         f"/api/trades/{t['id']}/screenshots",
-        files={"file": ("bomb.png", bomb, "image/png")},
+        files={"file": ("bomb.png", patched, "image/png")},
         data={"slot": "entry"},
     )
-    assert res.status_code == 413
+    assert res.status_code == 413, res.text
 
 
 def test_session_id_must_belong_to_the_strategy_and_the_actor(admin_client, member_client):
