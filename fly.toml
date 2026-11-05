@@ -1,0 +1,22 @@
+# Fly.io config. The app does not exist yet: create it once with
+#   fly apps create trading-portal-jamie && fly volumes create portal_data --size 1 --region lhr
+# (change the name if it's taken, here and in .github/workflows/deploy.yml).
+app = "trading-portal-jamie"
+primary_region = "lhr"
+
+[build]
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+[[mounts]]
+  source = "portal_data"
+  destination = "/data"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

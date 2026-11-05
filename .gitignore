@@ -1,0 +1,36 @@
+# Python
+backend/.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Node
+frontend/node_modules/
+frontend/dist/
+frontend/e2e/.results/
+frontend/test-results/
+frontend/playwright-report/
+
+# Data never lives in the repo
+/data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite*
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Screenshot runs from /check-devices (commit only on purpose)
+docs/check-devices/
+
+# Claude tooling setup run log (may contain account names)
+docs/claude-setup/setup-run.log
+
+# macOS
+.DS_Store

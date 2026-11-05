@@ -1,0 +1,31 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest"
+      ],
+      "env": {}
+    },
+    "chrome-devtools": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "chrome-devtools-mcp@latest",
+        "--no-usage-statistics",
+        "--no-performance-crux"
+      ],
+      "env": {}
+    },
+    "flyctl": {
+      "type": "stdio",
+      "command": "fly",
+      "args": [
+        "mcp",
+        "server"
+      ],
+      "env": {}
+    }
+  }
+}
