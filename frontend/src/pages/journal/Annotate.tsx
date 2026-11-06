@@ -55,6 +55,7 @@ function Stepper({ strategyId, trades, canEdit }: { strategyId: number; trades: 
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pending = useRef<TradePatch>({});
   const firstFieldRef = useRef<HTMLInputElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const fields = strategy.data?.reasoning_template ?? [];
   const rules = strategy.data?.rules ?? [];
 
@@ -87,7 +88,7 @@ function Stepper({ strategyId, trades, canEdit }: { strategyId: number; trades: 
       setParams(p, { replace: true });
       setSaveState("idle");
       (document.activeElement as HTMLElement | null)?.blur?.();
-      window.scrollTo({ top: 0 });
+      scrollRef.current?.scrollTo({ top: 0 }); // the dialog scrolls, not the window
     },
     [flush, trades, params, setParams],
   );
@@ -186,7 +187,7 @@ function Stepper({ strategyId, trades, canEdit }: { strategyId: number; trades: 
         </span>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-(--gutter-phone) py-4 tablet:px-(--gutter-tablet) desktop:px-(--gutter-desktop)">
+      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto px-(--gutter-phone) py-4 tablet:px-(--gutter-tablet) desktop:px-(--gutter-desktop)">
         <div className="mx-auto grid max-w-[1400px] gap-6 laptop:grid-cols-[minmax(0,3fr)_minmax(320px,2fr)]">
           <section aria-label="Screenshots" className="flex flex-col gap-4">
             <p className="flex flex-wrap items-center gap-2 text-body tablet:hidden">
@@ -291,7 +292,7 @@ function Stepper({ strategyId, trades, canEdit }: { strategyId: number; trades: 
             return (
               <li key={t.id}>
                 <button type="button" aria-label={`Trade ${i + 1}${complete ? ", done" : ""}`} aria-current={i === index ? "step" : undefined} onClick={() => go(i)} className="grid size-11 place-items-center">
-                  <span className={`block size-2.5 rounded-full ${i === index ? "bg-accent ring-2 ring-accent/40" : complete ? "bg-accent" : "bg-surface-2 ring-1 ring-border-input"}`} />
+                  <span className={`block rounded-full ${i === index ? "size-3.5 border-2 border-accent bg-bg" : complete ? "size-2.5 bg-accent" : "size-2.5 bg-surface-2 ring-1 ring-border-input"}`} />
                 </button>
               </li>
             );

@@ -28,7 +28,7 @@ Branch `build/02-journal-loop`, 6 Nov 2026. Gate 2: see the checklist below.
 - `/journal/strategies/:id/trades/:tid`: detail with a swipeable gallery (scroll-snap), full-screen viewer (thumbnail first, full resolution on zoom; pinch, wheel, double-tap and +/− keys), facts, tags, reasoning, rules followed, Annotate and Delete.
 - `/journal/trash`: strategies, sessions and trades with Restore.
 - Hub: the Replay Journal island shows "Last session: 10 trades · 2 h ago" from `GET /api/journal/summary`.
-- 30 new Playwright tests (76 total) at 1440 and 375 with axe.
+- 30 new Playwright tests (76 total) at 1440 and 375 with axe; the suite passed three times in a row.
 
 ## Gate 2 checklist
 
@@ -44,7 +44,7 @@ Branch `build/02-journal-loop`, 6 Nov 2026. Gate 2: see the checklist below.
 | A member gets 403 on the admin's strategy and trades and sees the read-only banner | Pass | `test_member_gets_403_on_the_admins_strategy_and_trades` (9 writes refused); e2e "a member sees the admin's strategy read-only" |
 | `make lint`, `make test`, `make smoke` green | Pass | lint clean (ruff, oxlint, tsc, bundle 184.1 KB of 200); 208 pytest; 76 Playwright |
 | `/check-devices` clean at all six widths for the journal screens, Annotate mode and the matcher | Pass | `docs/check-devices/2026-11-06/` (48 screenshots of journal, strategy, backtest tab, trade, annotate, match, trash, hub at 360/375/430/768/1440/1920). Fixed on the way: the Annotate overlay sat under the sidebar (portal), session rows overflowed on the phone, the tablet header squeezed the title, the trade table wrapped dates |
-| design-reviewer: no blockers or majors | DESIGN_REVIEW_RESULT | DESIGN_REVIEW_HOW |
+| design-reviewer: no blockers or majors | Pass | First pass: 0 blockers, 6 majors (reserved green/orange used for status, a fake-timed import stepper, a 3.4:1 kbd, a stretched row link, a scrolling table on tablet), all fixed plus 16 of the 22 minors/nits. Second pass: 0 blockers, 1 new major (the stepper's scroll reset was a no-op inside the Radix dialog), fixed, plus its minors (observable import stages, sticky Date column, matcher card style, step dots, duplicate scroll lock, Reduced-motion rule for `page-enter` utilities). Left as minors: Sparkline/StatTile sharing, extra panels at 1920+, a few `.num` labels, drawn checkbox ticks |
 
 ## Assumptions
 1. **Duplicate key is (strategy, destination kind, FX Replay id)**, not (strategy, id). The gate asks for an Ideal import followed by a Backtest import of the same file that takes *all* trades, then a third import that is all duplicates; that only works if the ideal catalogue and the backtest ledger are separate destinations. A winner can therefore sit in both. Within a destination a re-import skips duplicates and reports them.
@@ -71,7 +71,8 @@ Branch `build/02-journal-loop`, 6 Nov 2026. Gate 2: see the checklist below.
 
 ## Known issues
 - Real screenshots match by sequence only (see the gate row): no filename hint and no capture time to go on.
-- The matcher at 1920px leaves the trade column wide; the grid could cap its width.
+- Design-review minors left open: `Sparkline` lives under journal rather than `components/ui`; the strategy page is one column at 1920+ (Coverage and the profile could sit beside the trade list); a handful of labels lack `.num`; native checkboxes in Annotate (the shared drawn-tick Checkbox can come with Prompt 3); the Reduced-motion rule for `animate-[page-enter_…]` utilities is a CSS attribute-selector in `index.css`.
+- Phase 1's e2e toast assertions were flaky against Radix's aria-live duplicate; made exact in this branch.
 - Analytics tab is a placeholder with four headline tiles until Prompt 3.
 - The "live" dot on the Replay Journal nav item is static.
 - Context7 MCP still rejects calls; library APIs were read from the installed packages.

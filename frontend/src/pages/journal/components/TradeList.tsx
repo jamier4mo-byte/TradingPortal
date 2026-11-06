@@ -77,7 +77,7 @@ export function TradeList({ trades, strategyId, mode, emptyTitle, emptyText, emp
       <table className="w-full min-w-[880px] border-separate border-spacing-0 whitespace-nowrap text-body">
         <thead>
           <tr className="text-left text-label text-muted">
-            <th scope="col" className="border-b border-border px-2 py-2 font-normal">Date</th>
+            <th scope="col" className="sticky left-0 z-10 border-b border-border bg-surface-1 px-2 py-2 font-normal">Date</th>
             <th scope="col" className="border-b border-border px-2 py-2 font-normal">Time</th>
             <th scope="col" className="border-b border-border px-2 py-2 font-normal">Instrument</th>
             <th scope="col" className="border-b border-border px-2 py-2 font-normal">Side</th>
@@ -97,7 +97,7 @@ export function TradeList({ trades, strategyId, mode, emptyTitle, emptyText, emp
         <tbody>
           {trades.map((t) => (
             <tr key={t.id} className="cursor-pointer hover:bg-surface-2" onClick={() => navigate(href(t))}>
-              <td className="num border-b border-border px-2 py-0">
+              <td className="num sticky left-0 z-10 border-b border-border bg-surface-1 px-2 py-0">
                 <Link to={href(t)} onClick={(e) => e.stopPropagation()} className="flex min-h-11 items-center" aria-label={`Open trade on ${fmtUkDate(t.opened_at)} ${fmtUkTime(t.opened_at)} ${t.instrument}`}>
                   {fmtUkDate(t.opened_at)}
                 </Link>

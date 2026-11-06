@@ -11,7 +11,8 @@ import { OutcomeChip } from "./OutcomeChip.tsx";
 
 type Destination = "ideal" | "backtest";
 type Step = "pick" | "preview" | "running" | "done";
-const STAGES = ["Reading file", "Matching trades", "Calculating stats", "Done"] as const;
+// Only what the browser can observe: the file read, the request in flight, the response.
+const STAGES = ["Reading file", "Matching trades and calculating stats", "Done"] as const;
 
 /** Upload → preview → confirm → Session created (F3), with the stage progress from the Motion doc. */
 export function ImportDrawer({ open, onClose, strategy, destination: initial = "ideal", onImported }: {
@@ -78,10 +79,9 @@ export function ImportDrawer({ open, onClose, strategy, destination: initial = "
     form.append("destination", destination);
     form.append("timezone", tz);
     try {
-      setStage(1); // Matching trades: the request is in flight
+      setStage(1); // the request is in flight: the server matches trades and calculates stats
       const r = await api.upload<ImportResult>(`/api/strategies/${strategy.id}/imports`, form);
-      setStage(2); // Calculating stats: the response is in
-      setStage(3);
+      setStage(2); // the response is in
       setResult(r);
       setStep("done");
       invalidate(strategy.id);
@@ -250,7 +250,7 @@ export function ImportDrawer({ open, onClose, strategy, destination: initial = "
             })}
           </ol>
           <div className="h-1 overflow-hidden rounded-pill bg-surface-2">
-            <motion.div className="h-full origin-left bg-accent" initial={{ scaleX: 0 }} animate={{ scaleX: (step === "done" ? 4 : stage) / 4 }} transition={{ duration: level === "full" ? dur.standard() : 0, ease: easeEnter }} />
+            <motion.div className="h-full origin-left bg-accent" initial={{ scaleX: 0 }} animate={{ scaleX: (step === "done" ? 3 : stage) / 3 }} transition={{ duration: level === "full" ? dur.standard() : 0, ease: easeEnter }} />
           </div>
           <AnimatePresence>
             {step === "done" && result ? (

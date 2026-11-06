@@ -255,9 +255,10 @@ function MatcherScreen({ sessionId, strategyId, trades, canEdit, timezone }: { s
       <input ref={inputRef} type="file" accept="image/*" multiple className="hidden" tabIndex={-1} aria-label="Screenshots" onChange={(e) => void addFiles(Array.from(e.target.files ?? [])).then(() => (e.target.value = ""))} />
 
       {device !== "desktop" ? (
+        <Card title="Trades" subtitle={picked ? "Now tap where it belongs" : "Tap a thumbnail to pick it up, then tap its slot."}>
         <ul className="flex flex-col gap-2" aria-label="Trades">
           {trades.map((t, i) => (
-            <li key={t.id} className="card p-3">
+            <li key={t.id} className="rounded-panel border border-border bg-surface-2 p-3">
               <p className="num flex items-center gap-2 text-body">
                 <span className="text-muted">{i + 1}.</span> <span className="font-mono">{t.instrument}</span> {fmtUkTime(t.opened_at)} <span className="ml-auto">{fmtR(t.r_multiple)}</span>
               </p>
@@ -268,9 +269,10 @@ function MatcherScreen({ sessionId, strategyId, trades, canEdit, timezone }: { s
             </li>
           ))}
         </ul>
+        </Card>
       ) : (
         <Card title="Trades" subtitle={picked ? "Now tap where it belongs" : "Tap a thumbnail to pick it up, then tap its slot. Or drag."}>
-          <div className="grid grid-cols-[minmax(0,1fr)_200px_200px] gap-x-4 gap-y-2 desktop:grid-cols-[minmax(0,1fr)_240px_240px]">
+          <div className="grid max-w-[1100px] grid-cols-[minmax(0,1fr)_200px_200px] gap-x-4 gap-y-2 desktop:grid-cols-[minmax(0,1fr)_240px_240px]">
             <span className="text-label text-muted">Trade</span>
             <span className="text-label text-muted">Entry</span>
             <span className="text-label text-muted">Exit</span>

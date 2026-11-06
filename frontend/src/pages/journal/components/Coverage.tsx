@@ -1,5 +1,6 @@
 import { Lock, LockOpen } from "lucide-react";
 import { motion } from "motion/react";
+import { useRef } from "react";
 
 import { dur, easeEnter, motionLevel } from "../../../lib/motion.ts";
 import { type Coverage, fmtMonth } from "../../../lib/journal.ts";
@@ -24,9 +25,22 @@ export function CoverageBar({ coverage, compact = false }: { coverage: Coverage;
 }
 
 /** The months grid: every month from the first trade to the last, gaps included. */
+const STAGGER_KEY = "tp.coverage-staggered";
+
 export function CoverageTracker({ coverage }: { coverage: Coverage }) {
   const level = motionLevel();
   const months = coverage.months;
+  // Stagger on the first load of the screen only (Motion doc), not on every tab switch.
+  const firstLoad = useRef<boolean | null>(null);
+  if (firstLoad.current === null) {
+    try {
+      firstLoad.current = !sessionStorage.getItem(STAGGER_KEY);
+      sessionStorage.setItem(STAGGER_KEY, "1");
+    } catch {
+      firstLoad.current = true;
+    }
+  }
+  const stagger = level === "full" && firstLoad.current;
   return (
     <div>
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -55,9 +69,9 @@ export function CoverageTracker({ coverage }: { coverage: Coverage }) {
           {months.map((m, i) => (
             <motion.li
               key={m.month}
-              initial={level === "full" ? { opacity: 0, y: 6 } : false}
+              initial={stagger ? { opacity: 0, y: 6 } : false}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: level === "off" ? 0 : dur.standard(), ease: easeEnter, delay: level === "full" ? Math.min(i, 12) * 0.03 : 0 }}
+              transition={{ duration: level === "off" ? 0 : dur.standard(), ease: easeEnter, delay: stagger ? Math.min(i, 12) * 0.03 : 0 }}
               className={`flex min-h-16 flex-col justify-between rounded-panel border p-2 ${
                 m.covered ? "border-accent/60 bg-accent-soft" : "border-dashed border-border-strong"
               }`}

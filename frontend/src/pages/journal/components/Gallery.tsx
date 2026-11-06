@@ -56,11 +56,7 @@ function Viewer({ shots, index, onIndex, onClose }: { shots: Screenshot[]; index
       if (e.key === "-") setScale((s) => Math.max(1, s / 1.25));
     };
     window.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
+    return () => window.removeEventListener("keydown", onKey);
   }, [index, shots.length, onClose, onIndex]);
 
   const down = (e: PointerEvent) => {
