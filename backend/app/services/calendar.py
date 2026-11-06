@@ -74,7 +74,17 @@ def parse_rrule(rule: str, dtstart: datetime) -> du.rrule:
     # the calendar is about days and sessions, so daily is the finest repeat.
     if parsed._freq > du.DAILY:  # noqa: SLF001 — dateutil keeps the frequency private
         raise CalendarError("Repeat at most once a day (FREQ=DAILY, WEEKLY, MONTHLY or YEARLY).", 422)
+    # BYHOUR/BYMINUTE/BYSECOND multiply a daily rule into many rows a day, and BYSETPOS has no use here.
+    if re.search(r"(^|;)(BYHOUR|BYMINUTE|BYSECOND|BYSETPOS)=", rule):
+        raise CalendarError("Repeat rules can't use BYHOUR, BYMINUTE, BYSECOND or BYSETPOS.", 422)
+    # Expansion walks from the rule's start to the window, so a start decades away costs time for nothing.
+    if abs(dtstart.year - datetime.now(UTC).year) > MAX_RRULE_YEARS:
+        raise CalendarError(f"A repeating task must start within {MAX_RRULE_YEARS} years of today.", 422)
     return parsed
+
+
+# A repeating task's start may be at most this many years from today (bounds the expansion walk).
+MAX_RRULE_YEARS = 10
 
 
 # The most occurrences one task may contribute to a single expansion window (62 days, daily at most).
