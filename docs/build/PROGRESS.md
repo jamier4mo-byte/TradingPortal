@@ -235,12 +235,12 @@ prompt's branch. If a prompt stops part-way, the next run continues from the fir
 - [ ] e2e: load the Hub, go offline, reload, cached Hub shows with offline marking
 
 ### 5. Backups, storage and data safety (F2, F5)
-- [ ] `S3Storage` (boto3, Tigris) behind `Storage`, `STORAGE_BACKEND=local|s3`, moto tests; `make migrate-screenshots` (resumable, idempotent)
-- [ ] Litestream: pinned binary in the Docker image, `litestream.yml` from env vars, entrypoint restore → migrate → replicate, plain uvicorn without a replica
-- [ ] `make restore-test` + `docs/ops/RESTORE-TEST.md`
-- [ ] Trash purge after 30 days (daily scheduler job with the lease)
-- [ ] Admin "Export everything" (streamed zip: consistent DB snapshot, screenshots, manifest)
-- [ ] `fly.toml`: always on, volume, health check on `/api/health`, `[env]` for non-secret settings
+- [x] `S3Storage` (boto3, Tigris) behind `Storage`, `STORAGE_BACKEND=local|s3`, moto tests; `make migrate-screenshots` (resumable, idempotent)
+- [x] Litestream: pinned binary in the Docker image, `litestream.yml` from env vars, entrypoint restore → migrate → replicate, plain uvicorn without a replica
+- [x] `make restore-test` + `docs/ops/RESTORE-TEST.md`
+- [x] Trash purge after 30 days (daily scheduler job with the lease)
+- [x] Admin "Export everything" (streamed zip: consistent DB snapshot, screenshots, manifest)
+- [x] `fly.toml`: always on, volume, health check on `/api/health`, `[env]` for non-secret settings
 
 ### 6. Security and quality review
 - [ ] Review: auth, sessions, CSRF, lockout, invites, resets; route × role table from OpenAPI; uploads and path traversal; zip export; key vault; SSRF; headers (CSP, HSTS, frame-ancestors, Referrer-Policy); rate limits; `pip-audit`, `npm audit --omit=dev`
@@ -251,7 +251,7 @@ prompt's branch. If a prompt stops part-way, the next run continues from the fir
 - [ ] Flashcard review (U14) · Konva annotator · presence and activity feed
 
 ### 8. Deploy runbook
-- [ ] `docs/DEPLOY.md`
+- [x] `docs/DEPLOY.md`
 
 ### 9. Gate 5
 - [ ] `make lint`, `make test`, `make smoke` green; bundle budget; `docker build .` (not available here: say so)
