@@ -117,11 +117,11 @@ prompt's branch. If a prompt stops part-way, the next run continues from the fir
 - [x] FX Replay metric definitions summarised (`docs/build/research/fxreplay-metrics.md`); old app's analytics/export read
 
 ### 1. Metrics engine
-- [ ] Metric registry (id, label, unit, formula, function); FX Replay set + the doc's own
-- [ ] Breakdowns (hour, weekday, session, entry model, instrument, direction) and daily P&L calendar
-- [ ] Reconcile line against the CSV's own totals
-- [ ] `POST /api/analytics/query` with source, scope, split_by_owner and all 2.4 filters
-- [ ] Hand-computed metric tests (all wins, all losses, breakeven-heavy, single trade); 5,000 trades < 300 ms
+- [x] Metric registry (id, label, unit, formula, function); FX Replay set + the doc's own
+- [x] Breakdowns (hour, weekday, session, entry model, instrument, direction) and daily P&L calendar
+- [x] Reconcile line against the CSV's own totals
+- [x] `POST /api/analytics/query` with source, scope, split_by_owner and all 2.4 filters
+- [x] Hand-computed metric tests (all wins, all losses, breakeven-heavy, single trade); 5,000 trades < 300 ms (144 ms)
 
 ### 2–6. Views, chart system and layout
 - [ ] Shared lazy `Chart` wrapper (echarts/core), runtime theme from CSS tokens, motion, crosshair, text summary + data table, skeletons

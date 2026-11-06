@@ -26,6 +26,7 @@ from . import audit
 from . import fxreplay as fx
 from . import instruments as inst_svc
 from . import journal_rules as rules
+from .analytics.reconcile import csv_totals
 from .tags import resolve_tag
 
 TRASH_DAYS = 30
@@ -494,6 +495,9 @@ def confirm_import(
         "problems": result.problems,
         "unresolved_tags": sorted(unresolved_tags),
         "timezone": zone,
+        # Reconcile line (F16): FX Replay's own figures for the file, and what this import kept of them.
+        "csv_totals": csv_totals(result.rows) if result.rows else None,
+        "kept_totals": {"trades": len(imported), "rpnl_sum": round(sum(t.pnl or 0.0 for t in imported), 2)},
     }
     session.import_report = report
     strategy.profile_fingerprint = None
