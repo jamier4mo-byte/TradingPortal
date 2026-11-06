@@ -130,6 +130,12 @@ def test_readme_and_strategy_md_read_well(admin_client):
     )
     assert "| Win rate |" in md and "Breakevens are left out" in md
     assert "### Reconcile against FX Replay's CSV" in md and "✓" in md
+    import re
+
+    for line in md.splitlines():
+        if line.startswith("| ") and "Metric" not in line:
+            cells = re.split(r"(?<!\\)\|", line)
+            assert len(cells) in (5, 7), line  # KPI rows have 3 cells, breakdown rows 5: pipes are escaped
 
 
 def test_export_respects_the_filters(admin_client):

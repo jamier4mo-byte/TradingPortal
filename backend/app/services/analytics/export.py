@@ -176,6 +176,10 @@ def export_filename(db: Session, q: AnalyticsQuery, ext: str, now: datetime | No
 # ---- per-trade record ----------------------------------------------------------------------------
 
 
+def _r4(v: float | None) -> float | None:
+    return None if v is None else round(v, 4)
+
+
 def trade_record(t: Trade, row: Row, n: int, owner: str, strategy: Strategy, images: list[dict]) -> dict:
     labels = {f["key"]: f["label"] for f in strategy.reasoning_template or []}
     rule_text = {r["key"]: r["text"] for r in strategy.rules or []}
@@ -202,12 +206,12 @@ def trade_record(t: Trade, row: Row, n: int, owner: str, strategy: Strategy, ima
         "exit_price": t.exit_price,
         "stop_distance": t.sl_distance,
         "target_distance": t.tp_distance,
-        "target_r": t.tp_r,
-        "r": t.r_multiple,
+        "target_r": _r4(t.tp_r),
+        "r": _r4(t.r_multiple),
         "pnl": t.pnl,
         "outcome": row.outcome,
-        "max_favourable_r": row.mfe_r,
-        "max_adverse_r": t.mae_r,
+        "max_favourable_r": _r4(row.mfe_r),
+        "max_adverse_r": _r4(t.mae_r),
         "entry_model": t.entry_model,
         "reasoning": {labels.get(k, k): v for k, v in (t.reasoning or {}).items() if str(v).strip()},
         "notes": t.notes or "",
@@ -244,7 +248,7 @@ def _kpi_table(kpis: dict, ids: tuple[str, ...]) -> list[str]:
     for mid in ids:
         if mid in kpis and mid in BY_ID:
             m = BY_ID[mid]
-            lines.append(f"| {m.label} | {fmt_value(mid, kpis[mid])} | {m.formula} |")
+            lines.append(f"| {m.label} | {fmt_value(mid, kpis[mid])} | {m.formula.replace('|', '\\|')} |")
     return lines
 
 
@@ -380,9 +384,7 @@ Portal. This bundle is an export of {what}. It was made on {when} with these fil
 - `trades.jsonl`: one JSON object per line, one line per trade ({trades} trades). Every field, my written
   reasoning (keyed by the template headings), tags, each rule with kept true/false, the outcome, and the
   relative paths of its screenshots.
-- `images/`: {images} screenshots, long edge at most 1,568 px. Each trade has up to three labelled shots:
-  `htf` (higher-timeframe context), `entry` and `outcome`, plus extras. File names are
-  `<trade n>-<slot>.{ext}`, matching `n` in `trades.jsonl`.
+- `images/`: {images_line}
 - `manifest.json`: counts, the filters, and a SHA-256 for every file, so you can tell nothing is missing.
 
 ## How to read the numbers
@@ -422,6 +424,16 @@ compute something, say how.
 
 
 # ---- the zip ----------------------------------------------------------------------------------------
+
+
+def images_line(count: int) -> str:
+    if not count:
+        return "no screenshots in this export (none were added yet, or they were left out)."
+    return (
+        f"{count} screenshots, long edge at most 1,568 px. Each trade has up to three labelled shots:\n"
+        "  `htf` (higher-timeframe context), `entry` and `outcome`, plus extras. File names are\n"
+        f"  `<trade n>-<slot>.{IMAGE_EXT}`, matching `n` in `trades.jsonl`."
+    )
 
 
 class _Sink(io.RawIOBase):
@@ -520,8 +532,7 @@ def stream_ai_zip(db: Session, user: User, q: ExportQuery) -> Iterator[bytes]:
                 when=f"{datetime.now(UTC):%d %b %Y %H:%M} UTC",
                 filters=filters_text,
                 trades=len(planned),
-                images=image_count,
-                ext=IMAGE_EXT,
+                images_line=images_line(image_count),
                 threshold=threshold,
             ).encode(),
         )
