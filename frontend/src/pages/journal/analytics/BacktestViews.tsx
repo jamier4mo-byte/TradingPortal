@@ -85,11 +85,11 @@ export function BacktestViews({ block, meta, registry, owners, dim }: { block: B
         <BreakdownChart groups={block.breakdowns[dimension]} metric={metric} label={DIM_LABEL[dimension]} dim={dim} />
       </Card>
 
-      <div className="grid gap-4 laptop:grid-cols-2 laptop:gap-6">
-        <Card title="P&L calendar" subtitle="By the UK date each trade opened" controls={<PillToggle size="sm" value={calUnit} onChange={setCalUnit} options={[{ value: "usd" as const, label: "$" }, { value: "r" as const, label: "R" }]} label="Calendar unit" />}>
-          <PnlCalendar days={block.calendar} unit={calUnit} />
-        </Card>
+      <Card title="P&L calendar" subtitle="By the UK date each trade opened" controls={<PillToggle size="sm" value={calUnit} onChange={setCalUnit} options={[{ value: "usd" as const, label: "$" }, { value: "r" as const, label: "R" }]} label="Calendar unit" />}>
+        <PnlCalendar days={block.calendar} unit={calUnit} />
+      </Card>
 
+      <div className="grid gap-4 laptop:grid-cols-2 laptop:gap-6">
         <Card title="Rulebook" subtitle="R with every rule kept vs any rule broken, and what each broken rule cost">
           {rb.marked ? (
             <div className="flex flex-col gap-4">
@@ -103,9 +103,6 @@ export function BacktestViews({ block, meta, registry, owners, dim }: { block: B
             <p className="text-body text-muted">Tick the rulebook on each trade in Annotate mode and this shows what breaking each rule costs.</p>
           )}
         </Card>
-      </div>
-
-      <div className="grid gap-4 laptop:grid-cols-2 laptop:gap-6">
         <Card title="Exit efficiency" subtitle="Realised R against the best R available (MAE/MFE, or FX Replay's ideal price)">
           {block.excursions.n ? (
             <div className="flex flex-col gap-4">
@@ -119,8 +116,9 @@ export function BacktestViews({ block, meta, registry, owners, dim }: { block: B
             <p className="text-body text-muted">Add MAE and MFE in Annotate mode (or import from FX Replay, which records the best price) to see how much of each move you kept.</p>
           )}
         </Card>
-        <MonteCarloCard rs={block.r_sequence} />
       </div>
+
+      <MonteCarloCard rs={block.r_sequence} />
 
       <Card title="Every metric" subtitle="Values for the current filters, with how each is worked out">
         <AllMetrics kpis={k} registry={registry} />

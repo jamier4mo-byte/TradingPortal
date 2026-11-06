@@ -354,7 +354,11 @@ def run_query(db: Session, user: User, q: AnalyticsQuery) -> dict:
         "ideal": ideal_block(ideal) if q.source in ("ideal", "compare") else None,
         "compare": series.compare(ideal, backtest) if q.source == "compare" else None,
         "owners": owner_split(primary, users) if q.split_by_owner else None,
-        "insights": insights(primary, "backtest" if primary is backtest else "ideal"),
+        # U11 compares slices with the strategy's baseline: every trade in scope, before the filters.
+        "insights": insights(
+            [r for r in rows if r.kind == ("backtest" if primary is backtest else "ideal")],
+            "backtest" if primary is backtest else "ideal",
+        ),
         "reconcile": reconcile(db, strategy, kinds) if strategy else [],
         "trades": _trade_list(primary),
     }

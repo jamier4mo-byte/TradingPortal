@@ -15,7 +15,7 @@ function ChipToggle({ on, onClick, children, label }: { on: boolean; onClick: ()
       aria-pressed={on}
       aria-label={label}
       onClick={onClick}
-      className={`inline-flex min-h-11 items-center gap-1.5 rounded-pill border px-3 text-body transition-colors duration-(--dur-quick) ${
+      className={`inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-pill border px-3 text-body transition-colors duration-(--dur-quick) ${
         on ? "border-accent bg-accent-soft text-text" : "border-border bg-surface-2 text-muted hover:text-text"
       }`}
     >

@@ -166,7 +166,7 @@ export function Chart({
 
 export function DataTable({ id, label, table }: { id?: string; label: string; table: TableData }) {
   return (
-    <div id={id} className="max-h-72 overflow-auto rounded-panel border border-border">
+    <div id={id} className="max-h-72 overflow-auto rounded-panel border border-border" tabIndex={0} role="region" aria-label={`${label}: data table`}>
       <table className="num w-full border-collapse text-left text-label">
         <caption className="sr-only">{label}: data</caption>
         <thead className="sticky top-0 bg-surface-2 text-muted">

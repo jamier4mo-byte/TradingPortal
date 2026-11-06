@@ -33,7 +33,7 @@ export function CompareView({ block, dim }: { block: CompareBlock; dim: boolean 
 
       <Card title="What holds up" subtitle="Where ideal winners came from, and how the backtest did there. Holds = average R above 0 on 3+ trades." controls={<PillToggle size="sm" value={by} onChange={setBy} options={BY} label="Compare by" />}>
         {rows.length ? (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Comparison table (scrolls sideways)">
             <table className="num w-full min-w-[520px] border-collapse text-left text-body" data-testid="compare-table">
               <caption className="sr-only">Ideal share and backtest results by {BY.find((b) => b.value === by)?.label.toLowerCase()}</caption>
               <thead className="text-label text-muted">

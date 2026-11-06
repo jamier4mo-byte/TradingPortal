@@ -270,8 +270,8 @@ export function RuleCostChart({ rules, dim }: { rules: RuleCost[]; dim?: boolean
   const option = useMemo<OptionBuilder>(
     () => (t) => ({
       tooltip: { trigger: "item", formatter: (p: { dataIndex: number }) => { const r = shown[p.dataIndex]; return r ? tipTitle(r.text) + tipRow(t.loss, "cost", fmtR(-(r.cost_r ?? 0))) + tipRow(t.muted, "broken", `${r.broken}×`) + tipRow(t.muted, "avg kept / broken", `${fmtR(r.avg_r_kept)} / ${fmtR(r.avg_r_broken)}`) : ""; } },
-      grid: { left: 8, right: 56, top: 8, bottom: 8, containLabel: true },
-      xAxis: valueAxis(t, { axisLabel: { color: t.muted, formatter: (v: number) => `${v}R` } }),
+      grid: { left: 8, right: 64, top: 8, bottom: 8, containLabel: true },
+      xAxis: valueAxis(t, { axisLabel: { show: false } }),
       yAxis: categoryAxis(t, shown.map((r, i) => `${i + 1}. ${r.text.length > 28 ? `${r.text.slice(0, 27)}…` : r.text}`), { inverse: true, axisLine: { show: false } }),
       series: [{ id: "cost", type: "bar", barMaxWidth: 16, data: shown.map((r) => ({ value: r.cost_r, itemStyle: { color: (r.cost_r ?? 0) > 0 ? t.loss : t.breakeven, borderRadius: [0, 4, 4, 0] } })), label: { show: true, position: "right", color: t.muted, fontFamily: t.font, fontSize: 11, formatter: (p: { value: number }) => (p.value > 0 ? `−${p.value.toFixed(2)}R` : fmtR(-p.value)) } }],
     }),
@@ -295,16 +295,16 @@ export function ExcursionScatter({ points, dim }: { points: { id: number; r: num
   const option = useMemo<OptionBuilder>(
     () => (t) => ({
       tooltip: { trigger: "item", formatter: (p: { dataIndex: number }) => { const pt = points[p.dataIndex]; return pt ? tipTitle(`Trade #${pt.id}`) + tipRow(t.series1, "realised", fmtR(pt.r)) + tipRow(t.muted, "max favourable", fmtR(pt.mfe)) : ""; } },
-      grid: { left: 8, right: 16, top: 16, bottom: 28, containLabel: true },
+      grid: { left: 28, right: 16, top: 12, bottom: 28, containLabel: true },
       xAxis: valueAxis(t, { min: 0, max, name: "Max favourable R", nameLocation: "middle", nameGap: 24, nameTextStyle: { color: t.muted } }),
-      yAxis: valueAxis(t, { min: Math.min(-1, Math.floor(Math.min(...points.map((p) => p.r), 0))), max, name: "Realised R", nameTextStyle: { color: t.muted } }),
+      yAxis: valueAxis(t, { min: Math.min(-1, Math.floor(Math.min(...points.map((p) => p.r), 0))), max, name: "Realised R", nameLocation: "middle", nameRotate: 90, nameGap: 28, nameTextStyle: { color: t.muted } }),
       series: [
         {
           id: "exc",
           type: "scatter",
           symbolSize: 9,
           data: points.map((p) => ({ value: [p.mfe, p.r], itemStyle: { color: p.r > 0 ? t.win : p.r < 0 ? t.loss : t.breakeven, borderColor: t.surface1, borderWidth: 2 } })),
-          markLine: { silent: true, symbol: "none", lineStyle: { color: t.axis, type: "solid", width: 1 }, label: { show: true, color: t.muted, formatter: "all of it", fontFamily: t.font }, data: [[{ coord: [0, 0] }, { coord: [max, max] }]] },
+          markLine: { silent: true, symbol: "none", lineStyle: { color: t.axis, type: "solid", width: 1 }, label: { show: false }, data: [[{ coord: [0, 0] }, { coord: [max, max] }]] },
         },
       ],
     }),

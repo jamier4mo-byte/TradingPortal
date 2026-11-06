@@ -59,12 +59,10 @@ export function AllMetrics({ kpis, registry }: { kpis: Kpis; registry: MetricMet
   return (
     <dl className="grid gap-x-6 tablet:grid-cols-2">
       {rows.map((m) => (
-        <div key={m.id} className="flex flex-col gap-0.5 border-t border-border py-2.5">
-          <div className="flex items-baseline justify-between gap-3">
-            <dt className="text-body">{m.label}</dt>
-            <dd className="num text-body font-medium">{fmtMetric(m.unit, kpis[m.id])}</dd>
-          </div>
-          <p className="text-label text-muted">{m.formula}</p>
+        <div key={m.id} className="grid grid-cols-[1fr_auto] items-baseline gap-x-3 gap-y-0.5 border-t border-border py-2.5">
+          <dt className="text-body">{m.label}</dt>
+          <dd className="num text-body font-medium">{fmtMetric(m.unit, kpis[m.id])}</dd>
+          <dd className="col-span-2 text-label text-muted">{m.formula}</dd>
         </div>
       ))}
     </dl>

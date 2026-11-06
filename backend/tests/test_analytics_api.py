@@ -260,3 +260,10 @@ def test_non_finite_numbers_never_reach_the_analytics(admin_client):
     assert histogram([float("inf"), float("nan")], 0.5) == []
     bins = histogram([0.0, 1e300], 0.5)
     assert len(bins) <= 40 and sum(b["n"] for b in bins) == 2
+
+
+def test_insights_compare_with_the_unfiltered_baseline(db, admin, admin_client):
+    s = seeded(db, admin, 200)
+    plain = query(admin_client, strategy_id=s.id)["insights"]
+    filtered = query(admin_client, strategy_id=s.id, filters={"weekdays": [0]})["insights"]
+    assert plain == filtered
