@@ -9,6 +9,7 @@ An occurrence is identified by its task and the *original* local date it was gen
 rows still find it; what changes is where it is shown.
 """
 
+import logging
 import re
 from datetime import UTC, date, datetime, time, timedelta
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
@@ -27,6 +28,9 @@ MAX_RANGE_DAYS = 62
 PAD = timedelta(days=45)
 Mode = str  # "series" | "occurrence"
 _DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+
+log = logging.getLogger("trading_portal.calendar")
 
 
 class CalendarError(Exception):
@@ -60,8 +64,24 @@ def normalise_rrule(text: str | None) -> str | None:
     return rule
 
 
-def parse_rrule(rule: str, dtstart: datetime) -> du.rrule:
-    """`dtstart` is a naive local datetime; a bad rule raises CalendarError(422)."""
+# Only these characters may appear in a stored rule: no whitespace or line breaks, so nothing can smuggle a
+# DTSTART/RDATE/EXDATE line past the parser, and nothing but the RRULE grammar is ever evaluated.
+RRULE_CHARS = re.compile(r"[A-Z0-9=;,+\-]+")
+# The most occurrences one task may contribute to a single expansion window (62 days, daily at most).
+MAX_OCCURRENCES_PER_TASK = 200
+# A repeating task's start may be at most this many years from today (bounds the expansion walk).
+MAX_RRULE_YEARS = 10
+
+
+def parse_rrule(rule: str, dtstart: datetime, *, for_write: bool = False) -> du.rrule:
+    """`dtstart` is a naive local datetime; a bad rule raises CalendarError(422).
+
+    With `for_write` (create and series edits) the policy that keeps expansion cheap also applies: daily is
+    the finest repeat, no BYHOUR/BYMINUTE/BYSECOND/BYSETPOS, and the start within MAX_RRULE_YEARS of today.
+    The read path only parses, so a rule that was valid when written can never take the calendar down later.
+    """
+    if not RRULE_CHARS.fullmatch(rule) or "DTSTART" in rule or "RDATE" in rule or "EXDATE" in rule:
+        raise CalendarError("That repeat rule has characters or parts that aren't allowed.", 422)
     try:
         parsed = du.rrulestr(f"RRULE:{rule}", dtstart=dtstart)
     except (ValueError, TypeError, KeyError, AttributeError) as exc:
@@ -70,6 +90,8 @@ def parse_rrule(rule: str, dtstart: datetime) -> du.rrule:
         ) from exc
     if not isinstance(parsed, du.rrule):
         raise CalendarError("Use a single RRULE (no RDATE or EXDATE).", 422)
+    if not for_write:
+        return parsed
     # Sub-daily rules would expand to thousands of rows inside the 62-day window (a denial of service);
     # the calendar is about days and sessions, so daily is the finest repeat.
     if parsed._freq > du.DAILY:  # noqa: SLF001 — dateutil keeps the frequency private
@@ -78,13 +100,10 @@ def parse_rrule(rule: str, dtstart: datetime) -> du.rrule:
     if re.search(r"(^|;)(BYHOUR|BYMINUTE|BYSECOND|BYSETPOS)=", rule):
         raise CalendarError("Repeat rules can't use BYHOUR, BYMINUTE, BYSECOND or BYSETPOS.", 422)
     # Expansion walks from the rule's start to the window, so a start decades away costs time for nothing.
-    if abs(dtstart.year - datetime.now(UTC).year) > MAX_RRULE_YEARS:
+    anchor = parsed._dtstart  # noqa: SLF001 — the start dateutil really uses
+    if abs(anchor.year - datetime.now(UTC).year) > MAX_RRULE_YEARS:
         raise CalendarError(f"A repeating task must start within {MAX_RRULE_YEARS} years of today.", 422)
     return parsed
-
-
-# A repeating task's start may be at most this many years from today (bounds the expansion walk).
-MAX_RRULE_YEARS = 10
 
 
 # The most occurrences one task may contribute to a single expansion window (62 days, daily at most).
@@ -171,7 +190,11 @@ def _occurrence_dates(task: Task, zone: ZoneInfo, lo: datetime, hi: datetime) ->
     local_start = _local_naive(task.start_at, zone)
     if not task.rrule:
         return [local_start] if lo <= local_start <= hi else []
-    rule = parse_rrule(task.rrule, local_start)
+    try:
+        rule = parse_rrule(task.rrule, local_start)
+    except CalendarError:  # one bad row must never take the whole calendar down
+        log.warning("task %s has an unreadable repeat rule; skipped", task.id)
+        return []
     out: list[datetime] = []
     for hit in rule.xafter(lo - timedelta(seconds=1), count=MAX_OCCURRENCES_PER_TASK, inc=False):
         if hit > hi:
@@ -186,7 +209,10 @@ def _series_occurrence_start(task: Task, zone: ZoneInfo, occurrence_date: str) -
     local_start = _local_naive(task.start_at, zone)
     if not task.rrule:
         return task.start_at if local_start.date() == d else None
-    rule = parse_rrule(task.rrule, local_start)
+    try:
+        rule = parse_rrule(task.rrule, local_start)
+    except CalendarError:
+        return None
     hits = rule.between(datetime.combine(d, time(0)), datetime.combine(d, time(23, 59, 59)), inc=True)
     return _to_utc(hits[0], zone) if hits else None
 
@@ -336,7 +362,7 @@ def create(db: Session, actor: User, **fields) -> Task:
     start, end = _normalise_times(all_day=all_day, start_at=start_at, end_at=fields.get("end_at"), zone=zone)
     rule = normalise_rrule(fields.get("rrule"))
     if rule:
-        parse_rrule(rule, _local_naive(start, zone))
+        parse_rrule(rule, _local_naive(start, zone), for_write=True)
     task = Task(
         owner_id=actor.id,
         title=_clean_title(fields.get("title")),
@@ -486,7 +512,7 @@ def update(
         )
         task.all_day = all_day
     if task.rrule:
-        parse_rrule(task.rrule, _local_naive(task.start_at, zone))
+        parse_rrule(task.rrule, _local_naive(task.start_at, zone), for_write=True)
     for key in ("title", "description", "category"):
         if key in fields:
             setattr(task, key, fields[key])

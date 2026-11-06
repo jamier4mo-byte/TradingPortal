@@ -491,3 +491,35 @@ def test_recurring_start_must_be_within_ten_years(admin_client):
     assert admin_client.post("/api/calendar/tasks", json=body).status_code == 422
     one_off = {k: v for k, v in body.items() if k != "rrule"}
     assert admin_client.post("/api/calendar/tasks", json=one_off).status_code == 201
+
+
+def test_rule_text_cannot_smuggle_dtstart_or_other_lines(admin_client):
+    body = {"title": "Sneaky", "start_at": "2026-11-09T09:00:00Z", "end_at": "2026-11-09T10:00:00Z"}
+    for rule in (
+        "FREQ=DAILY\nDTSTART:19000101T090000",
+        "FREQ=DAILY;DTSTART=19000101",
+        "FREQ=DAILY\rRDATE:20260101",
+    ):
+        res = admin_client.post("/api/calendar/tasks", json={**body, "rrule": rule})
+        assert res.status_code == 422, (rule, res.text)
+
+
+def test_a_stored_rule_that_fails_todays_policy_is_skipped_not_fatal(admin_client, db, admin):
+    """A rule valid when written (or hand-edited in the DB) must never break GET /occurrences."""
+    from app.models import Task
+
+    bad = Task(
+        owner_id=admin.id,
+        title="Poison",
+        start_at=datetime(2026, 11, 9, 9, tzinfo=UTC),
+        end_at=datetime(2026, 11, 9, 10, tzinfo=UTC),
+        rrule="FREQ=NEVER",  # unparseable: imagine a row from an older rule grammar
+        category="other",
+        all_day=False,
+        tz="Europe/London",
+    )
+    db.add(bad)
+    db.commit()
+    res = admin_client.get("/api/calendar/occurrences?from=2026-11-09&to=2026-11-15")
+    assert res.status_code == 200
+    assert all(o["task_id"] != bad.id for o in res.json()["occurrences"])
