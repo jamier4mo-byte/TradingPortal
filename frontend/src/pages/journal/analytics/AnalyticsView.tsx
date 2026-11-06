@@ -14,6 +14,7 @@ import { ExportDrawer, MorphIcon, useCopyForAi } from "./ExportDrawer.tsx";
 import { FilterPanel } from "./FilterPanel.tsx";
 import { IdealViews } from "./IdealViews.tsx";
 import { InsightsCard, ReconcileLine, TradeMiniList } from "./parts.tsx";
+import { AroundNewsCard, newsTypesOf } from "./AroundNews.tsx";
 
 /**
  * Analytics (2.4) for one strategy, or for every strategy when `strategy` is omitted.
@@ -51,7 +52,7 @@ export default function AnalyticsView({ strategy }: { strategy?: Strategy }) {
   const filtersText = useMemo(() => describe(st.filters, st.source), [st.filters, st.source]);
   const showOwners = !strategy || (data?.options.owners.length ?? 0) > 1;
 
-  const panel = <FilterPanel filters={st.filters} onChange={st.setFilters} onClear={st.clearFilters} options={data?.options} source={st.source} newsStatus={data?.news_status} showOwners={showOwners} />;
+  const panel = <FilterPanel filters={st.filters} onChange={st.setFilters} onClear={st.clearFilters} options={data?.options} source={st.source} newsStatus={data?.news_status} newsTypes={newsTypesOf(data)} showOwners={showOwners} />;
 
   const toolbar = (
     <div className="flex flex-wrap items-center gap-2 print:hidden" data-testid="analytics-toolbar">
@@ -135,6 +136,7 @@ export default function AnalyticsView({ strategy }: { strategy?: Strategy }) {
             </>
           ) : null}
           {body}
+          {data && data.counts.filtered > 0 ? <AroundNewsCard rows={(st.source === "ideal" ? data.ideal : data.backtest ?? data.ideal)?.around_news ?? []} status={data.news_status} note={data.notes.news} /> : null}
           {data && data.counts.filtered > 0 && !large ? (
             <Card title="Trades" subtitle="In this filter, newest first" className="print:hidden">
               <TradeMiniList trades={data.trades} total={data.counts.filtered} limit={wide ? 20 : 10} />
@@ -241,7 +243,8 @@ function describe(f: ReturnType<typeof useAnalyticsState>["filters"], source: So
   if (f.outcomes.length) parts.push(f.outcomes.join("/"));
   if (f.owners.length) parts.push(`${f.owners.length} owner${f.owners.length > 1 ? "s" : ""}`);
   if (f.rules) parts.push(f.rules === "all_kept" ? "all rules kept" : "a rule broken");
-  if (f.news) parts.push(`news ${f.news}`);
+  if (f.news) parts.push(f.news === "no_data" ? "no news data" : `${f.news} news windows`);
+  if (f.news_event_types.length) parts.push(f.news_event_types.join(" or "));
   const src = source === "ideal" ? "Ideal" : source === "compare" ? "Compare" : "Backtest";
   return parts.length ? `${src} · ${parts.join(" · ")}` : `${src} · no filters`;
 }

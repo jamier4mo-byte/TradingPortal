@@ -120,6 +120,18 @@ function Detail({ trade: t, templateFields, rules }: { trade: Trade; templateFie
             <Fact label="Held" value={fmtDuration(current.duration_seconds)} />
             <Fact label="Closed" value={fmtUkDateTime(current.closed_at)} />
             <Fact label="Entry model" value={current.entry_model ?? "—"} />
+            <Fact
+              label="News"
+              value={
+                current.news_status === "inside"
+                  ? (current.news_events ?? [])
+                      .map((e) => `${e.currency} ${e.name} (${e.minutes_from_entry > 0 ? "+" : e.minutes_from_entry < 0 ? "−" : "±"}${Math.abs(e.minutes_from_entry)} min)`)
+                      .join(", ") || "Inside a news window"
+                  : current.news_status === "outside"
+                    ? "Outside news windows"
+                    : "No news data"
+              }
+            />
             {current.mae_r !== null || current.mfe_r !== null ? <Fact label="MAE / MFE" value={`${fmtR(current.mae_r, false)} / ${fmtR(current.mfe_r, false)}`} /> : null}
             {current.fx_id ? <Fact label="FX Replay id" value={current.fx_id} mono /> : null}
           </dl>

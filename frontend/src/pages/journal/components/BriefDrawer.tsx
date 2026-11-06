@@ -1,5 +1,6 @@
 import { Drawer, SkeletonText } from "../../../components/ui/index.ts";
-import { fmtDuration, fmtMonth, fmtR, type Strategy, useBrief } from "../../../lib/journal.ts";
+import { type BriefNews, fmtDuration, fmtMonth, fmtR, type Strategy, useBrief } from "../../../lib/journal.ts";
+import { dayLabel } from "../../../lib/news.ts";
 
 /** Pre-session brief (U7): profile, rule checklist, the last two "one thing to improve", next month to replay. */
 export function BriefDrawer({ open, onClose, strategy }: { open: boolean; onClose: () => void; strategy: Strategy }) {
@@ -64,9 +65,40 @@ export function BriefDrawer({ open, onClose, strategy }: { open: boolean; onClos
               <p className="mt-1 text-body text-muted">No notes yet. Each recap asks for one thing to improve.</p>
             )}
           </section>
-          <section className="rounded-panel border border-dashed border-border-strong px-3 py-2 text-label text-muted">News for that period arrives with the News Room (Prompt 4).</section>
+          <BriefNewsSection news={b.news} />
         </div>
       ) : null}
     </Drawer>
+  );
+}
+
+function BriefNewsSection({ news }: { news: BriefNews | null }) {
+  return (
+    <section>
+      <h3 className="text-body font-medium">High-impact news{news?.month ? ` in ${fmtMonth(news.month)}` : ""}</h3>
+      {!news || news.status === "no_data" ? (
+        <p className="mt-1 text-body text-muted">{news?.note ?? "No news data for that month: it's outside the stored news history."}</p>
+      ) : news.events.length === 0 ? (
+        <p className="mt-1 text-body text-muted">No high-impact events stored for your instruments that month.</p>
+      ) : (
+        <>
+          <p className="num mt-1 text-label text-muted">
+            {news.high_count} high-impact {news.high_count === 1 ? "event" : "events"}
+            {news.status === "partial" ? " · part of the month has no news data" : ""}
+          </p>
+          <ul className="mt-2 flex max-h-64 flex-col divide-y divide-border overflow-y-auto">
+            {news.events.map((e) => (
+              <li key={e.id} className="flex min-h-11 items-center gap-2 py-1.5 text-body">
+                <span className="num w-28 shrink-0 text-label text-muted">
+                  {dayLabel(e.uk_date, "short")} {e.uk_time}
+                </span>
+                <span className="font-mono text-label">{e.currency}</span>
+                <span className="min-w-0 flex-1 truncate">{e.name}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </section>
   );
 }

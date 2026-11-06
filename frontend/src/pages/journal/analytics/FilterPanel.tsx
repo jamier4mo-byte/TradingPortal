@@ -42,7 +42,7 @@ function shiftMonths(iso: string, months: number): string {
 }
 
 /** Every 2.4 filter. Changes apply at once and land in the URL, so a view can be bookmarked or shared. */
-export function FilterPanel({ filters, onChange, onClear, options, source, newsStatus, showOwners }: { filters: Filters; onChange: (f: Filters) => void; onClear: () => void; options: AnalyticsResult["options"] | undefined; source: Source; newsStatus: "ok" | "no_data" | undefined; showOwners: boolean }) {
+export function FilterPanel({ filters, onChange, onClear, options, source, newsStatus, newsTypes = [], showOwners }: { filters: Filters; onChange: (f: Filters) => void; onClear: () => void; options: AnalyticsResult["options"] | undefined; source: Source; newsStatus: "ok" | "partial" | "no_data" | undefined; newsTypes?: string[]; showOwners: boolean }) {
   const f = filters;
   const set = (patch: Partial<Filters>) => onChange({ ...f, ...patch });
   const max = options?.date_max ?? null;
@@ -180,14 +180,39 @@ export function FilterPanel({ filters, onChange, onClear, options, source, newsS
         </Group>
       ) : null}
 
-      <Group title="News" note={newsStatus === "no_data" ? "No news data yet: the News Room fills this in later, so this filter doesn't change anything." : undefined}>
+      <Group
+        title="News"
+        note={
+          newsStatus === "no_data"
+            ? "No news data for these trades: they fall outside the stored news history."
+            : newsStatus === "partial"
+              ? "Some trades fall outside the stored news history and show as “No news data”."
+              : undefined
+        }
+      >
         <ChipToggle on={f.news === "inside"} onClick={() => set({ news: f.news === "inside" ? undefined : "inside" })}>
           Inside a news window
         </ChipToggle>
         <ChipToggle on={f.news === "outside"} onClick={() => set({ news: f.news === "outside" ? undefined : "outside" })}>
           Outside
         </ChipToggle>
+        <ChipToggle on={f.news === "no_data"} onClick={() => set({ news: f.news === "no_data" ? undefined : "no_data" })}>
+          No news data
+        </ChipToggle>
       </Group>
+      {newsTypes.length || f.news_event_types.length ? (
+        <Group title="News event">
+          {[...new Set([...newsTypes, ...f.news_event_types])].map((t) => (
+            <ChipToggle
+              key={t}
+              on={f.news_event_types.includes(t)}
+              onClick={() => set({ news_event_types: f.news_event_types.includes(t) ? f.news_event_types.filter((x) => x !== t) : [...f.news_event_types, t] })}
+            >
+              {t}
+            </ChipToggle>
+          ))}
+        </Group>
+      ) : null}
     </div>
   );
 }

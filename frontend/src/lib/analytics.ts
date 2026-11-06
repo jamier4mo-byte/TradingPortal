@@ -24,7 +24,17 @@ export interface Filters {
   outcomes: ("win" | "loss" | "breakeven")[];
   owners: number[];
   rules?: "all_kept" | "any_broken";
-  news?: "inside" | "outside";
+  news?: "inside" | "outside" | "no_data";
+  news_event_types: string[];
+}
+
+/** "Around news" (3.6): trades inside vs outside news windows, without news data, and by event type. */
+export interface AroundNewsRow {
+  key: string;
+  trades: number;
+  win_rate: number | null;
+  avg_r: number | null;
+  total_r: number | null;
 }
 
 export interface AnalyticsQuery {
@@ -114,6 +124,7 @@ export interface Streak {
   r: number;
 }
 export interface BacktestBlock {
+  around_news?: AroundNewsRow[];
   kpis: Kpis;
   equity: EquityPoint[];
   streaks: Streak[];
@@ -126,6 +137,7 @@ export interface BacktestBlock {
   r_sequence: number[];
 }
 export interface IdealBlock {
+  around_news?: AroundNewsRow[];
   kpis: Kpis;
   distributions: { tp_r: Bin[]; sl_distance: Bin[]; tp_distance: Bin[]; duration: { label: string; n: number }[] };
   heatmap: HeatCell[];
@@ -213,7 +225,7 @@ export interface AnalyticsResult {
   strategy_id: number | null;
   breakeven_threshold: number;
   counts: { in_scope: number; filtered: number; ideal: number; backtest: number };
-  news_status: "ok" | "no_data";
+  news_status: "ok" | "partial" | "no_data";
   notes: { unresolved_tags: string[]; news: string | null };
   registry: MetricMeta[];
   options: { instruments: string[]; sessions: string[]; entry_models: string[]; tags: string[]; owners: OwnerRef[]; date_min: string | null; date_max: string | null };
@@ -233,7 +245,7 @@ export interface SessionInsights {
   top: Insight[];
 }
 
-export const EMPTY_FILTERS: Filters = { instruments: [], sessions: [], weekdays: [], entry_models: [], directions: [], tags: [], outcomes: [], owners: [] };
+export const EMPTY_FILTERS: Filters = { instruments: [], sessions: [], weekdays: [], entry_models: [], directions: [], tags: [], outcomes: [], owners: [], news_event_types: [] };
 export const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
 export const SOURCES: { value: Source; label: string }[] = [
   { value: "ideal", label: "Ideal" },
@@ -243,7 +255,7 @@ export const SOURCES: { value: Source; label: string }[] = [
 
 // ---- URL state: every filter is a search param, so a view can be shared and bookmarked ----
 
-const LIST_KEYS = ["instruments", "sessions", "entry_models", "directions", "tags", "outcomes"] as const;
+const LIST_KEYS = ["instruments", "sessions", "entry_models", "directions", "tags", "outcomes", "news_event_types"] as const;
 
 export function filtersFromParams(p: URLSearchParams): Filters {
   const f: Filters = { ...EMPTY_FILTERS };
@@ -260,7 +272,7 @@ export function filtersFromParams(p: URLSearchParams): Filters {
   const rules = p.get("rules");
   if (rules === "all_kept" || rules === "any_broken") f.rules = rules;
   const news = p.get("news");
-  if (news === "inside" || news === "outside") f.news = news;
+  if (news === "inside" || news === "outside" || news === "no_data") f.news = news;
   return f;
 }
 
