@@ -190,3 +190,27 @@ def test_export_errors(admin_client, client):
     assert admin_client.get("/api/analytics/export/ai", params={"q": "not json"}).status_code == 422
     assert admin_client.get("/api/analytics/export/ai", params={"q": q(strategy_id=99999)}).status_code == 404
     assert admin_client.get("/api/analytics/export/csv", params={"q": q(source="nope")}).status_code == 422
+
+
+def test_csv_neutralises_formulas(admin_client):
+    s = new_strategy(admin_client, name="=cmd|' /C calc'!A0")
+    t = admin_client.post(
+        f"/api/strategies/{s['id']}/trades",
+        json={
+            "kind": "backtest",
+            "instrument": "NAS100",
+            "side": "sell",
+            "opened_at": "2026-03-03T10:00:00Z",
+            "r_multiple": -1.0,
+            "pnl": -100,
+            "notes": '=HYPERLINK("http://evil.test","x")',
+            "entry_model": "@SUM(1)",
+        },
+    )
+    assert t.status_code == 201, t.text
+    res = admin_client.get("/api/analytics/export/csv", params={"q": q(strategy_id=s["id"])})
+    row = next(csv.DictReader(io.StringIO(res.content.decode("utf-8-sig"))))
+    assert row["notes"].startswith("'=HYPERLINK")
+    assert row["entry_model"] == "'@SUM(1)"
+    assert row["strategy"].startswith("'=cmd")
+    assert row["r"] == "-1.0" and row["pnl"] == "-100.0"  # numbers are left alone

@@ -640,6 +640,21 @@ CSV_COLUMNS = (
 )
 
 
+FORMULA_TRIGGERS = ("=", "+", "-", "@", "\t", "\r")
+
+
+def csv_cell(value):
+    """Spreadsheet-safe cell: free text that starts like a formula gets a leading apostrophe.
+
+    Numbers stay numbers (a −1.0 R is data, not a formula); only strings are neutralised.
+    """
+    if value is None:
+        return ""
+    if isinstance(value, str) and value.startswith(FORMULA_TRIGGERS):
+        return "'" + value
+    return value
+
+
 def stream_csv(db: Session, user: User, q: AnalyticsQuery) -> Iterator[str]:
     """Rows are built now (the database session closes before the response streams)."""
     rows = select_rows(db, user, q)
@@ -657,7 +672,7 @@ def stream_csv(db: Session, user: User, q: AnalyticsQuery) -> Iterator[str]:
         rec = trade_record(t, row, n, owner, strategies[t.strategy_id], [])
         rec["tags"] = "; ".join(rec["tags"])
         rec["notes"] = rec["notes"].replace("\r", " ").replace("\n", " ")
-        records.append(["" if rec.get(c) is None else rec.get(c) for c in CSV_COLUMNS])
+        records.append([csv_cell(rec.get(c)) for c in CSV_COLUMNS])
 
     def generate() -> Iterator[str]:
         buf = io.StringIO()
