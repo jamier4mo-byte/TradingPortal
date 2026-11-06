@@ -3,8 +3,8 @@ import { useMemo } from "react";
 import { Chart, type OptionBuilder } from "../charts/Chart.tsx";
 import { categoryAxis, tipRow, tipTitle, valueAxis } from "../charts/theme.ts";
 import { formatPrice } from "../../lib/markets.ts";
+import { ukTime } from "../../lib/news.ts";
 
-const ukTime = (iso: string) => new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/London", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
 
 /** The instrument view's intraday line: the shared ECharts wrapper (axes, crosshair, tap to pin, summary
  * and data table). Series 1, never green/red. */

@@ -3,6 +3,7 @@ import { type PointerEvent, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { displaySymbol, formatPrice, type Quote, signed } from "../../lib/markets.ts";
+import { ukTime } from "../../lib/news.ts";
 import { PriceSparkline } from "./PriceSparkline.tsx";
 
 const REVEAL = 96; // px the row slides to show Remove
@@ -43,15 +44,13 @@ export function WatchlistRow({ quote, points, onUnpin, busy = false, paused = fa
 
   return (
     <li className="relative overflow-hidden rounded-panel border border-border bg-surface-2">
-      <div className="absolute inset-y-0 right-0 flex items-center pr-2" aria-hidden={dx === 0}>
+      <div className={`absolute inset-y-0 right-0 flex items-center pr-2 ${dx === 0 && !dragging ? "invisible" : ""}`} aria-hidden={dx === 0}>
         <button type="button" className="btn btn-danger" tabIndex={dx === 0 ? -1 : 0} onClick={onUnpin} disabled={busy}>
           Remove
         </button>
       </div>
       <div
-        className={`relative flex min-h-14 touch-pan-y items-center gap-3 bg-surface-2 pr-1 pl-3 ${dragging ? "" : "transition-transform duration-(--dur-standard) ease-(--ease-in-enter)"} ${
-          quote.status === "stale" || paused ? "opacity-80" : ""
-        }`}
+        className={`relative flex min-h-14 touch-pan-y items-center gap-3 bg-surface-2 pr-1 pl-3 ${dragging ? "" : "transition-transform duration-(--dur-standard) ease-(--ease-in-enter)"}`}
         style={{ transform: `translateX(${dx}px)` }}
         onPointerDown={onDown}
         onPointerMove={onMove}
@@ -61,12 +60,12 @@ export function WatchlistRow({ quote, points, onUnpin, busy = false, paused = fa
         <Link to={`/markets/${encodeURIComponent(id)}`} className="flex min-h-11 min-w-0 flex-1 items-center gap-3">
           <span className="min-w-0 flex-1">
             <span className="block truncate font-mono text-body font-semibold">{label}</span>
-            <span className="num block truncate text-label text-muted">
+            <span className={`num block truncate text-label text-muted ${quote.status === "stale" || paused ? "opacity-80" : ""}`}>
               {usable ? (
                 <>
                   <span aria-hidden className={`mr-1.5 inline-block size-1.5 rounded-full align-middle ${quote.status === "ok" && !paused ? "bg-live" : "bg-stale"}`} />
                   {quote.status === "ok" && !paused ? "" : "Paused · "}
-                  {quote.updated_at ? `Delayed · ${new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/London", hour: "2-digit", minute: "2-digit" }).format(new Date(quote.updated_at))}` : quote.name}
+                  {quote.updated_at ? `Delayed · ${ukTime(quote.updated_at)}` : quote.name}
                 </>
               ) : (
                 quote.message ?? "No price"

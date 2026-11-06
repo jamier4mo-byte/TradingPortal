@@ -78,6 +78,7 @@ export function NextUp({ compact = false }: { compact?: boolean }) {
     );
   }
   const secs = left(shown.at, nowMs);
+  const refreshFailed = next.isError && !!next.data;
   const released = secs <= 0;
   return (
     <section aria-label="Next high-impact event" className={`card relative flex items-center gap-4 overflow-hidden p-4 tablet:gap-6 tablet:p-5`}>
@@ -105,6 +106,14 @@ export function NextUp({ compact = false }: { compact?: boolean }) {
         ) : (
           <Figures event={{ ...shown, released: released || shown.released }} flip={!!held} className="mt-2 max-w-md" />
         )}
+        {refreshFailed ? (
+          <p className="mt-1 text-label text-muted">
+            Couldn&rsquo;t refresh.{" "}
+            <button type="button" className="inline-flex min-h-11 items-center underline underline-offset-4" onClick={() => next.refetch()}>
+              Retry
+            </button>
+          </p>
+        ) : null}
         <p className="mt-1 text-label text-muted" aria-live="polite">
           {released && !shown.actual ? "Actual pending: it appears here when the actuals feed next updates." : ""}
         </p>

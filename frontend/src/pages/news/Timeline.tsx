@@ -33,10 +33,10 @@ export function TradingDayTimeline({ date, isToday }: { date: string; isToday: b
   if (q.isPending) return <SkeletonCard className="h-40" />;
   if (!q.data) return <ErrorState title="The timeline didn't load" text={q.error?.message} onRetry={() => q.refetch()} />;
   return (
-    <>
+    <div className="flex flex-col gap-3">
       {q.isError ? <RefreshFailed updatedAt={q.dataUpdatedAt} onRetry={() => q.refetch()} /> : null}
       <TimelineBody data={q.data} isToday={isToday} />
-    </>
+    </div>
   );
 }
 
@@ -138,12 +138,13 @@ function TimelineBody({ data, isToday }: { data: TimelineData; isToday: boolean 
             })}
             {/* now line */}
             {nowMin !== null ? (
-              <div aria-hidden className="pointer-events-none absolute inset-0">
+              <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
                 <div
                   className="absolute inset-y-0 left-0 w-full transition-transform duration-(--dur-emphasis) ease-(--ease-in-enter)"
                   style={{ transform: `translateX(${(nowMin / DAY) * 100}%)` }}
                 >
                   <div className="absolute inset-y-0 left-0 w-px bg-text" />
+                  <span className="absolute top-1 left-1 rounded-pill bg-text px-1.5 text-label text-bg">Now</span>
                 </div>
               </div>
             ) : null}

@@ -52,7 +52,9 @@ export default function Markets() {
               pinned={pinned}
               className="mb-4"
             />
-            {quotes.isError && quotes.data ? <RefreshFailed updatedAt={quotes.dataUpdatedAt} onRetry={() => quotes.refetch()} /> : null}
+            {(quotes.isError && quotes.data) || (pins.isError && pins.data) ? (
+              <RefreshFailed updatedAt={quotes.dataUpdatedAt} onRetry={() => void Promise.all([pins.refetch(), quotes.refetch()])} />
+            ) : null}
             {(pins.isPending || quotes.isPending) && (pins.fetchStatus === "paused" || quotes.fetchStatus === "paused") ? (
               <EmptyState illustration={<ChartEmpty />} title="You're offline" text="Prices load when you're back online." />
             ) : pins.isPending || quotes.isPending ? (
