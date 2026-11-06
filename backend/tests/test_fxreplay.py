@@ -62,15 +62,15 @@ def test_market_date_and_session_follow_uk_time():
     assert session_label(rows["100000005"].opened_at) == "New York"
 
 
-def test_breakeven_at_plus_minus_two():
+def test_breakeven_at_plus_minus_ten_dollars():
     assert classify_outcome(250.0) == "win"
     assert classify_outcome(-100.0) == "loss"
     assert classify_outcome(1.5) == "breakeven"
-    assert classify_outcome(-2.0) == "breakeven"
-    assert classify_outcome(2.0) == "breakeven"
-    assert classify_outcome(2.01) == "win"
-    assert classify_outcome(-2.01) == "loss"
-    assert classify_outcome(5.0, threshold=10) == "breakeven"
+    assert classify_outcome(-10.0) == "breakeven"  # inclusive at both ends
+    assert classify_outcome(10.0) == "breakeven"
+    assert classify_outcome(10.01) == "win"
+    assert classify_outcome(-10.01) == "loss"
+    assert classify_outcome(5.0, threshold=2) == "win"  # a user's own setting still wins
     outcomes = [classify_outcome(r.pnl) for r in fx.parse_csv(SAMPLE).rows]
     assert outcomes.count("win") == 6 and outcomes.count("loss") == 2 and outcomes.count("breakeven") == 2
 

@@ -98,9 +98,15 @@ Compare these with FX Replay's own Analytics page for the same session.
 | R left on the table | +3.88R per trade | |
 | Reconcile | ✓ 8 trades · +$5,475.76 = 8 rows · Σ rPnL $5,475.76; balance check ✓ | |
 
+## Addendum (6 Nov 2026): Jamie's answers
+Branch `build/03b-breakeven-10`.
+- **Breakeven stays in dollars, now ±$10** (was ±$2). It is the default for new accounts, and migration `0006` moves accounts still on ±$2 to ±$10 and re-labels stored trade outcomes from P&L. Anyone who chose another value keeps it. Settings, the metric formulas, the export and the tokens skill now say $10. On the sample CSV nothing changes: every trade is at least $520 from zero.
+- **Exit efficiency keeps using FX Replay's best price** (up to a week after the close) for imported trades, as built.
+- **Monte Carlo asks about a 10R drawdown by default** (was 5R): at 1% risk a trade that's a 10% drawdown, the usual max-loss line. You can type any figure.
+
 ## Assumptions
 1. **Win rate** follows FX Replay's help page: wins ÷ (wins + losses), with breakevens left out. The tooltip says so.
-2. **Breakeven** stays Jamie's ±$2 on P&L (settled 5 Nov), not FX Replay's R-based threshold. It is recomputed at query time with the viewer's own setting, so changing the setting updates every number.
+2. **Breakeven** is ±$10 on P&L (Jamie, 6 Nov; was ±$2), not FX Replay's R-based threshold. It is recomputed at query time with the viewer's own setting, so changing the setting updates every number.
 3. **P&L is booked at close** for the equity curve, drawdown and streaks, as FX Replay and the old app do. The calendar, weekday and hour views use the **open** time in UK time.
 4. **Drawdown** is peak-to-trough on cumulative R and cumulative P&L, starting from 0, and shown as a negative number. FX Replay's own "Drawdown" tab is something else: how far price went against a winner. That's here as "Winner drawdown" when MAE is entered.
 5. **Expectancy** = win rate × average win − (1 − win rate) × |average loss|, using the same win rate (breakevens left out). **Average R** is total R ÷ trades, breakevens included. FX Replay shows expectancy as a bar with no formula.
@@ -109,7 +115,7 @@ Compare these with FX Replay's own Analytics page for the same session.
 8. **Exit efficiency** = Σ max(R, 0) ÷ Σ best favourable R, over trades with an excursion. The best R comes from the MFE typed in Annotate mode, or else from FX Replay's `idealTP`. FX Replay defines that as the best price up to a week after the close, so imported trades can look less efficient than a strict in-trade MFE would.
 9. **Rule cost** = trades that broke the rule × (average R when kept − average R when broken).
 10. **Insights** compare each slice with the strategy's unfiltered baseline. They look at stop size, target R, duration, and (for backtests) win rate and average R. A difference needs to be 15% or more. One insight per slice; ranked by effect × √n.
-11. **Monte Carlo**: 1,000 bootstrap paths of the R sequence, each as long as the history, with seed 20261106. The default drawdown question is 5R and you can change it.
+11. **Monte Carlo**: 1,000 bootstrap paths of the R sequence, each as long as the history, with seed 20261106. The default drawdown question is 10R (Jamie, 6 Nov) and you can change it.
 12. **News filter**: there's no news data until Prompt 4, so the filter is accepted but not applied, and the screen says "No news data".
 13. **Exports are GET downloads** with the query as JSON in `q`, so the browser streams the zip straight to disk. Filters aren't personal data. A member can export everyone's trades, but the export reads only trade, strategy and display-name data: no emails, password hashes, sessions or keys. A test proves it.
 14. **AI images** are re-encoded WebP (quality 85) at most 1,568 px on the long edge, from the stored full-size WebP.
@@ -118,15 +124,16 @@ Compare these with FX Replay's own Analytics page for the same session.
 17. The strategy card's numbers use the viewer's breakeven threshold.
 
 ## Open questions for Jamie
-1. Breakeven: FX Replay measures it in R (e.g. ±0.1R), we use ±$2. Keep $, switch to R, or offer both in Settings?
-2. Exit efficiency on imported trades uses FX Replay's "ideal" price, which can be up to a week after the close. Count that as the best available, or only use MFE you type in?
+1. ~~Breakeven in $ or R?~~ Answered 6 Nov: dollars, ±$10.
+2. ~~Exit efficiency from FX Replay's week-later best price?~~ Answered 6 Nov: yes, keep it.
 3. Is "a breakeven ends a streak" how you read FX Replay's Max consecutive?
-4. The Monte Carlo question defaults to "a 5R drawdown". Is there a figure you'd rather see by default (your daily or total loss limit in R)?
+4. ~~Monte Carlo default drawdown?~~ Answered 6 Nov: 10R (recommended: 10% at 1% risk).
 5. The owner colours and the second chart series pass colour-blind separation and contrast but sit lighter than the dataviz validator's preferred band on dark, and sand reads a little grey. Keep them, or try darker steps?
 6. Should Copy for AI include the screenshots' file names, or stay text only?
 7. The phone hides Expectancy from the 2×2 KPI grid; it's still in "Every metric". Want a different four?
 
 ## Known issues
+- **Intermittent Annotate e2e failure (Phase 2 flow, about 1 run in 6, phone only).** In "annotate mode completes 8 trades with the keyboard only", trade 3 (the only one of the first eight that arrives from the CSV with tags) sometimes ends without "Bullish 3" in HTF bias, though it still has some reasoning. Likely an autosave race between the screenshot uploads finishing and typing, which could drop a reason typed very quickly after pasting. Not caused by Phase 3; worth fixing next.
 - **Save as PDF** was checked in code and through the print tokens, not by printing from Safari and Chrome. Whether background colours print depends on the browser's "Background graphics" option. Pressing ⌘P directly (rather than Export → Save as PDF) prints only the charts that have already scrolled into view.
 - The ECharts chunk is 201 KB gzip. It's lazy and never on the Hub, but it's the heaviest download on the Analytics tab. An SVG renderer or fewer components could trim it in Prompt 5.
 - Design-review minors left open: the print wait (`+900 ms`) and heatmap stagger (30 ms) are timings outside `@theme`; the Drawer description and Card subtitles are plain strings, so "160 trades" and "1,000" in them aren't `.num`; the 5-tile KPI strip leaves a gap on tablet (3 + 2).

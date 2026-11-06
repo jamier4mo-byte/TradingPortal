@@ -57,7 +57,7 @@ Without them, Prompt 4 builds against fakes and the live checks are left for you
 Each one is recorded in the phase report so you can change it later.
 
 - Button text on blue stays dark ink (`#0B0F1A`). Proposed win/loss/impact colours are kept.
-- Breakeven threshold is ±2 in account currency ($), and you can change it in Settings.
+- Breakeven threshold is ±$10 in account currency (Jamie, 6 Nov 2026), and you can change it in Settings.
 - Unlock rule: 6 consecutive calendar months, each with at least 1 ideal trade (so 6+ trades), counted by the trade's open date in UK time.
 - News "surprise" colours are new tokens, not the reserved green/red, because those mean win/loss only.
 - One small always-on Fly machine, so push alerts work.

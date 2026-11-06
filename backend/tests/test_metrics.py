@@ -1,6 +1,6 @@
 """Every metric against numbers worked out by hand (F16).
 
-The main fixture, six trades booked in this order (breakeven threshold $2):
+The main fixture, six trades booked in this order (default breakeven threshold ±$10):
 
     #  R      P&L    outcome    held     rules            MFE   MAE
     1  +2.00  +200   win        1h       r1 ✓ r2 ✓        4.0   −0.4

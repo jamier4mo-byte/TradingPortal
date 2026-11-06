@@ -32,7 +32,7 @@ Values marked **proposed** weren't given in the Foundations doc; they're startin
 | `--color-data-2` | `#5CC8FF` | Second data series; never reads as the brand |
 | `--color-win` | `#2FD27F` (proposed) | Win / profit / positive R. **Reserved** |
 | `--color-loss` | `#FF5A66` (proposed) | Loss. **Reserved** |
-| `--color-breakeven` | `#8F99AD` (proposed) | Breakeven (≈0, out to ±2). **Reserved** |
+| `--color-breakeven` | `#8F99AD` (proposed) | Breakeven (≈0, out to ±$10 by default). **Reserved** |
 | `--color-impact-high / -medium / -low` | `#FF5A66` / `#FF9F43` / `#F5D547` (proposed) | News impact red/orange/yellow. **Reserved**, always with a High/Med/Low label |
 | `--color-live` / `--color-stale` | `#2FD27F` / `#8F99AD` (proposed) | Live dot; paused/stale |
 | `--color-owner-0` … `-7` | `#2EC4B6` teal · `#8FA3FF` periwinkle · `#FF7AC6` pink · `#D4B483` sand · `#C9A7F5` lilac · `#6FD3F2` sky · `#C2D94A` chartreuse · `#D98CB3` mauve (proposed) | Calendar owners and "logged by" chips **only** (`OwnerChip`, `ownerBg(index)`). Each user has a fixed `colour_index` 0–7. All ≥ 7:1 on `surface-1`; none is a reserved or brand hue |

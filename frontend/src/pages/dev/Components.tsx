@@ -122,7 +122,7 @@ export default function Components() {
           <StatTile label="Win rate" value="62.5" unit="%" />
           <StatTile label="Total R" value="+18.4" unit="R" tone="win" />
           <StatTile label="Max drawdown" value="−6.2" unit="R" tone="loss" />
-          <StatTile label="Breakeven" value="3" tone="breakeven" hint="±$2" />
+          <StatTile label="Breakeven" value="3" tone="breakeven" hint="±$10" />
         </div>
         <div className="mt-4 flex flex-wrap gap-6">
           <RingGauge value={62.5} label="Win rate" />
