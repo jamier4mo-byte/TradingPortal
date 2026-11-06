@@ -123,12 +123,13 @@ def session_out(db, session: JournalSession, user: User) -> SessionOut:
         **{
             k: getattr(session, k)
             for k in SessionOut.model_fields
-            if k not in ("owner", "progress", "stats", "can_edit")
+            if k not in ("owner", "progress", "stats", "can_edit", "strategy_name")
         },
         owner=_owner(db, session.owner_id),
         progress=SessionProgressOut(**svc.session_progress(db, session)),
         stats=StatsOut(**svc.headline_stats(trades, user.breakeven_threshold)),
         can_edit=_can_edit(session, user),
+        strategy_name=session.strategy.name if session.strategy else None,
     )
 
 
@@ -495,7 +496,11 @@ def _serve(key: str, content_type: str) -> Response:
     headers = {"Cache-Control": "private, max-age=31536000, immutable"}
     if path:
         return FileResponse(path, media_type=content_type, headers=headers)
-    return Response(storage.get(key), media_type=content_type, headers=headers)
+    try:  # remote stores (S3Storage) have no local path: stream the bytes with the same headers
+        data = storage.get(key)
+    except FileNotFoundError as exc:
+        raise HTTPException(404, "That screenshot's file is missing.") from exc
+    return Response(data, media_type=content_type, headers=headers)
 
 
 @router.get("/screenshots/{shot_id}/full", include_in_schema=False)

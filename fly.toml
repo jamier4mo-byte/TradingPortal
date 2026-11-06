@@ -1,19 +1,51 @@
-# Fly.io config. The app does not exist yet: create it once with
-#   fly apps create trading-portal-jamie && fly volumes create portal_data --size 1 --region lhr
-# (change the name if it's taken, here and in .github/workflows/deploy.yml).
+# Fly.io config. docs/DEPLOY.md is the step-by-step runbook; the short version:
+#   fly apps create trading-portal-jamie
+#   fly volumes create portal_data --size 1 --region lhr
+#   fly storage create            (Tigris: sets BUCKET_NAME, AWS_ENDPOINT_URL_S3 and the AWS_* keys as secrets)
+#   fly secrets set TRADING_PORTAL_SECRET_KEY=… JBLANKED_API_KEY=… VAPID_PUBLIC_KEY=… VAPID_PRIVATE_KEY=… VAPID_SUBJECT=…
+# If the app name is taken, change it in THREE places: `app` below, the RP id and origins in [env],
+# and .github/workflows/deploy.yml (and the URLs in docs/DEPLOY.md).
 app = "trading-portal-jamie"
 primary_region = "lhr"
 
 [build]
 
+# Non-secret settings. Secrets (TRADING_PORTAL_SECRET_KEY, JBLANKED_API_KEY, VAPID_*) are set with
+# `fly secrets set`; the bucket (BUCKET_NAME, AWS_ENDPOINT_URL_S3, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY,
+# and sometimes AWS_REGION) is set by `fly storage create`, so none of those appear here.
+[env]
+  TRADING_PORTAL_ENV = "production"
+  TRADING_PORTAL_DATA_DIR = "/data"
+  # Screenshots go to the Tigris bucket (S3Storage); the database stays on the volume and streams to the
+  # same bucket through Litestream. Set to "local" only for a throw-away app with no bucket.
+  STORAGE_BACKEND = "s3"
+  # WebAuthn passkeys are bound to the host: both must match the real URL. Change with the app name
+  # (or to the custom domain once there is one).
+  TRADING_PORTAL_RP_ID = "trading-portal-jamie.fly.dev"
+  TRADING_PORTAL_ORIGINS = '["https://trading-portal-jamie.fly.dev"]'
+  # Call Forex Factory and JBlanked for real, and run the in-app scheduler (news, alerts, prices, purge).
+  TRADING_PORTAL_FEEDS = "live"
+  TRADING_PORTAL_SCHEDULER = "true"
+
 [http_service]
   internal_port = 8080
   force_https = true
   # Always on (F7): the in-app scheduler sends news alerts by Web Push and refreshes the news feeds,
-  # so the one machine must never stop. Roughly $2–4/month on shared-cpu-1x.
+  # so the one machine must never stop. Roughly $3.70/month on shared-cpu-1x with 512 MB.
   auto_stop_machines = "off"
   auto_start_machines = true
   min_machines_running = 1
+
+  # /api/health runs `select 1` against the database. The grace period covers the Litestream restore
+  # on a fresh volume plus `alembic upgrade head` on boot.
+  [[http_service.checks]]
+    grace_period = "20s"
+    interval = "30s"
+    method = "GET"
+    timeout = "5s"
+    path = "/api/health"
+    [http_service.checks.headers]
+      X-Forwarded-Proto = "https"
 
 [[mounts]]
   source = "portal_data"

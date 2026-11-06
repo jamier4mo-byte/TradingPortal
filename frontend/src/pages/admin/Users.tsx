@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Copy, KeyRound, UserPlus } from "lucide-react";
+import { Check, Copy, Download, KeyRound, UserPlus } from "lucide-react";
 import { useState } from "react";
 
 import Card from "../../components/Card.tsx";
@@ -53,11 +53,21 @@ export default function AdminUsers() {
         title="Users"
         subtitle="Accounts come from invite links. Nobody is ever deleted."
         controls={
-          <button type="button" className="btn btn-primary" onClick={() => setInviteOpen(true)}>
-            <UserPlus aria-hidden className="size-4" />
-            <span className="hidden tablet:inline">Invite someone</span>
-            <span className="tablet:hidden">Invite</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-col items-end gap-1">
+              <a href="/api/admin/export" download className="btn btn-secondary" title="A zip of the database snapshot and every screenshot">
+                <Download aria-hidden className="size-4" />
+                <span className="hidden tablet:inline">Export everything</span>
+                <span className="tablet:hidden">Export</span>
+              </a>
+              <span className="hidden text-label text-muted laptop:inline">A zip of the database snapshot and every screenshot</span>
+            </div>
+            <button type="button" className="btn btn-primary" onClick={() => setInviteOpen(true)}>
+              <UserPlus aria-hidden className="size-4" />
+              <span className="hidden tablet:inline">Invite someone</span>
+              <span className="tablet:hidden">Invite</span>
+            </button>
+          </div>
         }
       >
         {users.isPending ? (

@@ -1,0 +1,28 @@
+# Litestream (v0.5.x): stream the SQLite database to the Tigris bucket, continuously.
+# Copied to /etc/litestream.yml in the Docker image; backend/entrypoint.sh runs restore → migrate → replicate.
+#
+# Every ${VAR} is expanded from the environment at start. The four names are exactly what
+# `fly storage create` (Tigris) sets as Fly secrets, so there is nothing extra to configure:
+#   BUCKET_NAME, AWS_ENDPOINT_URL_S3, AWS_REGION (Tigris: "auto"; the app defaults it too),
+#   plus AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY, which Litestream reads itself (not written here).
+#
+# Screenshots live in the same bucket under screenshots/ (S3Storage); the database replica under litestream/.
+
+# Snapshots and retention are global in v0.5 (not per replica): a fresh snapshot every hour, and
+# point-in-time history for the last 72 hours. Anything older is dropped by Litestream.
+snapshot:
+  interval: 1h
+  retention: 72h
+
+dbs:
+  - path: /data/portal.db
+    replica:
+      type: s3
+      bucket: ${BUCKET_NAME}
+      path: litestream/portal.db
+      endpoint: ${AWS_ENDPOINT_URL_S3}
+      region: ${AWS_REGION}
+      # Tigris wants virtual-hosted addressing (bucket.host). Litestream switches to path-style
+      # whenever an endpoint is set, so it has to be turned off explicitly here.
+      force-path-style: false
+      sync-interval: 1s

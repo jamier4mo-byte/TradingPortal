@@ -13,6 +13,9 @@
 #   make seed-dev      fill /tmp/tp-dev with an admin, two members and sample records
 #   make news-backfill load JBlanked event history once (resumable; respects the API limit)
 #   make vapid         write VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY and VAPID_SUBJECT into .env if missing
+#   make migrate-screenshots  copy the data dir's screenshots into the S3 bucket (STORAGE_BACKEND=s3; idempotent)
+#   make restore-test  restore the backup replica to /tmp/tp-restore-test, integrity-check it, compare row counts
+#                      (REPLICA=<s3 url or dir with a snapshot>; see docs/ops/RESTORE-TEST.md)
 #
 # Data lives in $TRADING_PORTAL_DATA_DIR (default ~/TradingPortal/data), never in the repo.
 
@@ -20,7 +23,7 @@ PYTHON ?= python3
 PORT   ?= 8765
 VENV   := backend/.venv
 
-.PHONY: icons setup setup-backend setup-frontend dev dev-backend dev-frontend test lint fmt build run migrate smoke smoke-browser clean dev-secrets create-admin seed-dev news-backfill vapid
+.PHONY: icons setup setup-backend setup-frontend dev dev-backend dev-frontend test lint fmt build run migrate smoke smoke-browser clean dev-secrets create-admin seed-dev news-backfill vapid migrate-screenshots restore-test
 
 setup: setup-backend setup-frontend
 
@@ -77,6 +80,12 @@ news-backfill:
 
 vapid:
 	cd backend && .venv/bin/python -m app.vapid_cli
+
+migrate-screenshots:
+	cd backend && .venv/bin/python -m app.cli migrate-screenshots $(ARGS)
+
+restore-test:
+	cd backend && .venv/bin/python -m app.cli restore-test $(if $(REPLICA),--replica "$(REPLICA)") $(if $(OUT),--out "$(OUT)")
 
 run:
 	cd backend && .venv/bin/alembic upgrade head && .venv/bin/uvicorn app.main:app --host 0.0.0.0 --port $(PORT)

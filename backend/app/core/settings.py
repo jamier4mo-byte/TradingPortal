@@ -14,7 +14,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 log = logging.getLogger(__name__)
@@ -72,8 +72,40 @@ class Settings(BaseSettings):
     vapid_private_key: str | None = Field(default=None, validation_alias="VAPID_PRIVATE_KEY")
     vapid_subject: str | None = Field(default=None, validation_alias="VAPID_SUBJECT")
 
+    # ---- Screenshot storage (Prompt 5, F2) ----
+    # local = files under DATA_DIR/screenshots; s3 = an S3-compatible bucket (Tigris on Fly).
+    # The unprefixed names are what `fly storage create` sets; AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY
+    # are read by boto3 itself. Litestream reads the same four names from litestream.yml.
+    storage_backend: Literal["local", "s3"] = Field(default="local", validation_alias="STORAGE_BACKEND")
+    s3_bucket: str | None = Field(default=None, validation_alias="BUCKET_NAME")
+    s3_endpoint_url: str | None = Field(default=None, validation_alias="AWS_ENDPOINT_URL_S3")
+    s3_region: str = Field(default="auto", validation_alias="AWS_REGION")
+    s3_prefix: str = "screenshots/"  # TRADING_PORTAL_S3_PREFIX
+
+    @field_validator("storage_backend", "s3_region", mode="before")
+    @classmethod
+    def _blank_storage_is_default(cls, v, info):
+        if isinstance(v, str) and not v.strip():
+            return {"storage_backend": "local", "s3_region": "auto"}[info.field_name]
+        return v
+
+    @model_validator(mode="after")
+    def _s3_needs_a_bucket(self):
+        if self.storage_backend == "s3" and not self.s3_bucket:
+            raise ValueError(
+                "STORAGE_BACKEND=s3 but BUCKET_NAME is not set. Run `fly storage create` (Tigris sets "
+                "BUCKET_NAME, AWS_ENDPOINT_URL_S3 and the access keys) or set STORAGE_BACKEND=local."
+            )
+        return self
+
     @field_validator(
-        "jblanked_api_key", "dev_twelve_data_key", "vapid_public_key", "vapid_private_key", "vapid_subject"
+        "jblanked_api_key",
+        "dev_twelve_data_key",
+        "vapid_public_key",
+        "vapid_private_key",
+        "vapid_subject",
+        "s3_bucket",
+        "s3_endpoint_url",
     )
     @classmethod
     def _blank_is_none(cls, v: str | None) -> str | None:
