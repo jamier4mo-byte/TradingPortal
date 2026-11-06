@@ -50,6 +50,8 @@ export interface Stats {
   avg_r: number | null;
   total_pnl: number | null;
   rules_followed_rate: number | null;
+  profit_factor?: number | null;
+  max_dd_r?: number | null;
 }
 
 export interface Strategy {

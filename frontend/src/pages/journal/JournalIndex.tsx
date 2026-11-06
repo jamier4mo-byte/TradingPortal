@@ -1,4 +1,4 @@
-import { Plus, Trash2 } from "lucide-react";
+import { ChartLine, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
@@ -27,6 +27,11 @@ export default function JournalIndex() {
         <h1 className="text-heading font-semibold tablet:sr-only">Strategies</h1>
         <div className="ml-auto flex items-center gap-2">
           <ViewScopeToggle size="sm" />
+          <Link to="/journal/analytics" className="btn btn-ghost">
+            <ChartLine aria-hidden className="size-4" />
+            <span className="hidden tablet:inline">Analytics</span>
+            <span className="sr-only tablet:hidden">Analytics</span>
+          </Link>
           <Link to="/journal/trash" className="btn btn-ghost size-11 px-0" aria-label="Trash">
             <Trash2 aria-hidden className="size-4" />
           </Link>
