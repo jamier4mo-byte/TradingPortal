@@ -6,6 +6,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Home,
+  LineChart,
   LogOut,
   MoreHorizontal,
   Newspaper,
@@ -28,15 +29,17 @@ import { CommandPalette } from "./CommandPalette.tsx";
 import { PageTransition } from "./PageTransition.tsx";
 import { OfflineBanner, ownerBg } from "./ui/index.ts";
 import { setPrintMode } from "../lib/print.ts";
+import { onChimeMessage, playChime } from "../lib/push.ts";
 
 const TOOLS = [
   { to: "/", label: "Hub", icon: Home, end: true, dot: "live" },
   { to: "/journal", label: "Replay Journal", short: "Journal", icon: BookOpen, dot: "live" },
-  { to: "/news", label: "News Room", short: "News", icon: Newspaper, dot: "stale" },
+  { to: "/news", label: "News Room", short: "News", icon: Newspaper, dot: "live" },
   { to: "/calendar", label: "Calendar", icon: CalendarDays, dot: "stale" },
 ];
 
 const SECONDARY = [
+  { to: "/markets", label: "Markets", icon: LineChart },
   { to: "/tags", label: "Tags", icon: Tags },
   { to: "/settings", label: "Settings", icon: Settings },
 ];
@@ -45,6 +48,8 @@ const PAGE_TITLES: Record<string, string> = {
   "/": "Hub",
   "/journal": "Replay Journal",
   "/news": "News Room",
+  "/markets": "Markets",
+  "/settings/alerts": "Alerts",
   "/calendar": "Calendar",
   "/tags": "Tags",
   "/settings": "Settings",
@@ -71,6 +76,9 @@ export default function AppShell({ children }: { children: ReactNode }) {
       return false;
     }
   });
+
+  // Optional soft chime: the service worker asks an open page to play it (only when the alert says so).
+  useEffect(() => onChimeMessage(() => playChime()), []);
 
   // Save as PDF: the light print tokens for the whole page (charts read them when they redraw).
   useEffect(() => {
@@ -199,9 +207,9 @@ export default function AppShell({ children }: { children: ReactNode }) {
             </span>
           </div>
 
-          <button type="button" className="btn btn-ghost size-11 px-0" aria-label="Notifications (coming with the News Room)" disabled>
+          <NavLink to="/settings/alerts" className="btn btn-ghost size-11 px-0" aria-label="News alerts">
             <Bell aria-hidden className="size-5" strokeWidth={1.75} />
-          </button>
+          </NavLink>
 
           <DropdownMenu.Root>
             <DropdownMenu.Trigger asChild>

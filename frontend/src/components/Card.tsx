@@ -7,7 +7,9 @@ export default function Card({
   controls,
   children,
   className = "",
+  id,
 }: {
+  id?: string;
   title: string;
   subtitle?: string;
   controls?: ReactNode;
@@ -15,7 +17,7 @@ export default function Card({
   className?: string;
 }) {
   return (
-    <section className={`card p-4 tablet:p-5 ${className}`} aria-label={title}>
+    <section id={id} className={`card scroll-mt-20 p-4 tablet:p-5 ${className}`} aria-label={title}>
       <header className="mb-4 flex flex-wrap items-start gap-3">
         <div className="min-w-0">
           <h2 className="text-title font-semibold">{title}</h2>
