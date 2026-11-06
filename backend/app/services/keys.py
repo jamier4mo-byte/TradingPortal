@@ -72,16 +72,30 @@ def reveal_for_server_use(db: Session, user: User, provider: str) -> str | None:
     return decrypt_secret(row.ciphertext) if row else None
 
 
-def test_key(db: Session, user: User, provider: str) -> bool:
-    """Stub until Prompt 4 wires the real provider call: a key is 'ok' if it decrypts."""
+def test_key(db: Session, user: User, provider: str) -> tuple[bool, str]:
+    """ "Check key": for Twelve Data, one `/api_usage` call (1 credit, counted against the user's day).
+
+    Returns (ok, message), e.g. (True, "Key works · 12 of 800 credits used today") or
+    (False, "Twelve Data rejected this key"). When Twelve Data couldn't answer (network, busy minute) the
+    stored result is left as it was and ok is False with a "try again" message.
+    """
+    from .prices import service as prices  # late import: prices uses this module for the vault key
+
     row = _live(db, user, provider)
     if row is None:
         raise KeyError_("No key saved for that provider.", 404)
     try:
-        ok = len(decrypt_secret(row.ciphertext)) >= 8
-    except Exception:
-        ok = False
+        plaintext = decrypt_secret(row.ciphertext)
+    except Exception:  # noqa: BLE001 — never log the key or the cipher error detail
+        plaintext = ""
+    if len(plaintext) < 8:
+        ok, message = False, "This key can't be read. Save it again."
+    else:
+        result, message = prices.check_key(db, user, plaintext)
+        if result is None:
+            return False, message
+        ok = result
     row.last_tested_at = utcnow()
     row.last_test_ok = ok
     db.commit()
-    return ok
+    return ok, message

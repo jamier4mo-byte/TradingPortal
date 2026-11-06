@@ -112,7 +112,7 @@ def delete_key(provider: Provider, user: CurrentUser, db: Db) -> OkOut:
 @router.post("/keys/{provider}/test", response_model=ApiKeyTestOut)
 def test_key(provider: Provider, user: CurrentUser, db: Db) -> ApiKeyTestOut:
     try:
-        ok = keys_svc.test_key(db, user, provider)
+        ok, message = keys_svc.test_key(db, user, provider)
     except KeyError_ as exc:
         raise http(exc) from exc
-    return ApiKeyTestOut(ok=ok, tested_at=users_svc.utcnow())
+    return ApiKeyTestOut(ok=ok, tested_at=users_svc.utcnow(), message=message)

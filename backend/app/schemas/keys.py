@@ -24,3 +24,4 @@ class ApiKeySetIn(BaseModel):
 class ApiKeyTestOut(BaseModel):
     ok: bool
     tested_at: datetime
+    message: str | None = None  # "Key works · 12 of 800 credits used today" / "Twelve Data rejected this key"

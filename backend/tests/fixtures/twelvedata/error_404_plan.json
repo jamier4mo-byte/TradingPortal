@@ -1,0 +1,5 @@
+{
+ "code": 404,
+ "message": "**symbol** XAU/USD is available exclusively with grow or pro or ultra or enterprise plans. Consider upgrading your API Key now at https://twelvedata.com/pricing",
+ "status": "error"
+}

@@ -1,0 +1,27 @@
+{
+ "symbol": "EUR/USD",
+ "name": "Euro / US Dollar",
+ "exchange": "Forex",
+ "datetime": "2026-11-06",
+ "timestamp": 1793972700,
+ "last_quote_at": 1793972700,
+ "open": "1.07980",
+ "high": "1.08620",
+ "low": "1.07910",
+ "close": "1.08502",
+ "volume": null,
+ "previous_close": "1.07990",
+ "change": "0.00512",
+ "percent_change": "0.47412",
+ "average_volume": null,
+ "is_market_open": true,
+ "fifty_two_week": {
+  "low": "1.01770",
+  "high": "1.18190",
+  "low_change": "0.06732",
+  "high_change": "-0.09688",
+  "low_change_percent": "6.61492",
+  "high_change_percent": "-8.19697",
+  "range": "1.017700 - 1.181900"
+ }
+}
