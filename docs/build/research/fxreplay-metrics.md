@@ -35,5 +35,15 @@ Default BE threshold and whether its bounds are inclusive; whether breakevens br
 | Average RR (winners) | `avg_win_r` | Plus `avg_r` over all trades (the doc's own) |
 | Expectancy | win% × avg win − loss% × avg loss, in R and $ | FX Replay shows a bar only; formula is ours |
 | Drawdown (winner retrace, R) | `avg_winner_mae_r` / `max_winner_mae_r` from MAE when entered | Plus equity drawdown peak-to-trough in R and $ (Default) |
-| Max consecutive | `longest_win_streak` / `longest_loss_streak` | Breakevens are skipped (neither extend nor break) |
+| Max consecutive | `longest_win_streak` / `longest_loss_streak` | A breakeven ends a streak (as the old app did) |
 | Average duration | mean of closed trades, also split winners/losers | |
+
+## From the old Replay Journal (reference only)
+- Equity and drawdown book P&L at **close** (sorted by close time, then id); the drawdown series starts from 0.
+- Calendar, weekday and hour panels use the **open** date/time.
+- Profit factor = Σ P&L of wins ÷ −Σ P&L of losses; no losses → no value ("undefined"), never ∞.
+- FX Replay's `idealTP` is the best price reached, so ideal R − realised R is "R left on the table". Capture = Σ max(R,0) ÷ Σ max(ideal R,0).
+- Export zip had strategy.md, trades.json, trades.csv, analytics.json, images/ (full originals, unresized); no manifest, no
+  hashes, no README prompt, not streamed. Clipboard prompts asked for: what's working, where the edge is and isn't (with
+  numbers), filter/rule changes to keep winners and cut losers, and what data to start recording.
+- No runtime reconcile existed; `initialBalance` / `currentRealizedBalance` were stored but never checked.

@@ -108,3 +108,38 @@ prompt's branch. If a prompt stops part-way, the next run continues from the fir
 - [x] Annotate mode: three slots, Mark completed (⌘⇧↵), inbox counts completed; matcher and lists updated
 - [x] Mark completed warns about missing images or reasoning, never restricts (branch `build/02c-completion-warning`)
 - [x] 211 pytest · 76 Playwright · lint clean; merged to local `main`
+
+## Prompt 3 — Analytics and Export for AI (branch `build/03-analytics-export`)
+
+### 0. Preflight
+- [x] Clean `main`; branch `build/03-analytics-export`
+- [x] Baseline: `make test` 211 passed · `make lint` clean (Hub 184.3 KB) · `make smoke` 76 passed
+- [x] FX Replay metric definitions summarised (`docs/build/research/fxreplay-metrics.md`); old app's analytics/export read
+
+### 1. Metrics engine
+- [ ] Metric registry (id, label, unit, formula, function); FX Replay set + the doc's own
+- [ ] Breakdowns (hour, weekday, session, entry model, instrument, direction) and daily P&L calendar
+- [ ] Reconcile line against the CSV's own totals
+- [ ] `POST /api/analytics/query` with source, scope, split_by_owner and all 2.4 filters
+- [ ] Hand-computed metric tests (all wins, all losses, breakeven-heavy, single trade); 5,000 trades < 300 ms
+
+### 2–6. Views, chart system and layout
+- [ ] Shared lazy `Chart` wrapper (echarts/core), runtime theme from CSS tokens, motion, crosshair, text summary + data table, skeletons
+- [ ] Ideal Trades views
+- [ ] Backtest views (KPI strip, equity, drawdown, streaks, breakdowns, calendar, R distribution, rulebook, exit efficiency, Monte Carlo worker)
+- [ ] Compare view; split by owner (small multiples above 3 owners)
+- [ ] Layout per device; Source PillToggle; filters in the URL
+
+### 7–9. Insights, cards, export
+- [ ] Auto-insights card (Analytics tab and session recap)
+- [ ] Strategy cards: real headline stats
+- [ ] Export for AI zip, Copy for AI, CSV export, print stylesheet; export tests
+
+### 10. Gate 3
+- [ ] Reconcile ✓ on the real CSV; KPI table in the report
+- [ ] Metric tests pass on every fixture
+- [ ] Filters morph charts; URL round-trips
+- [ ] AI export unzips; README_prompt reads well
+- [ ] `make lint`, `make test`, `make smoke` green; bundle budget
+- [ ] `/check-devices` clean at six widths; design-reviewer no blockers/majors
+- [ ] `docs/build/PHASE-3-REPORT.md`; merged to local `main`
