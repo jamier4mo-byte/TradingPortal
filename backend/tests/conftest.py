@@ -19,6 +19,19 @@ os.environ["TRADING_PORTAL_DATA_DIR"] = str(DATA_DIR)
 os.environ["TRADING_PORTAL_SECRET_KEY"] = "test-secret-key-that-is-long-enough-for-anything-0123456789"
 os.environ["TRADING_PORTAL_RP_ID"] = "localhost"
 os.environ["TRADING_PORTAL_ORIGINS"] = '["http://localhost:5173"]'
+# Tests never call Twelve Data, JBlanked or Forex Factory: blank every key a developer's .env may hold
+# (environment variables win over .env), switch the feeds off and use the fake price provider.
+os.environ["TRADING_PORTAL_FEEDS"] = "off"
+os.environ["TRADING_PORTAL_PRICE_PROVIDER"] = "fake"
+os.environ["TRADING_PORTAL_SCHEDULER"] = "false"
+for _name in (
+    "JBLANKED_API_KEY",
+    "DEV_TWELVE_DATA_KEY",
+    "VAPID_PUBLIC_KEY",
+    "VAPID_PRIVATE_KEY",
+    "VAPID_SUBJECT",
+):
+    os.environ[_name] = ""
 
 BACKEND = Path(__file__).resolve().parents[1]
 subprocess.run([sys.executable, "-m", "alembic", "upgrade", "head"], cwd=BACKEND, check=True)
@@ -31,12 +44,25 @@ from app.core.deps import CSRF_COOKIE, CSRF_HEADER  # noqa: E402
 from app.db import session_factory  # noqa: E402
 from app.main import app  # noqa: E402
 from app.models import (  # noqa: E402
+    AlertDelivery,
+    AlertPrefs,
+    AppState,
     AuditLog,
+    Event,
+    EventType,
+    FeedRun,
     Instrument,
     Invite,
     JournalSession,
+    Lease,
+    NewsHistoryCoverage,
     Passkey,
     PasswordReset,
+    PriceCache,
+    PriceCreditUsage,
+    PricePin,
+    PriceReaction,
+    PushSubscription,
     Screenshot,
     Session,
     Strategy,
@@ -44,6 +70,7 @@ from app.models import (  # noqa: E402
     Trade,
     User,
     UserApiKey,
+    UserMarketPrefs,
     trade_tags,
 )
 from app.services import users as users_svc  # noqa: E402
@@ -71,6 +98,25 @@ def clean_db() -> Iterator[None]:
     yield
     with session_factory()() as db:
         db.execute(delete(trade_tags))
+        # Prompt 4 tables. Seed tables (event_types marked seeded, news_instrument_map, price_symbols)
+        # stay as the migrations left them; a test that edits one restores it itself.
+        for model in (
+            AlertDelivery,
+            PushSubscription,
+            AlertPrefs,
+            PriceReaction,
+            PriceCache,
+            PriceCreditUsage,
+            PricePin,
+            UserMarketPrefs,
+            Event,
+            NewsHistoryCoverage,
+            FeedRun,
+            Lease,
+            AppState,
+        ):
+            db.execute(delete(model))
+        db.execute(delete(EventType).where(EventType.seeded.is_(False)))
         for model in (
             Screenshot,
             Trade,

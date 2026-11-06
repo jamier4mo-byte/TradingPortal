@@ -1,7 +1,9 @@
 """Trading Portal API. Serves the built front end from frontend/dist when it exists."""
 
+import asyncio
 import logging
 import math
+from contextlib import asynccontextmanager, suppress
 
 from fastapi import FastAPI, Request
 from fastapi.encoders import jsonable_encoder
@@ -15,8 +17,22 @@ from .api import api
 from .core.csrf import CsrfMiddleware
 from .core.settings import FRONTEND_DIST, get_settings
 from .db import get_engine
+from .services import scheduler
 
 log = logging.getLogger("trading_portal")
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    """Start the in-app scheduler (F7) on the always-on machine; a DB lease keeps it single-instance."""
+    task = asyncio.create_task(scheduler.run_forever()) if scheduler.should_run() else None
+    try:
+        yield
+    finally:
+        if task:
+            task.cancel()
+            with suppress(asyncio.CancelledError):
+                await task
 
 
 def create_app() -> FastAPI:
@@ -24,7 +40,10 @@ def create_app() -> FastAPI:
     settings.require_secret_key()  # production refuses to start without TRADING_PORTAL_SECRET_KEY
 
     app = FastAPI(
-        title="Trading Portal", version=__version__, docs_url=None if settings.is_production else "/api/docs"
+        title="Trading Portal",
+        version=__version__,
+        docs_url=None if settings.is_production else "/api/docs",
+        lifespan=lifespan,
     )
     app.add_middleware(CsrfMiddleware)
     app.include_router(api)

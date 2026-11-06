@@ -14,7 +14,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 log = logging.getLogger(__name__)
@@ -48,6 +48,40 @@ class Settings(BaseSettings):
     rp_id: str = "localhost"
     rp_name: str = "Trading Portal"
     origins: list[str] = Field(default_factory=lambda: ["http://localhost:5173", "http://127.0.0.1:5173"])
+
+    # ---- News Room, prices and alerts (Prompt 4) ----
+    # feeds: live = call Forex Factory and JBlanked; off = never (tests, smoke, CI).
+    feeds: Literal["live", "off"] = "live"
+    # prices: auto = the user's vault key, else (development only) DEV_TWELVE_DATA_KEY, else the fake in
+    # development; twelve_data = never fake; fake = never call Twelve Data (tests, smoke, CI).
+    price_provider: Literal["auto", "twelve_data", "fake"] = "auto"
+    # The in-app scheduler (an asyncio task started in the lifespan, single-instance by a DB lease).
+    scheduler: bool = True
+    scheduler_tick_seconds: int = 60
+    ff_calendar_url: str = "https://nfs.faireconomy.media/ff_calendar_thisweek.json"
+    ff_min_interval_minutes: int = 60
+    # JBlanked: never more than one request per interval, globally (a DB slot); plus a daily budget,
+    # because the free tier allows one /calendar/today/ request a day (research, 6 Nov 2026).
+    jblanked_min_interval_minutes: int = 5
+    jblanked_daily_requests: int = 1
+    jblanked_source: Literal["mql5", "forex-factory", "fxstreet"] = "forex-factory"
+    # Unprefixed names: these are the names Jamie sets as Fly secrets / in .env.
+    jblanked_api_key: str | None = Field(default=None, validation_alias="JBLANKED_API_KEY")
+    dev_twelve_data_key: str | None = Field(default=None, validation_alias="DEV_TWELVE_DATA_KEY")
+    vapid_public_key: str | None = Field(default=None, validation_alias="VAPID_PUBLIC_KEY")
+    vapid_private_key: str | None = Field(default=None, validation_alias="VAPID_PRIVATE_KEY")
+    vapid_subject: str | None = Field(default=None, validation_alias="VAPID_SUBJECT")
+
+    @field_validator(
+        "jblanked_api_key", "dev_twelve_data_key", "vapid_public_key", "vapid_private_key", "vapid_subject"
+    )
+    @classmethod
+    def _blank_is_none(cls, v: str | None) -> str | None:
+        return v.strip() or None if isinstance(v, str) else v
+
+    @property
+    def feeds_live(self) -> bool:
+        return self.feeds == "live" and self.env != "test"
 
     @property
     def is_production(self) -> bool:

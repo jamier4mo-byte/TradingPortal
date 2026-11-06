@@ -16,10 +16,48 @@ from .journal import (
     Trade,
     trade_tags,
 )
+from .market import (
+    AlertDelivery,
+    AlertPrefs,
+    PriceCache,
+    PriceCreditUsage,
+    PricePin,
+    PriceReaction,
+    PriceSymbol,
+    PushSubscription,
+)
+from .news import (
+    IMPACTS,
+    AppState,
+    Event,
+    EventType,
+    FeedRun,
+    Lease,
+    NewsHistoryCoverage,
+    NewsInstrumentMap,
+    UserMarketPrefs,
+)
 from .tag import TAG_CATEGORIES, Tag
 from .user import OWNER_COLOURS, Invite, Passkey, PasswordReset, Session, User
 
 __all__ = [
+    "IMPACTS",
+    "AlertDelivery",
+    "AlertPrefs",
+    "AppState",
+    "Event",
+    "EventType",
+    "FeedRun",
+    "Lease",
+    "NewsHistoryCoverage",
+    "NewsInstrumentMap",
+    "PriceCache",
+    "PriceCreditUsage",
+    "PricePin",
+    "PriceReaction",
+    "PriceSymbol",
+    "PushSubscription",
+    "UserMarketPrefs",
     "DEFAULT_REASONING_TEMPLATE",
     "DEFAULT_RULES",
     "LABELLED_SLOTS",
