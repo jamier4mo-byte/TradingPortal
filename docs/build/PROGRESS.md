@@ -162,35 +162,35 @@ prompt's branch. If a prompt stops part-way, the next run continues from the fir
 - [x] Foundation: settings, migration `0007` (16 tables + instrument map + symbol aliases), DB leases and rate slots, network guard for tests, scheduler skeleton in the lifespan
 
 ### 1. News data model and ingestion
-- [ ] Event-type catalogue (30+ explanations), migration `0008`
-- [ ] Forex Factory fetcher (hourly, upsert, UK/US DST), JBlanked fetcher (slot + daily budget), merge
-- [ ] `make news-backfill` (resumable, records coverage); feed runs and "last updated"
-- [ ] Fixture tests: parsing, DST, upserts, merge, lease, failure path
+- [x] Event-type catalogue (30+ explanations), migration `0008`
+- [x] Forex Factory fetcher (hourly, upsert, UK/US DST), JBlanked fetcher (slot + daily budget), merge
+- [x] `make news-backfill` (resumable, records coverage); feed runs and "last updated"
+- [x] Fixture tests: parsing, DST, upserts, merge, lease, failure path
 
 ### 2. Trade ↔ news link
-- [ ] Tagging service (window per user, coverage, "No news data"), re-run when coverage grows
-- [ ] Analytics News filter live (inside/outside, by event type) + "Around news" breakdown
-- [ ] Pre-session brief news slot
+- [x] Tagging service (window per user, coverage, "No news data"), re-run when coverage grows
+- [x] Analytics News filter live (inside/outside, by event type) + "Around news" breakdown
+- [x] Pre-session brief news slot
 
 ### 3. Prices backend
-- [ ] PriceProvider protocol, TwelveDataProvider, FakePriceProvider
-- [ ] Per-key minute limiter (queues), daily credits, shared cache, pins (8)
-- [ ] Endpoints: search, quotes, sparkline, usage, pin/unpin; vault "Check key" calls Twelve Data
-- [ ] Daily-limit paused state; price-reaction job (opt-in, capped, leftover credits)
+- [x] PriceProvider protocol, TwelveDataProvider, FakePriceProvider
+- [x] Per-key minute limiter (queues), daily credits, shared cache, pins (8)
+- [x] Endpoints: search, quotes, sparkline, usage, pin/unpin; vault "Check key" calls Twelve Data
+- [x] Daily-limit paused state; price-reaction job (opt-in, capped, leftover credits)
 
 ### 4. Push and the service worker
-- [ ] push_subscriptions / alert_prefs / alert_deliveries services and endpoints; `make vapid`
-- [ ] `public/sw.js` (push, notificationclick); Settings → Alerts flow (iOS guidance, permission on press, test, chime)
-- [ ] Scheduler tests with a frozen clock
+- [x] push_subscriptions / alert_prefs / alert_deliveries services and endpoints; `make vapid`
+- [x] `public/sw.js` (push, notificationclick); Settings → Alerts flow (iOS guidance, permission on press, test, chime)
+- [x] Scheduler tests with a frozen clock
 
 ### 5. News Room screens
-- [ ] Header, countdown ring, calendar day/week, filters, phone list + bottom sheet
-- [ ] Trading-day timeline; event detail; week ahead; alerts settings
-- [ ] Market components: TickerCard, InstrumentSearch, WatchlistRow, CreditsMeter, instrument view
-- [ ] `GET /api/news/today`, `GET /api/news/next`
+- [x] Header, countdown ring, calendar day/week, filters, phone list + bottom sheet
+- [x] Trading-day timeline; event detail; week ahead; alerts settings
+- [x] Market components: TickerCard, InstrumentSearch, WatchlistRow, CreditsMeter, instrument view
+- [x] `GET /api/news/today`, `GET /api/news/next`
 
 ### 6. Gate 4
-- [ ] Gate checks (see report)
-- [ ] `make lint`, `make test`, `make smoke` green; bundle budget
-- [ ] `/check-devices` at six widths; design-reviewer no blockers or majors
-- [ ] `docs/build/PHASE-4-REPORT.md`; merged to local `main`
+- [x] Gate checks (see report; the Chromium push check is partial, see Known issues)
+- [x] `make lint`, `make test`, `make smoke` green (467 pytest + 6 Node · 144 Playwright); Hub 187.8 KB
+- [x] `/check-devices` at six widths (two rounds); design-reviewer: two passes, majors fixed
+- [x] `docs/build/PHASE-4-REPORT.md`; merged to local `main`

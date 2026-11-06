@@ -49,10 +49,10 @@ export function WeekAheadView() {
                 {d.events.map((e) => (
                   <li key={e.id}>
                     <Link to={`/news/events/${e.id}`} className="block rounded-panel border border-border bg-surface-2 p-3 transition-colors duration-(--dur-quick) hover:border-border-strong">
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
                         <span className="num font-mono text-body">{e.all_day ? "All day" : e.uk_time}</span>
                         <CurrencyTag currency={e.currency} />
-                        <ImpactChip impact={e.impact} compact className="ml-auto" />
+                        <ImpactChip impact={e.impact} compact />
                       </div>
                       <p className="mt-1.5 text-body font-medium" style={{ viewTransitionName: vtName("event", e.id) }}>
                         {e.name}

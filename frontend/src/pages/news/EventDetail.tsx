@@ -9,6 +9,7 @@ import { EmptyState, ErrorState, SkeletonCard } from "../../components/ui/index.
 import { displaySymbol } from "../../lib/markets.ts";
 import { dayLabel, type EventDetail as Detail, type HorizonReaction, useEventDetail } from "../../lib/news.ts";
 import { useNow } from "../../lib/useNow.ts";
+import { useDevice } from "../../lib/useMediaQuery.ts";
 import { vtName } from "../../lib/vt.ts";
 
 const HORIZONS = ["5", "15", "60"] as const;
@@ -55,6 +56,7 @@ export default function EventDetailPage() {
 
 function DetailBody({ d }: { d: Detail }) {
   const e = d.event;
+  const phone = useDevice() === "phone";
   const now = useNow(1000);
   const secs = (new Date(e.at).getTime() - now.getTime()) / 1000;
   return (
@@ -109,6 +111,35 @@ function DetailBody({ d }: { d: Detail }) {
         <Card title="Release history" subtitle="Actual, forecast, previous and surprise" className="desktop:col-span-7">
           {d.history.length === 0 ? (
             <EmptyState illustration={<ListEmpty />} title="No past releases stored" text={d.empty.history ?? "History builds up as each release is stored."} />
+          ) : phone ? (
+            <ul className="flex flex-col divide-y divide-border" aria-label={`Past releases of ${e.name}`}>
+              {d.history.map((h) => (
+                <li key={h.event_id}>
+                  <Link to={`/news/events/${h.event_id}`} className="block py-2">
+                    <span className="num block text-label text-muted">{shortDate(h.at)}</span>
+                    <span className="num mt-1 grid grid-cols-3 gap-2 text-body">
+                      <span>
+                        <span className="block text-label text-muted">Actual</span>
+                        {h.actual ?? "—"}
+                      </span>
+                      <span>
+                        <span className="block text-label text-muted">Forecast</span>
+                        {h.forecast ?? "—"}
+                      </span>
+                      <span>
+                        <span className="block text-label text-muted">Previous</span>
+                        {h.previous ?? "—"}
+                      </span>
+                    </span>
+                    {h.surprise ? (
+                      <span className="mt-1 block">
+                        <SurpriseBadge surprise={h.surprise} withWords />
+                      </span>
+                    ) : null}
+                  </Link>
+                </li>
+              ))}
+            </ul>
           ) : (
             <div className="relative -mx-4 overflow-x-auto px-4 tablet:mx-0 tablet:px-0" role="region" tabIndex={0} aria-label="Release history table, scrolls sideways">
               <table className="w-full min-w-[30rem] text-body">

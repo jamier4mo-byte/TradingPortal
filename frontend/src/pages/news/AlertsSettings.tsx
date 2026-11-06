@@ -298,7 +298,7 @@ function PrefsCard() {
       <div className="flex flex-col gap-5">
         <Switch checked={p.enabled} onChange={(enabled) => save.mutate({ enabled })} label="News alerts" description={p.enabled ? "On for every device you've added" : "Off: no notifications are sent"} />
 
-        <fieldset disabled={!p.enabled} className="flex flex-col gap-5 disabled:opacity-60">
+        <fieldset disabled={!p.enabled} className="flex flex-col gap-5 disabled:opacity-80">
           <label className="flex flex-col gap-1.5">
             <span className="text-label text-muted">How long before</span>
             <select className="input num w-40" value={p.minutes_before} onChange={(e) => save.mutate({ minutes_before: Number(e.target.value) })}>
@@ -336,7 +336,7 @@ function PrefsCard() {
               checked={p.currencies === null}
               onChange={(mineOnly) => save.mutate({ currencies: mineOnly ? null : p.effective_currencies })}
               label="Currencies of my instruments"
-              description={`Now: ${p.effective_currencies.join(", ") || "none"}`}
+              description={`Now: ${p.effective_currencies.filter((c) => /^[A-Z]{3}$/.test(c)).join(", ") || "none"}`}
             />
             {p.currencies !== null ? (
               <div className="mt-3 flex flex-wrap gap-2">

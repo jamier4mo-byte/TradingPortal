@@ -73,7 +73,7 @@ export default function InstrumentView() {
             </button>
           </div>
           {usable ? (
-            <div className="relative mt-4 grid grid-cols-1 gap-6 laptop:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] laptop:items-end">
+            <div className="relative mt-4 grid grid-cols-1 gap-6 laptop:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] laptop:items-center">
               <div>
                 <PriceFigure price={quote!.price} decimals={quote!.decimals} className="text-hero font-semibold" />
                 <p className="num mt-2 text-body">
@@ -163,12 +163,12 @@ function InstrumentNews({ code, className = "" }: { code: string; className?: st
         <ul className="flex flex-col divide-y divide-border">
           {list.slice(0, 12).map((e) => (
             <li key={e.id}>
-              <Link to={`/news/events/${e.id}`} className="flex min-h-12 items-center gap-3 py-2 hover:underline hover:decoration-border-strong hover:underline-offset-4">
-                <span className="num w-24 shrink-0 text-label text-muted">
+              <Link to={`/news/events/${e.id}`} className="grid min-h-12 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-0.5 py-2 hover:underline hover:decoration-border-strong hover:underline-offset-4">
+                <span className="num col-span-3 text-label text-muted tablet:col-span-1 tablet:w-24">
                   {dayLabel(e.uk_date, "short")} {e.uk_time}
                 </span>
                 <CurrencyTag currency={e.currency} />
-                <span className="min-w-0 flex-1 truncate text-body">{e.name}</span>
+                <span className="min-w-0 text-body">{e.name}</span>
                 <ImpactChip impact={e.impact} compact />
               </Link>
             </li>

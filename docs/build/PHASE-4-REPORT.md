@@ -107,8 +107,8 @@ Branch `build/04-newsroom-prices-alerts`, 6 Nov 2026. Gate 4: see the checklist 
 | The scheduler sends a due test alert exactly once | Pass | `test_alerts` (frozen clock: two ticks → one send per device; two schedulers at once → one send; quiet hours; 404/410 pruned) |
 | Local "Send test notification" works in Chromium | **Partial** | Every server path is tested with the fake sender. In a real Chrome driven by Playwright, the flow reaches the browser's push registration, which Chrome refuses under automation ("Registration failed – permission denied"), with or without background networking. After two genuine fixes this is logged under Known issues; Jamie's check step 4 covers it |
 | `make lint`, `make test`, `make smoke` green; bundle budget | Pass | lint clean (ruff, oxlint, tsc); 467 pytest + 6 Node; **144/144 Playwright**; Hub **187.8 KB** of 200 KB; ECharts stays lazy |
-| `/check-devices` clean for News Room, event detail, week ahead, alerts, instrument view at six widths | DEVICES_RESULT | `docs/check-devices/2026-11-06-p4/` (48 screenshots, not committed) |
-| design-reviewer: no blockers or majors | DESIGN_RESULT | Pass 1: 0 blockers, 11 majors, all fixed (tick glyph, credits wording, H/M/L markers, laptop rows, duplicate transition names, Reduced odometer, search focus, stale-on-refresh-error, instrument-news error, More entries, ECharts intraday chart) plus 17 minors |
+| `/check-devices` clean for News Room, event detail, week ahead, alerts, instrument view at six widths | Pass | Two rounds of 48 screenshots: `docs/check-devices/2026-11-06-p4/` and `-p4b/` (news, week, week ahead, event detail, alerts, markets, instrument, unavailable instrument × 360/375/430/768/1440/1920; not committed). Round 1 problems, all fixed in round 2:<br>• the phone timeline scrolled to its empty end<br>• Week ahead chips overflowed at 1440<br>• phone rows truncated names<br>• the history table hid columns on the phone (now cards)<br>• the countdown text touched the ring at 360<br>• ticker cards were uneven at 768<br>• the instrument hero was bottom-aligned<br>• disabled alert controls were too faint<br>• "Live" sat next to "Delayed" (now "Updating")<br>• "DE" was listed as a currency |
+| design-reviewer: no blockers or majors | Pass | Pass 1: 0 blockers, 11 majors, all fixed (tick glyph, credits wording, H/M/L markers, laptop rows, duplicate transition names, Reduced odometer, search focus, stale-on-refresh-error, instrument-news error, More entries, ECharts intraday chart) plus 17 minors. Pass 2: all 11 confirmed fixed; 2 new majors (the now line widened the timeline's scroll area; the red Remove action showed through faded rows), both fixed, plus its minors (Now label, spacing, pins refresh line, shared time formatter) |
 
 ## Twelve Data coverage (live, Jamie's Basic key, 6 Nov 2026 ~15:00 UK)
 
@@ -183,7 +183,9 @@ Branch `build/04-newsroom-prices-alerts`, 6 Nov 2026. Gate 4: see the checklist 
   - Card subtitles aren't `.num`;
   - switches aren't optimistic;
   - no extra side panel at 1920+;
-  - the loss-red toast tone is used for non-loss notices (existing convention).
+  - the loss-red toast tone is used for non-loss notices (existing convention);
+  - the tick glyph stays mounted after its flash.
+- The dev seed has two "Unemployment Claims" rows on Thursday at 13:30 (the synthetic week and the weekly claims series overlap). This is dev data only.
 - In development, the Hub's News card is still the Phase 1 placeholder; Prompt 5 places `TickerCard` and today's news there.
 - **The dev server's feeds run live** (`make dev` with the default `TRADING_PORTAL_FEEDS=live`). That is one Forex Factory request an hour; set `TRADING_PORTAL_FEEDS=off` to stop it.
 

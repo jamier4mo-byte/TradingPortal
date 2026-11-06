@@ -79,7 +79,7 @@ export function EventRow({ event, compact }: { event: NewsEvent; compact: boolea
       >
         <span className="num font-mono text-body">{event.all_day ? "All day" : event.uk_time}</span>
         <CurrencyTag currency={event.currency} />
-        <span className="min-w-0 truncate text-body" style={{ viewTransitionName: vtName("event", event.id) }}>
+        <span className="line-clamp-2 min-w-0 text-body" style={{ viewTransitionName: vtName("event", event.id) }}>
           {event.name}
         </span>
         <ImpactChip impact={event.impact} compact />

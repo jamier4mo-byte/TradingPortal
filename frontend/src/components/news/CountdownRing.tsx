@@ -45,7 +45,7 @@ export function CountdownRing({
           className={`${tone} transition-[stroke-dashoffset] duration-(--dur-emphasis) ease-(--ease-in-enter) ${final && left > 0 ? "pulse" : ""}`}
         />
       </svg>
-      <span className={`num absolute text-center text-title font-semibold ${final ? tone : ""}`} aria-hidden>
+      <span className={`num absolute text-center font-semibold ${size < 96 ? "text-label" : "text-title"} ${final ? tone : ""}`} aria-hidden>
         {text}
       </span>
     </div>

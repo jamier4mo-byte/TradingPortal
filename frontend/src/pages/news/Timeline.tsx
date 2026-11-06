@@ -51,7 +51,9 @@ function TimelineBody({ data, isToday }: { data: TimelineData; isToday: boolean 
     const el = scroller.current;
     if (!el || !phone) return;
     const target = nowMin ?? 8 * 60; // centre "now", or the London open on other days
-    el.scrollLeft = (target / DAY) * el.scrollWidth - el.clientWidth / 2;
+    const track = (el.firstElementChild as HTMLElement | null)?.offsetWidth ?? el.scrollWidth;
+    const max = Math.max(0, el.scrollWidth - el.clientWidth);
+    el.scrollLeft = Math.min(max, Math.max(0, (target / DAY) * track - el.clientWidth / 2));
     // only on mount / day change
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data.date, phone]);

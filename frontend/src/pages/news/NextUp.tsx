@@ -89,7 +89,7 @@ export function NextUp({ compact = false }: { compact?: boolean }) {
         </p>
         <Link to={`/news/events/${shown.id}`} className="mt-1 flex min-h-11 items-center gap-2 hover:underline hover:decoration-border-strong hover:underline-offset-4">
           <CurrencyTag currency={shown.currency} />
-          <span className="min-w-0 truncate text-title font-semibold">
+          <span className="line-clamp-2 min-w-0 text-title font-semibold">
             {shown.name}
           </span>
           <ImpactChip impact={shown.impact} compact className="hidden tablet:inline-flex" />

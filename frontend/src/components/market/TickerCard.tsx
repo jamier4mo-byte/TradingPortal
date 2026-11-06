@@ -12,7 +12,7 @@ export function LiveDot({ live, className = "" }: { live: boolean; className?: s
   return (
     <span className={`inline-flex items-center gap-1.5 text-label text-muted ${className}`}>
       <span aria-hidden className={`size-2 rounded-full ${live ? "pulse bg-live" : "bg-stale"}`} />
-      <span>{live ? "Live" : "Paused"}</span>
+      <span>{live ? "Updating" : "Paused"}</span>
     </span>
   );
 }
@@ -81,7 +81,7 @@ export function TickerCard({
 
       {usable ? (
         <>
-          <div className="relative mt-3 flex flex-wrap items-end justify-between gap-x-3 gap-y-2">
+          <div className="relative mt-3 flex flex-col gap-2">
             <div className="min-w-0">
               <PriceFigure price={quote.price} decimals={quote.decimals} className={`${compact ? "text-title" : "text-heading"} font-semibold`} />
               <p className="num mt-1 text-label text-text">
