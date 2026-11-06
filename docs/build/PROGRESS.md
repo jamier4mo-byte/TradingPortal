@@ -204,12 +204,12 @@ prompt's branch. If a prompt stops part-way, the next run continues from the fir
 - [ ] Every route has the five states (checked in step 6's accessibility sweep)
 
 ### 1. Team calendar (1.4)
-- [ ] Migration `0009`: `tasks`, `task_exceptions`, `task_completions`
-- [ ] Occurrence expansion server-side (rrule, DST-safe); this-occurrence vs series edits and moves; members change only their own
-- [ ] `/calendar`: week / day / month, + New task, tap a day, owner dots and filter chips, drag to move, optimistic done with undo, news markers, tokens only
-- [ ] Phone: day / 3-day agenda, long-press drag, swipe to complete plus a button
-- [ ] Hub `CalendarCard` (week on desktop, agenda on the phone)
-- [ ] Tests: recurrence across DST, this-occurrence vs series, permissions; Playwright at 375 and 1440 with axe
+- [x] Migration `0009`: `tasks`, `task_exceptions`, `task_completions`
+- [x] Occurrence expansion server-side (rrule, DST-safe); this-occurrence vs series edits and moves; members change only their own
+- [x] `/calendar`: week / day / month, + New task, tap a day, owner dots and filter chips, drag to move, optimistic done with undo, news markers, tokens only
+- [x] Phone: day / 3-day agenda, long-press drag, swipe to complete plus a button
+- [x] Hub `CalendarCard` (week on desktop, agenda on the phone)
+- [x] Tests: recurrence across DST, this-occurrence vs series, permissions; Playwright at 375 and 1440 with axe
 
 ### 2. The Hub (section 1)
 - [ ] `GET /api/hub`: welcome-back gap, process streak, personal bests, first-run checklist, week behind
