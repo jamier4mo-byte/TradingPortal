@@ -107,6 +107,70 @@ def _seed_journal(db, admin, sam) -> None:
         entry_models=["OTE"],
     )
     journal_svc.confirm_import(db, sam, other, data, destination="ideal", filename="fxreplay-sample.csv")
+    _seed_analytics(db, admin, sam)
+
+
+def _seed_analytics(db, admin, sam) -> None:
+    """Synthetic trades (deterministic) so the Analytics, Compare and Export screens have something to show.
+
+    Strategy 3 (Jamie): 7 months of ideal winners (unlocked) and 160 backtest trades. Strategy 4 (Sam): 80
+    backtest trades, so the all-strategies view can split by owner. Dev data only: /tmp/tp-dev.
+    """
+    from datetime import UTC, datetime
+
+    from sqlalchemy import select
+
+    from .models import Trade, User
+    from .services.analytics.synthetic import insert_trades, trade_dicts
+
+    alex = db.scalar(select(User).where(User.email == "alex@example.test"))
+    mine = journal_svc.create_strategy(
+        db,
+        admin,
+        name="NAS100 London breaker",
+        description="London-open sweep of Asia's range, then a breaker or FVG entry towards the daily draw.",
+        instruments=["NAS100"],
+        timeframes=["15m", "5m"],
+        entry_models=["FVG", "Breaker", "OTE", "Order block"],
+    )
+    rows: list[dict] = []
+    for month in range(7):
+        start = datetime(2025, 3 + month, 3, 7, 0, tzinfo=UTC)
+        rows += trade_dicts(mine, admin.id, 5, kind="ideal", seed=100 + month, start=start)
+    rows += trade_dicts(
+        mine, admin.id, 160, kind="backtest", seed=11, start=datetime(2025, 10, 6, 7, tzinfo=UTC)
+    )
+    insert_trades(db, rows)
+    sams = journal_svc.create_strategy(
+        db,
+        sam,
+        name="NAS100 New York reversal",
+        instruments=["NAS100"],
+        timeframes=["5m"],
+        entry_models=["OTE"],
+    )
+    insert_trades(db, trade_dicts(sams, sam.id, 80, seed=21, start=datetime(2025, 10, 6, 13, tzinfo=UTC)))
+    if alex:
+        alexs = journal_svc.create_strategy(
+            db,
+            alex,
+            name="NAS100 Asia range",
+            instruments=["NAS100"],
+            timeframes=["15m"],
+            entry_models=["FVG"],
+        )
+        insert_trades(
+            db, trade_dicts(alexs, alex.id, 40, seed=31, start=datetime(2025, 11, 3, 1, tzinfo=UTC))
+        )
+    names = [
+        t for t in (tags_svc.resolve_tag(db, n) for n in ("FVG", "Liquidity sweep", "London killzone")) if t
+    ]
+    for i, trade in enumerate(
+        db.scalars(select(Trade).where(Trade.strategy_id == mine.id).order_by(Trade.id))
+    ):
+        if names and i % 3 == 0:
+            trade.tags = names[: 1 + i % len(names)]
+    db.commit()
 
 
 def main(argv: list[str] | None = None) -> None:
