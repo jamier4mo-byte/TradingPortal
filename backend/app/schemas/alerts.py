@@ -55,9 +55,11 @@ class SubscriptionIn(BaseModel):
     @field_validator("endpoint")
     @classmethod
     def _https(cls, v: str) -> str:
+        from ..services.push import allowed_push_endpoint
+
         v = v.strip()
-        if not v.startswith("https://"):
-            raise ValueError("A push endpoint must be an https:// URL.")
+        if not allowed_push_endpoint(v):
+            raise ValueError("That isn't a browser push service endpoint.")
         return v
 
 

@@ -39,6 +39,9 @@ export default defineConfig({
           TRADING_PORTAL_SCHEDULER: "false",
           JBLANKED_API_KEY: "",
           DEV_TWELVE_DATA_KEY: "",
+          VAPID_PUBLIC_KEY: "",
+          VAPID_PRIVATE_KEY: "",
+          VAPID_SUBJECT: "",
         },
       },
 });

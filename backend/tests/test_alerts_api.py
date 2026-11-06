@@ -228,3 +228,25 @@ def test_test_send_with_no_devices(member_client, fake):
     res = member_client.post("/api/alerts/test", json={})
     assert res.status_code == 409
     assert "No devices" in res.json()["detail"]
+
+
+def test_only_browser_push_services_are_accepted_as_endpoints(admin_client):
+    keys = {"p256dh": "BOr" + "A" * 84, "auth": "x" * 22}
+    for bad in (
+        "http://fcm.googleapis.com/fcm/send/abc",
+        "https://169.254.169.254/latest/meta-data",
+        "https://localhost/hook",
+        "https://internal.fly.dev/api",
+        "https://fcm.googleapis.com.evil.test/x",
+        "https://user:pw@fcm.googleapis.com/x",
+        "https://fcm.googleapis.com:8443/x",
+    ):
+        res = admin_client.post("/api/alerts/subscriptions", json={"endpoint": bad, "keys": keys})
+        assert res.status_code == 422, bad
+    for good in (
+        "https://fcm.googleapis.com/fcm/send/abc",
+        "https://updates.push.services.mozilla.com/wpush/v2/abc",
+        "https://web.push.apple.com/QH1",
+    ):
+        res = admin_client.post("/api/alerts/subscriptions", json={"endpoint": good, "keys": keys})
+        assert res.status_code == 201, (good, res.text)

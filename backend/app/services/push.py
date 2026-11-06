@@ -48,6 +48,37 @@ class PushSender(Protocol):
     def send(self, subscription: SubscriptionLike, payload: dict) -> PushResult: ...
 
 
+# Only the browsers' own push services may be targets (SSRF guard: a member can't make the server POST
+# to an internal address by registering a crafted "endpoint"). Checked at registration and at send time.
+PUSH_HOSTS = (
+    "fcm.googleapis.com",  # Chrome, Edge, Android
+    "push.services.mozilla.com",  # Firefox (updates.push.services.mozilla.com)
+    "push.apple.com",  # Safari and iOS home-screen apps (web.push.apple.com)
+    "notify.windows.com",  # legacy Edge / Windows
+)
+TEST_PUSH_HOSTS = ("example.test",)
+
+
+def allowed_push_endpoint(url: str) -> bool:
+    from urllib.parse import urlsplit
+
+    try:
+        parts = urlsplit(url)
+    except ValueError:
+        return False
+    host = (parts.hostname or "").lower()
+    if (
+        parts.scheme != "https"
+        or not host
+        or parts.username
+        or parts.password
+        or parts.port not in (None, 443)
+    ):
+        return False
+    hosts = PUSH_HOSTS + (TEST_PUSH_HOSTS if get_settings().env == "test" else ())
+    return any(host == h or host.endswith("." + h) for h in hosts)
+
+
 def _b64url(data: bytes) -> str:
     return base64.urlsafe_b64encode(data).rstrip(b"=").decode()
 
@@ -73,6 +104,8 @@ class WebPushSender:
     def send(self, subscription: SubscriptionLike, payload: dict) -> PushResult:
         if get_settings().env == "test":
             raise NetworkBlocked("Real Web Push blocked in tests: use FakePushSender")
+        if not allowed_push_endpoint(subscription.endpoint):
+            return PushResult(None, False, True, "Not a known push service")
         import requests
         from pywebpush import WebPushException, webpush
 
