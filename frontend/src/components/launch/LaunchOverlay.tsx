@@ -52,7 +52,8 @@ const H = 72;
 const STEP = 12;
 
 /** Replay Journal: a rewind. Candles draw in right to left while a playhead sweeps back across them.
- * Win/loss colours are allowed here because they mean candle direction. Loops while the chunk loads. */
+ * Candles use the accent (up) and the subtle grey (down), never the reserved win/loss colours: a loader is
+ * decoration, and green/red mean profit and loss only. Loops while the chunk loads. */
 function RewindLoader() {
   const cycle = dur.launch() * 2; // ~1.2 s per pass
   const n = CANDLES.length;
@@ -67,7 +68,7 @@ function RewindLoader() {
         return (
           <motion.g
             key={i}
-            className={up ? "text-win" : "text-loss"}
+            className={up ? "text-accent" : "text-subtle"}
             style={{ transformBox: "fill-box", transformOrigin: "50% 50%" }}
             initial={{ opacity: 0, scaleY: 0.4 }}
             animate={{ opacity: [0, 1, 1, 0], scaleY: [0.4, 1, 1, 1] }}
