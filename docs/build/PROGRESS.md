@@ -147,3 +147,7 @@ prompt's branch. If a prompt stops part-way, the next run continues from the fir
 ### 11. Follow-up: Jamie's answers (branch `build/03b-breakeven-10`)
 - [x] Breakeven ±$10 in $ (default, migration `0006` moves the old ±$2 and re-labels outcomes); Monte Carlo defaults to 10R; exit efficiency keeps FX Replay's best price
 - [x] 262 pytest + Node · lint clean · smoke 109/110 (the 1 is the intermittent Annotate e2e, see Known issues); merged to local `main`
+
+### 12. Follow-up: Annotate autosave race (branch `build/03c-annotate-autosave`)
+- [x] Saves once per pause, in order; Mark completed queues behind the last save; regression e2e (old code kept "B")
+- [x] lint clean · 262 pytest + Node · smoke 112/112; merged to local `main`
