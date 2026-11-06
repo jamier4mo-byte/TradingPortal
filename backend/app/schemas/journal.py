@@ -284,7 +284,7 @@ class PreviewRowOut(BaseModel):
     pnl: float
     r_multiple: float | None
     outcome: Literal["win", "loss", "breakeven"] | None
-    duplicate: bool
+    duplicate: dict[str, bool]  # per destination
     tags: list[str]
 
 
@@ -301,7 +301,7 @@ class ImportPreviewOut(BaseModel):
     winners: int
     losers: int
     breakevens: int
-    duplicates: int
+    duplicates: dict[str, int]  # per destination
     would_import: dict[str, int]
     breakeven_threshold: float
     rows: list[PreviewRowOut]

@@ -73,7 +73,7 @@ export function TradeList({ trades, strategyId, mode, emptyTitle, emptyText, emp
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[720px] border-separate border-spacing-0 text-body">
+      <table className="w-full min-w-[880px] border-separate border-spacing-0 whitespace-nowrap text-body">
         <thead>
           <tr className="text-left text-label text-muted">
             <th className="border-b border-border px-2 py-2 font-normal">Date</th>

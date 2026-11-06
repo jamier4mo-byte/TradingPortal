@@ -161,9 +161,9 @@ export function ImportDrawer({ open, onClose, strategy, destination: initial = "
             <Stat label="Losers" value={String(preview.losers)} tone="loss" />
             <Stat label="Breakeven" value={`${preview.breakevens} (±${preview.breakeven_threshold})`} tone="breakeven" />
           </dl>
-          {preview.duplicates ? (
+          {preview.duplicates[destination] ? (
             <p className="rounded-panel border border-border bg-surface-2 px-3 py-2 text-body">
-              <span className="num font-medium">{preview.duplicates}</span> {preview.duplicates === 1 ? "trade is" : "trades are"} already in this strategy and will be skipped.
+              <span className="num font-medium">{preview.duplicates[destination]}</span> {preview.duplicates[destination] === 1 ? "trade is" : "trades are"} already in this strategy{"'"}s {destination === "ideal" ? "ideal catalogue" : "backtest"} and will be skipped.
             </p>
           ) : null}
           {preview.problems.length ? (
@@ -205,7 +205,8 @@ export function ImportDrawer({ open, onClose, strategy, destination: initial = "
               </thead>
               <tbody>
                 {preview.rows.map((r) => {
-                  const imports = !r.duplicate && (destination === "backtest" || r.outcome === "win");
+                  const dup = r.duplicate[destination];
+                  const imports = !dup && (destination === "backtest" || r.outcome === "win");
                   return (
                     <tr key={r.fx_id} className={imports ? "" : "text-muted"}>
                       <td className="num border-t border-border px-2 py-1.5">{r.opened_uk}</td>
@@ -213,7 +214,7 @@ export function ImportDrawer({ open, onClose, strategy, destination: initial = "
                       <td className="num border-t border-border px-2 py-1.5 text-right">{fmtPnl(r.pnl)}</td>
                       <td className="num border-t border-border px-2 py-1.5 text-right">{fmtR(r.r_multiple)}</td>
                       <td className="border-t border-border px-2 py-1.5"><OutcomeChip outcome={r.outcome} /></td>
-                      <td className="border-t border-border px-2 py-1.5">{r.duplicate ? "Duplicate" : imports ? "Yes" : "No"}</td>
+                      <td className="border-t border-border px-2 py-1.5">{dup ? "Duplicate" : imports ? "Yes" : "No"}</td>
                     </tr>
                   );
                 })}

@@ -125,7 +125,7 @@ trade_tags = Table(
 
 class Trade(OwnedRecordMixin, Base):
     __tablename__ = "trades"
-    __table_args__ = (UniqueConstraint("strategy_id", "fx_id", name="uq_trades_strategy_fx_id"),)
+    __table_args__ = (UniqueConstraint("strategy_id", "kind", "fx_id", name="uq_trades_strategy_kind_fx_id"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     strategy_id: Mapped[int] = mapped_column(ForeignKey("strategies.id"), nullable=False, index=True)

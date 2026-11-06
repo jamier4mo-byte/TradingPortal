@@ -101,16 +101,18 @@ test("import flow: upload → preview → confirm, winners only, undo and restor
   await expect(page.getByText("Import restored")).toBeVisible();
   await expect(page.getByText("6 trades · 0/12 screenshots")).toBeVisible();
 
-  // Backtest destination takes the rest; a third import is all duplicates
+  // Backtest is its own ledger and takes every row; importing the same file again is all duplicates
   const id = Number(page.url().match(/strategies\/(\d+)/)?.[1]);
   const second = await importCsv(context, id, "backtest");
-  expect(second.trades).toHaveLength(4);
+  expect(second.trades).toHaveLength(10);
   await page.reload();
   await page.getByRole("button", { name: /Import/ }).first().click();
   const chooser2 = page.waitForEvent("filechooser");
   await page.getByRole("button", { name: /Choose the CSV/ }).click();
   await (await chooser2).setFiles({ name: "export.csv", mimeType: "text/csv", buffer: CSV });
-  await expect(page.getByText("10 trades are already in this strategy")).toBeVisible();
+  await expect(page.getByText(/6 trades are already in this strategy's ideal catalogue/)).toBeVisible();
+  await page.getByRole("radio", { name: /Backtest · 0 trades/ }).click();
+  await expect(page.getByText(/10 trades are already in this strategy's backtest/)).toBeVisible();
   await expect(page.getByRole("button", { name: "Import 0 trades" })).toBeDisabled();
 });
 

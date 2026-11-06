@@ -122,7 +122,7 @@ function StrategyScreen({ strategy: s, tab, setTab }: { strategy: Strategy; tab:
           <ArrowLeft aria-hidden className="size-4" /> Strategies
         </Link>
         <div className="flex flex-wrap items-start gap-3">
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 basis-full laptop:flex-1 laptop:basis-0">
             <h1 className="text-heading font-semibold">{s.name}</h1>
             <div className="mt-1.5 flex flex-wrap items-center gap-2">
               <OwnerChip name={s.owner.display_name} colourIndex={s.owner.colour_index} deactivated={s.owner.status === "deactivated"} />

@@ -126,7 +126,7 @@ def upgrade() -> None:
         sa.Column("news_events", sa.JSON, nullable=True),
         sa.Column("raw_row", sa.JSON, nullable=True),
         *_owned(),
-        sa.UniqueConstraint("strategy_id", "fx_id", name="uq_trades_strategy_fx_id"),
+        sa.UniqueConstraint("strategy_id", "kind", "fx_id", name="uq_trades_strategy_kind_fx_id"),
     )
     for col in ("strategy_id", "session_id", "owner_id", "opened_at", "market_date"):
         op.create_index(f"ix_trades_{col}", "trades", [col])

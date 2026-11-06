@@ -88,7 +88,8 @@ def test_preview_reports_everything_and_writes_nothing(admin_client):
     p = res.json()
     assert p["rows_parsed"] == 10 and p["rows_total"] == 12 and len(p["problems"]) == 2
     assert p["timezone"] == "Europe/London"
-    assert (p["winners"], p["losers"], p["breakevens"], p["duplicates"]) == (6, 2, 2, 0)
+    assert (p["winners"], p["losers"], p["breakevens"]) == (6, 2, 2)
+    assert p["duplicates"] == {"ideal": 0, "backtest": 0}
     assert p["would_import"] == {"ideal": 6, "backtest": 10}
     assert p["range_start"] == "2026-01-12" and p["range_end"] == "2026-10-25"
     assert p["rows"][0]["instrument"] == "NAS100" and p["rows"][0]["opened_uk"] == "12 Jan 2026 09:30"
@@ -126,16 +127,24 @@ def test_backtest_import_keeps_everything_then_duplicates_are_skipped(admin_clie
     s = new_strategy(admin_client)
     first = do_import(admin_client, s["id"], "ideal")
     assert first["report"]["imported"] == 6
+    # The backtest ledger is a separate destination: every row, winners included
     second = do_import(admin_client, s["id"], "backtest")
-    assert second["report"]["imported"] == 4  # the 6 winners already exist
-    assert len(second["report"]["duplicates"]) == 6
-    outcomes = sorted(t["outcome"] for t in second["trades"])
-    assert outcomes == ["breakeven", "breakeven", "loss", "loss"]
+    assert second["report"]["imported"] == 10 and second["report"]["duplicates"] == []
+    assert sorted(t["outcome"] for t in second["trades"]).count("win") == 6
     third = do_import(admin_client, s["id"], "backtest")
     assert third["report"]["imported"] == 0 and len(third["report"]["duplicates"]) == 10
+    again = do_import(admin_client, s["id"], "ideal")
+    assert again["report"]["imported"] == 0 and len(again["report"]["duplicates"]) == 6
+    preview = admin_client.post(
+        f"/api/strategies/{s['id']}/imports/preview", files={"file": ("x.csv", SAMPLE, "text/csv")}
+    ).json()
+    assert preview["duplicates"] == {"ideal": 6, "backtest": 10}
+    assert preview["would_import"] == {"ideal": 0, "backtest": 0}
     card = admin_client.get(f"/api/strategies/{s['id']}").json()
-    assert card["backtest_count"] == 4 and card["stage"] == "backtesting"
-    assert card["backtest_stats"]["trades"] == 4 and card["backtest_stats"]["win_rate"] == 0
+    assert card["backtest_count"] == 10 and card["stage"] == "backtesting"
+    assert card["backtest_stats"]["trades"] == 10 and card["backtest_stats"]["win_rate"] == pytest.approx(
+        6 / 8
+    )
 
 
 def test_fresh_strategy_backtest_import_takes_all_ten(admin_client):

@@ -174,7 +174,7 @@ export interface PreviewRow {
   pnl: number;
   r_multiple: number | null;
   outcome: Outcome | null;
-  duplicate: boolean;
+  duplicate: { ideal: boolean; backtest: boolean };
   tags: string[];
 }
 
@@ -191,7 +191,7 @@ export interface ImportPreview {
   winners: number;
   losers: number;
   breakevens: number;
-  duplicates: number;
+  duplicates: { ideal: number; backtest: number };
   would_import: { ideal: number; backtest: number };
   breakeven_threshold: number;
   rows: PreviewRow[];

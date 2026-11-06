@@ -316,6 +316,19 @@ def restore_trade(db: Session, actor: User, trade: Trade) -> None:
 # ---- imports (F3) --------------------------------------------------------------------------
 
 
+def _existing_fx_ids(db: Session, strategy: Strategy, kind: str | None = None) -> dict[str, set[str]]:
+    """Duplicate key is (strategy, destination kind, FX Replay id): a winner can sit in both catalogues."""
+    stmt = select(Trade).where(
+        Trade.strategy_id == strategy.id, Trade.deleted_at.is_(None), Trade.fx_id.is_not(None)
+    )
+    if kind:
+        stmt = stmt.where(Trade.kind == kind)
+    out: dict[str, set[str]] = {"ideal": set(), "backtest": set()}
+    for t in db.scalars(stmt):
+        out.setdefault(t.kind, set()).add(t.fx_id)
+    return out
+
+
 def preview_import(
     db: Session,
     actor: User,
@@ -329,22 +342,16 @@ def preview_import(
     zone = timezone or strategy.csv_timezone
     result = fx.parse_csv(data, timezone=zone)
     threshold = actor.breakeven_threshold
-    existing = {
-        t.fx_id
-        for t in db.scalars(
-            select(Trade).where(
-                Trade.strategy_id == strategy.id, Trade.deleted_at.is_(None), Trade.fx_id.is_not(None)
-            )
-        )
-    }
+    existing = _existing_fx_ids(db, strategy)
     rows_out, winners = [], 0
-    losers = breakevens = duplicates = 0
+    losers = breakevens = 0
+    duplicates = {"ideal": 0, "backtest": 0}
     dates: list[date] = []
     for row in result.rows:
         outcome = rules.classify_outcome(row.pnl, threshold)
-        dup = row.fx_id in existing
-        if dup:
-            duplicates += 1
+        dup_in = {k: row.fx_id in existing[k] for k in ("ideal", "backtest")}
+        for k, v in dup_in.items():
+            duplicates[k] += int(v)
         if outcome == "win":
             winners += 1
         elif outcome == "loss":
@@ -364,11 +371,10 @@ def preview_import(
                 "pnl": row.pnl,
                 "r_multiple": fx.realised_r(row.side, row.entry_price, row.initial_sl, row.exit_price),
                 "outcome": outcome,
-                "duplicate": dup,
+                "duplicate": dup_in,
                 "tags": row.tags,
             }
         )
-    fresh = [r for r in rows_out if not r["duplicate"]]
     return {
         "filename": filename,
         "file_hash": hashlib.sha256(data).hexdigest(),
@@ -384,8 +390,8 @@ def preview_import(
         "breakevens": breakevens,
         "duplicates": duplicates,
         "would_import": {
-            "ideal": sum(1 for r in fresh if r["outcome"] == "win"),
-            "backtest": len(fresh),
+            "ideal": sum(1 for r in rows_out if r["outcome"] == "win" and not r["duplicate"]["ideal"]),
+            "backtest": sum(1 for r in rows_out if not r["duplicate"]["backtest"]),
         },
         "breakeven_threshold": threshold,
         "rows": rows_out,
@@ -409,14 +415,7 @@ def confirm_import(
     zone = timezone or strategy.csv_timezone
     result = fx.parse_csv(data, timezone=zone)
     threshold = actor.breakeven_threshold
-    existing = {
-        t.fx_id
-        for t in db.scalars(
-            select(Trade).where(
-                Trade.strategy_id == strategy.id, Trade.deleted_at.is_(None), Trade.fx_id.is_not(None)
-            )
-        )
-    }
+    existing = _existing_fx_ids(db, strategy, destination)[destination]
     owner_id = strategy.owner_id if actor.is_admin and strategy.owner_id != actor.id else actor.id
     session = JournalSession(
         owner_id=owner_id,
