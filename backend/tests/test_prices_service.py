@@ -275,3 +275,16 @@ def test_credit_day_is_the_utc_date() -> None:
     late = datetime(2026, 11, 6, 23, 59, tzinfo=UTC)
     assert credits_svc.day_of(late) == date(2026, 11, 6)
     assert credits_svc.resets_at(late) == datetime(2026, 11, 7, tzinfo=UTC)
+
+
+def test_one_users_plan_refusal_is_not_reused_for_another_user(monkeypatch, db, member, other_member) -> None:
+    """Plans differ per user: Sam's "not on your plan" must not hide gold from Alex; Alex's key is asked."""
+    mock = use_twelve_data(monkeypatch)
+    give_key(db, member)
+    give_key(db, other_member)
+    assert service.get_quote(db, member, "XAUUSD", NOW)["status"] == "unavailable"
+    calls = len(mock.requests)
+    service.get_quote(db, other_member, "XAUUSD", NOW + timedelta(minutes=1))
+    assert len(mock.requests) == calls + 1  # asked again with Alex's own key
+    # Sam's answer stays the same (it may cost Sam one more call, since the shared row is now Alex's).
+    assert service.get_quote(db, member, "XAUUSD", NOW + timedelta(minutes=2))["status"] == "unavailable"

@@ -17,6 +17,9 @@ from datetime import datetime, timedelta
 from ...models import utcnow
 
 PER_MINUTE = 8
+# At most this many requests per key may sit waiting for the next minute; more are refused at once
+# (the caller then serves the last known price). Stops one user tying up the server's worker threads.
+MAX_WAITERS = 2
 SAFETY_SECONDS = 0.25  # our clock and Twelve Data's may differ slightly
 
 
@@ -33,6 +36,7 @@ class MinuteLimiter:
         self._windows: dict[str, tuple[datetime, int]] = {}
         self._locks: dict[str, threading.Lock] = {}
         self._guard = threading.Lock()
+        self._waiting: dict[str, int] = {}
 
     def _lock(self, key: str) -> threading.Lock:
         with self._guard:
@@ -46,6 +50,19 @@ class MinuteLimiter:
     def acquire(self, key: str, credits: int = 1, *, block: bool = True) -> float | None:
         """Reserve `credits` in this minute. Returns the seconds waited, or None if `block=False` and full."""
         credits = min(max(credits, 1), self.per_minute)
+        if block:
+            with self._guard:
+                if self._waiting.get(key, 0) >= MAX_WAITERS:
+                    return None
+                self._waiting[key] = self._waiting.get(key, 0) + 1
+        try:
+            return self._acquire(key, credits, block)
+        finally:
+            if block:
+                with self._guard:
+                    self._waiting[key] -= 1
+
+    def _acquire(self, key: str, credits: int, block: bool) -> float | None:
         waited = 0.0
         with self._lock(key):
             while True:

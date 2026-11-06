@@ -179,3 +179,26 @@ def test_limiter_can_skip_instead_of_waiting_and_honours_the_header() -> None:
     other.acquire("k", 1)
     other.note_left("k", 0)  # Twelve Data says the minute is spent
     assert other.acquire("k", 1, block=False) is None
+
+
+def test_only_a_few_requests_per_key_may_wait_for_the_next_minute() -> None:
+    """A user can't tie up the server's threads: beyond MAX_WAITERS waiting requests, the rest are refused
+    at once (the service then serves the last known price)."""
+    import threading
+
+    from app.services.prices.limiter import MAX_WAITERS, MinuteLimiter
+
+    gate = threading.Event()
+    lim = MinuteLimiter(per_minute=1, sleep=lambda s: gate.wait(5))
+    assert lim.acquire("user:1") == 0.0  # the minute is now full
+    waiting = [threading.Thread(target=lim.acquire, args=("user:1",)) for _ in range(MAX_WAITERS)]
+    for t in waiting:
+        t.start()
+    deadline = __import__("time").monotonic() + 2
+    while lim._waiting.get("user:1", 0) < MAX_WAITERS and __import__("time").monotonic() < deadline:
+        pass
+    assert lim.acquire("user:1") is None  # refused, not queued
+    assert lim.acquire("user:2") == 0.0  # other keys are unaffected
+    gate.set()
+    for t in waiting:
+        t.join(5)

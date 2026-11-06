@@ -242,8 +242,12 @@ def cache_put(
     return row
 
 
-def fresh(row: PriceCache | None, kind: str, now: datetime) -> bool:
+def fresh(row: PriceCache | None, kind: str, now: datetime, user_id: int | None = None) -> bool:
     if row is None:
+        return False
+    # Plans differ per user: a refusal ("not on your plan") seen with someone else's key is never reused
+    # for this user; their own key is asked instead.
+    if row.status == "unavailable" and user_id is not None and row.fetched_by_user_id != user_id:
         return False
     if kind == "series":
         return True
@@ -309,7 +313,7 @@ def get_quotes(db: Session, user: User, symbols: list[str], now: datetime | None
     stale: dict[str, tuple[Resolved, PriceCache | None]] = {}
     for r in resolved:
         row = cache_get(db, "quote", cache_key(acct, r.symbol))
-        if fresh(row, "quote", now):
+        if fresh(row, "quote", now, acct.user_id):
             out[r.symbol] = _from_cache(r, row)  # type: ignore[arg-type]
         else:
             stale[r.symbol] = (r, row)
@@ -390,7 +394,7 @@ def get_sparkline(db: Session, user: User, symbol: str, now: datetime | None = N
         return _spark_out(r, "no_key", message=NO_KEY_MESSAGE)
     key = cache_key(acct, r.symbol)
     row = cache_get(db, "sparkline", key)
-    if fresh(row, "sparkline", now):
+    if fresh(row, "sparkline", now, acct.user_id):
         return _spark_out(r, row.status, row)  # type: ignore[union-attr]
 
     def fallback(message: str) -> dict:
