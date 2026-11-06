@@ -4,6 +4,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 from .auth import PublicUserOut
+from .news import BriefNewsOut
 from .tags import TagOut
 
 Kind = Literal["ideal", "backtest", "missed"]
@@ -189,6 +190,8 @@ class TradeOut(BaseModel):
     mae_r: float | None
     mfe_r: float | None
     news_impact: str | None
+    news_status: Literal["inside", "outside", "no_data"] = "no_data"
+    news_events: list[dict[str, Any]] = []  # [{event_id, name, currency, at, minutes_from_entry}]
     annotated_at: datetime | None
     tags: list[TagOut]
     screenshots: list[ScreenshotOut]
@@ -372,4 +375,4 @@ class BriefOut(BaseModel):
     rules: list[dict]
     recent_improve_notes: list[dict]
     next_uncovered: str | None
-    news: None = None  # Prompt 4 fills this slot
+    news: BriefNewsOut | None = None  # high-impact events for the next month to replay

@@ -1,0 +1,8 @@
+[
+  {"Name":"Non-Farm Employment Change","Currency":"USD","Event_ID":840030016,"Category":"Employment","Impact":"High","Date":"2026.11.06 15:30:00","Actual":254.0,"Forecast":110.0,"Previous":22.0,"Outcome":"Actual > Forecast","Strength":"Strong Data","Quality":"Good Data","Trend":"Bullish"},
+  {"Name":"Unemployment Rate","Currency":"USD","Event_ID":840030021,"Category":"Employment","Impact":"High","Date":"2026.11.06 15:30:00","Actual":4.2,"Forecast":4.3,"Previous":4.3,"Outcome":"Actual < Forecast","Strength":"Strong Data","Quality":"Good Data","Trend":"Bullish"},
+  {"Name":"Average Hourly Earnings m/m","Currency":"USD","Event_ID":840030017,"Category":"Employment","Impact":"High","Date":"2026.11.06 15:30:00","Actual":0.3,"Forecast":0.3,"Previous":0.3,"Outcome":"Actual = Forecast","Strength":"Neutral","Quality":"Good Data","Trend":"Neutral"},
+  {"Name":"Employment Change","Currency":"CAD","Event_ID":124010001,"Category":"Employment","Impact":"High","Date":"2026.11.06 15:30:00","Actual":-8.4,"Forecast":5.0,"Previous":-65.5,"Outcome":"Actual < Forecast","Strength":"Weak Data","Quality":"Bad Data","Trend":"Bearish"},
+  {"Name":"Prelim UoM Consumer Sentiment","Currency":"USD","Event_ID":null,"Category":"Consumer","Impact":"High","Date":"2026.11.06 17:00:00","Actual":51.9,"Forecast":53.2,"Previous":55.1,"Outcome":"Actual < Forecast","Strength":"Weak Data","Quality":"Bad Data","Trend":"Bearish"},
+  {"Name":"Consumer Credit m/m","Currency":"USD","Category":"Consumer","Impact":"Low","Date":"2026.11.06 22:00:00","Actual":13.1,"Forecast":10.5,"Previous":0.4,"Outcome":"Actual > Forecast","Strength":"Strong Data","Quality":"Good Data","Trend":"Bullish"}
+]

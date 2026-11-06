@@ -374,7 +374,9 @@ def test_session_progress_and_improve_note(admin_client):
     assert sess["improve_note"] == "Wait for the FVG to fill"
     brief = admin_client.get(f"/api/strategies/{s['id']}/brief").json()
     assert brief["recent_improve_notes"][0]["note"] == "Wait for the FVG to fill"
-    assert brief["next_uncovered"] == "2026-09" and brief["profile"] is None and brief["news"] is None
+    assert brief["next_uncovered"] == "2026-09" and brief["profile"] is None
+    # Prompt 4 fills the news slot: no news history for that month yet.
+    assert brief["news"]["month"] == "2026-09" and brief["news"]["status"] == "no_data"
     assert [x["id"] for x in admin_client.get(f"/api/strategies/{s['id']}/sessions").json()] == [sid]
 
 

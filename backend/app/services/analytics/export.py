@@ -85,8 +85,7 @@ def select_rows(db: Session, user: User, q: AnalyticsQuery) -> list[Row]:
     tag_ids = None
     if q.filters.tags:
         tag_ids = {t.id for t in (resolve_tag(db, n) for n in q.filters.tags) if t}
-    news_known = any(r.news_impact is not None for r in rows)
-    return apply_filters(rows, q.filters, tag_ids=tag_ids, news_known=news_known)
+    return apply_filters(rows, q.filters, tag_ids=tag_ids)
 
 
 def _load_trades(db: Session, ids: list[int]) -> dict[int, Trade]:
@@ -155,7 +154,13 @@ def describe_filters(q: AnalyticsQuery) -> str:
     if f.rules:
         parts.append("all rules kept" if f.rules == "all_kept" else "any rule broken")
     if f.news:
-        parts.append(f"news {f.news} (no news data yet: not applied)")
+        parts.append(
+            {"inside": "inside news windows", "outside": "outside news windows", "no_data": "no news data"}[
+                f.news
+            ]
+        )
+    if f.news_event_types:
+        parts.append(f"news events {', '.join(f.news_event_types)}")
     scope = {"mine": "my trades", "others": "other people's trades", "everyone": "everyone's trades"}[q.scope]
     return f"{q.source} · {scope}" + (f" · {'; '.join(parts)}" if parts else " · no other filters")
 
@@ -221,6 +226,8 @@ def trade_record(t: Trade, row: Row, n: int, owner: str, strategy: Strategy, ima
         ],
         "all_rules_kept": row.rules_kept,
         "news_impact": t.news_impact,
+        "news": row.news_status,
+        "news_events": t.news_events or [],
         "completed": t.annotated_at is not None,
         "images": images,
     }
@@ -399,7 +406,9 @@ Portal. This bundle is an export of {what}. It was made on {when} with these fil
 - **Backtest trades** are every valid setup taken in replay: wins, losses and breakevens.
 - Dollar P&L uses FX Replay's position sizes, which vary, so prefer R when comparing trades.
 - Times are UK. Sessions: Asia 00–08, London 08–13, New York 13–22; anything else is "Out of session".
-- News tagging isn't available yet, so `news_impact` is empty.
+- `news` is "inside" when the entry was within my news window (± minutes) of a high-impact release for a
+  currency that moves the instrument (listed in `news_events`, with minutes from entry), "outside" when
+  it wasn't, and "no_data" when our news history doesn't cover that date yet. Treat no_data as unknown.
 - Small samples: under 20 trades in a slice is an early signal, not a finding. Say so when you use one.
 
 ## What I'd like from you
@@ -647,6 +656,8 @@ CSV_COLUMNS = (
     "tags",
     "all_rules_kept",
     "completed",
+    "news",
+    "news_events",
     "notes",
 )
 
@@ -682,6 +693,9 @@ def stream_csv(db: Session, user: User, q: AnalyticsQuery) -> Iterator[str]:
         owner = users[t.owner_id].display_name if t.owner_id in users else ""
         rec = trade_record(t, row, n, owner, strategies[t.strategy_id], [])
         rec["tags"] = "; ".join(rec["tags"])
+        rec["news_events"] = "; ".join(
+            str(e.get("name", "")) for e in rec["news_events"] if isinstance(e, dict)
+        )
         rec["notes"] = rec["notes"].replace("\r", " ").replace("\n", " ")
         records.append([csv_cell(rec.get(c)) for c in CSV_COLUMNS])
 

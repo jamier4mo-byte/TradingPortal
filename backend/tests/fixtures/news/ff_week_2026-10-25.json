@@ -1,0 +1,14 @@
+[
+  {"title":"German Ifo Business Climate","country":"EUR","date":"2026-10-26T05:00:00-04:00","impact":"High","forecast":"88.4","previous":"87.7"},
+  {"title":"CB Consumer Confidence","country":"USD","date":"2026-10-27T10:00:00-04:00","impact":"High","forecast":"93.4","previous":"94.2"},
+  {"title":"Overnight Rate","country":"CAD","date":"2026-10-28T09:45:00-04:00","impact":"High","forecast":"2.25%","previous":"2.50%"},
+  {"title":"Federal Funds Rate","country":"USD","date":"2026-10-28T14:00:00-04:00","impact":"High","forecast":"3.75%","previous":"4.00%"},
+  {"title":"FOMC Statement","country":"USD","date":"2026-10-28T14:00:00-04:00","impact":"High","forecast":"","previous":""},
+  {"title":"FOMC Press Conference","country":"USD","date":"2026-10-28T14:30:00-04:00","impact":"High","forecast":"","previous":""},
+  {"title":"BOJ Policy Rate","country":"JPY","date":"2026-10-28T23:00:00-04:00","impact":"High","forecast":"0.50%","previous":"0.50%"},
+  {"title":"Main Refinancing Rate","country":"EUR","date":"2026-10-29T09:15:00-04:00","impact":"High","forecast":"2.15%","previous":"2.15%"},
+  {"title":"Advance GDP q/q","country":"USD","date":"2026-10-29T08:30:00-04:00","impact":"High","forecast":"1.6%","previous":"3.8%"},
+  {"title":"Unemployment Claims","country":"USD","date":"2026-10-29T08:30:00-04:00","impact":"High","forecast":"229K","previous":"224K"},
+  {"title":"CPI Flash Estimate y/y","country":"EUR","date":"2026-10-30T06:00:00-04:00","impact":"High","forecast":"2.1%","previous":"2.2%"},
+  {"title":"Core PCE Price Index m/m","country":"USD","date":"2026-10-30T08:30:00-04:00","impact":"High","forecast":"0.2%","previous":"0.2%"}
+]

@@ -1,0 +1,21 @@
+[
+  {"title":"MI Inflation Gauge m/m","country":"AUD","date":"2026-11-01T01:30:00-04:00","impact":"Low","forecast":"","previous":"0.4%"},
+  {"title":"Caixin Manufacturing PMI","country":"CNY","date":"2026-11-01T21:45:00-05:00","impact":"Medium","forecast":"50.6","previous":"51.2"},
+  {"title":"Bank Holiday","country":"JPY","date":"2026-11-03T00:00:00-05:00","impact":"Holiday","forecast":"","previous":""},
+  {"title":"Cash Rate","country":"AUD","date":"2026-11-02T22:30:00-05:00","impact":"High","forecast":"3.60%","previous":"3.60%"},
+  {"title":"ISM Manufacturing PMI","country":"USD","date":"2026-11-02T10:00:00-05:00","impact":"High","forecast":"49.5","previous":"48.7"},
+  {"title":"German ZEW Economic Sentiment","country":"EUR","date":"2026-11-03T05:00:00-05:00","impact":"High","forecast":"39.5","previous":"39.3"},
+  {"title":"JOLTS Job Openings","country":"USD","date":"2026-11-03T10:00:00-05:00","impact":"High","forecast":"7.18M","previous":"7.23M"},
+  {"title":"ADP Non-Farm Employment Change","country":"USD","date":"2026-11-04T08:15:00-05:00","impact":"High","forecast":"28K","previous":"-32K"},
+  {"title":"ISM Services PMI","country":"USD","date":"2026-11-04T10:00:00-05:00","impact":"High","forecast":"50.8","previous":"50.0"},
+  {"title":"Crude Oil Inventories","country":"USD","date":"2026-11-04T10:30:00-05:00","impact":"Low","forecast":"-1.2M","previous":"2.4M"},
+  {"title":"Official Bank Rate","country":"GBP","date":"2026-11-05T07:00:00-05:00","impact":"High","forecast":"4.00%","previous":"4.00%"},
+  {"title":"Unemployment Claims","country":"USD","date":"2026-11-05T08:30:00-05:00","impact":"High","forecast":"226K","previous":"218K"},
+  {"title":"FOMC Member Waller Speaks","country":"USD","date":"2026-11-05T12:00:00-05:00","impact":"Medium","forecast":"","previous":""},
+  {"title":"Non-Farm Employment Change","country":"USD","date":"2026-11-06T08:30:00-05:00","impact":"High","forecast":"110K","previous":"22K"},
+  {"title":"Unemployment Rate","country":"USD","date":"2026-11-06T08:30:00-05:00","impact":"High","forecast":"4.3%","previous":"4.3%"},
+  {"title":"Average Hourly Earnings m/m","country":"USD","date":"2026-11-06T08:30:00-05:00","impact":"High","forecast":"0.3%","previous":"0.3%"},
+  {"title":"Employment Change","country":"CAD","date":"2026-11-06T08:30:00-05:00","impact":"High","forecast":"5.0K","previous":"-65.5K"},
+  {"title":"Prelim UoM Consumer Sentiment","country":"USD","date":"2026-11-06T10:00:00-05:00","impact":"High","forecast":"53.2","previous":"55.1"},
+  {"title":"Fed Chair Powell Speaks","country":"USD","date":"2026-11-06T13:00:00-05:00","impact":"High","forecast":"","previous":""}
+]

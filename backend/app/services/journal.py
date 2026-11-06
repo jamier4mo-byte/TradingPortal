@@ -29,6 +29,7 @@ from . import journal_rules as rules
 from .analytics.metrics import compute
 from .analytics.reconcile import csv_totals
 from .analytics.rows import Row, prepare
+from .news import tagging as news_tagging
 from .tags import resolve_tag
 
 TRASH_DAYS = 30
@@ -252,6 +253,7 @@ def create_trade(
         _apply_tags(db, trade, tags)
     strategy.profile_fingerprint = None
     strategy.updated_at = utcnow()
+    news_tagging.tag_trades(db, [trade])
     audit.record(db, "trade.created", actor=actor, target_type="trade", target_id=trade.id)
     db.commit()
     return trade
@@ -308,6 +310,8 @@ def update_trade(
     _derive(trade, actor.breakeven_threshold)
     if tags is not None:
         _apply_tags(db, trade, tags)
+    if fields.get("opened_at") is not None or fields.get("instrument") is not None:
+        news_tagging.tag_trades(db, [trade])
     trade.strategy.profile_fingerprint = None
     db.commit()
     return trade
@@ -502,6 +506,7 @@ def confirm_import(
         "kept_totals": {"trades": len(imported), "rpnl_sum": round(sum(t.pnl or 0.0 for t in imported), 2)},
     }
     session.import_report = report
+    news_tagging.tag_trades(db, imported)
     strategy.profile_fingerprint = None
     strategy.updated_at = utcnow()
     audit.record(

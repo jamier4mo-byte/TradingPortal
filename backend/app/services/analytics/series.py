@@ -68,6 +68,33 @@ def breakdowns(rows: list[Row]) -> dict[str, list[dict]]:
     }
 
 
+NEWS_GROUPS = (("inside", "Inside news window"), ("outside", "Outside"), ("no_data", "No news data"))
+
+
+def around_news(rows: list[Row]) -> list[dict]:
+    """3.6 "Around news": inside vs outside the news windows vs no data, then each event type (a trade
+    inside two events' windows counts under both)."""
+
+    def stats(key: str, group: list[Row]) -> dict:
+        g = group_stats(group)
+        return {
+            "key": key,
+            "trades": g["n"],
+            "win_rate": g["win_rate"],
+            "avg_r": g["avg_r"],
+            "total_r": g["total_r"],
+        }
+
+    out = [stats(label, [r for r in rows if r.news_status == status]) for status, label in NEWS_GROUPS]
+    by_type: dict[str, list[Row]] = defaultdict(list)
+    for r in rows:
+        for name in dict.fromkeys(r.news_events):
+            by_type[name].append(r)
+    for name in sorted(by_type, key=lambda k: (-len(by_type[k]), k)):
+        out.append(stats(name, by_type[name]))
+    return out
+
+
 def equity(rows: list[Row]) -> list[dict]:
     """Cumulative R and P&L in booking order, with the drawdown at each point."""
     rs = [r.r or 0.0 for r in rows]
