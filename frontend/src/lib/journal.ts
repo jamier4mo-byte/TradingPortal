@@ -172,6 +172,7 @@ export interface JournalSession {
   progress: SessionProgress;
   stats: Stats;
   can_edit: boolean;
+  strategy_name?: string | null;
 }
 
 export interface PreviewRow {

@@ -5,13 +5,17 @@ const ms = (name: string, fallback: number) => {
   if (typeof window === "undefined") return fallback / 1000;
   const raw = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   const n = parseFloat(raw);
-  return Number.isNaN(n) ? fallback / 1000 : n / 1000;
+  if (Number.isNaN(n)) return fallback / 1000;
+  // The production build minifies "600ms" to ".6s": read the unit rather than assuming milliseconds.
+  return raw.endsWith("ms") ? n / 1000 : n;
 };
 
 export const dur = {
   quick: () => ms("--dur-quick", 150),
   standard: () => ms("--dur-standard", 250),
   emphasis: () => ms("--dur-emphasis", 500),
+  /** Launch loader minimum on a tool's first open each day (F14). */
+  launch: () => ms("--dur-launch", 600),
 };
 
 /** cubic-bezier(.16,1,.3,1): ease-out for things entering. */

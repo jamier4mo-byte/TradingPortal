@@ -1,102 +1,138 @@
-import { ArrowUpRight, CalendarDays, Newspaper } from "lucide-react";
+import { lazy } from "react";
 import { Link } from "react-router-dom";
 
 import Card from "../components/Card.tsx";
+import { LaunchOverlay } from "../components/launch/LaunchOverlay.tsx";
+import { useLaunch } from "../components/launch/useLaunch.ts";
+import { SkeletonText } from "../components/ui/index.ts";
 import { useAuth } from "../lib/auth.tsx";
-import { relativeTime } from "../lib/format.ts";
+import { INSTALL_DONE_KEY, isStandalone, queryState, remembered, useHub } from "../lib/hub.ts";
 import { useSummary } from "../lib/journal.ts";
-import { greeting, session, ukClock, ukDate } from "../lib/time.ts";
-import { useNow } from "../lib/useNow.ts";
+import { countdownText, useNextEvent } from "../lib/news.ts";
+import { useDevice } from "../lib/useMediaQuery.ts";
+import { Checklist } from "./hub/Checklist.tsx";
+import { Hero } from "./hub/Hero.tsx";
+import { LaunchIsland } from "./hub/LaunchIsland.tsx";
+import { LazyMount } from "./hub/LazyMount.tsx";
+import { TodaysNews } from "./hub/TodaysNews.tsx";
 
-/** Hub, first cut: greeting, launch islands and empty states. Real data arrives phase by phase. */
+// Below the fold: each is its own chunk, mounted when it scrolls near the viewport (F18). ECharts and
+// FullCalendar never reach this chunk; the calendar card is another build's component, imported lazily.
+const CalendarCard = lazy(() => import("../components/calendar/CalendarCard.tsx"));
+const MarketPanel = lazy(() => import("./hub/MarketPanel.tsx"));
+const Streak = lazy(() => import("./hub/Streak.tsx"));
+const Bests = lazy(() => import("./hub/Bests.tsx"));
+const WeekPair = lazy(() => import("./hub/WeekPair.tsx"));
+
+/** The Hub (Foundations §1), top to bottom per 1.6: hero → today's news → launch islands → team calendar →
+ * live market data, then the engagement cards. From 1920 px the market panel becomes a side column beside
+ * the hero, news and islands instead of a stretched full-width card. */
 export default function Hub() {
-  const now = useNow();
-  const sess = session(now);
   const { user } = useAuth();
+  const device = useDevice();
+  const hub = useHub();
   const summary = useSummary();
+  const next = useNextEvent(true);
+  const { tool, launch } = useLaunch();
+
+  const firstName = (user?.display_name ?? "there").trim().split(/\s+/)[0] || "there";
   const last = summary.data?.last_session;
+  // A mini-stat is `undefined` while loading (skeleton line) and `null` when it can't load (offline or
+  // errored): the island then shows its subtitle alone rather than shimmering forever.
   const journalStat = summary.data
     ? last
-      ? `Last session: ${last.trade_count} ${last.trade_count === 1 ? "trade" : "trades"} · ${relativeTime(last.created_at)}`
+      ? `Last session: ${last.trade_count} ${last.trade_count === 1 ? "trade" : "trades"}${last.strategy_name ? ` · ${last.strategy_name}` : ""}`
       : summary.data.strategies
         ? `${summary.data.strategies} ${summary.data.strategies === 1 ? "strategy" : "strategies"} · no sessions yet`
         : "Create your first strategy"
-    : undefined;
+    : queryState(summary) === "pending"
+      ? undefined
+      : null;
+  const newsStat = next.data
+    ? next.data.event && next.data.seconds_until !== null
+      ? `Next event: ${next.data.event.currency} ${next.data.event.name} in ${countdownText(next.data.seconds_until)}`
+      : "No high-impact news ahead"
+    : queryState(next) === "pending"
+      ? undefined
+      : null;
+  const showWeek = hub.data?.week_recap.show ?? false;
+  // When the checklist is finished its slot goes, so the streak and bests share the row at desktop and up.
+  const checklistGone = hub.data ? hub.data.checklist.all_done_server && (isStandalone() || remembered(INSTALL_DONE_KEY)) : false;
+  const engagementSpan = checklistGone ? "col-span-full laptop:col-span-6" : "col-span-full laptop:col-span-6 desktop:col-span-4";
+
   return (
-    <div className="grid grid-cols-4 gap-4 tablet:grid-cols-8 laptop:grid-cols-12 laptop:gap-6">
-      {/* Hero greeting — the only place atmosphere is allowed */}
-      <section
-        aria-label="Greeting"
-        className="relative col-span-full overflow-hidden rounded-card border border-border bg-surface-1 p-5 tablet:p-8"
-      >
-        <div aria-hidden className="hero-atmosphere pointer-events-none absolute inset-0 opacity-60" />
-        <div className="relative">
-          <p className="text-label uppercase tracking-[0.08em] text-muted">{ukDate(now)}</p>
-          <h1 className="mt-2 text-heading font-semibold tablet:text-hero">{greeting(now)}, {user?.display_name ?? "there"}</h1>
-          <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-body text-muted">
-            <span className="inline-flex items-center gap-2">
-              <span
-                aria-hidden
-                className={`size-2 rounded-full ${sess === "Markets closed" ? "bg-stale" : "bg-live"}`}
-              />
-              {sess === "Markets closed" ? "Markets closed" : `${sess} session`}
-            </span>
-            <span className="num font-mono">UK {ukClock(now)}</span>
-          </p>
-        </div>
-      </section>
+    <>
+      <div className="grid grid-cols-4 gap-4 tablet:grid-cols-8 laptop:grid-cols-12 laptop:gap-6">
+        <Hero firstName={firstName} welcomeBack={hub.data?.welcome_back ?? false} className="col-span-full desktop:col-span-8" />
 
-      {/* Launch islands */}
-      <LaunchIsland
-        to="/journal"
-        logo="/brand/replayjournal-logo.png"
-        name="Replay Journal"
-        subtitle="Ideal trades, backtests and analytics"
-        stat={journalStat}
-      />
-      <LaunchIsland to="/news" logo="/brand/newsroom-logo.png" name="News Room" subtitle="Economic calendar and alerts" />
+        <TodaysNews className="col-span-full desktop:col-span-8" />
 
-      <Card
-        title="Today's news"
-        subtitle="High-impact events for your instruments"
-        className="col-span-full laptop:col-span-7"
-        controls={<Newspaper aria-hidden className="size-5 text-subtle" />}
-      >
-        <EmptyState text="No news feed connected yet. The News Room build (Phase 4) fills this card." />
-      </Card>
-      <Card
-        title="Calendar"
-        subtitle="Team tasks and events"
-        className="col-span-full laptop:col-span-5"
-        controls={<CalendarDays aria-hidden className="size-5 text-subtle" />}
-      >
-        <EmptyState text="No tasks yet. The team calendar arrives with the Hub phase." />
-      </Card>
-    </div>
-  );
-}
+        <LaunchIsland
+          tool="journal"
+          logo="/brand/replayjournal-logo.png"
+          subtitle="Ideal trades, backtests and analytics"
+          stat={journalStat}
+          onLaunch={launch}
+          className="col-span-2 tablet:col-span-4 laptop:col-span-6 desktop:col-span-4"
+        />
+        <LaunchIsland
+          tool="news"
+          logo="/brand/newsroom-logo.png"
+          subtitle="Economic calendar and alerts"
+          stat={newsStat}
+          onLaunch={launch}
+          className="col-span-2 tablet:col-span-4 laptop:col-span-6 desktop:col-span-4"
+        />
 
-function LaunchIsland({ to, logo, name, subtitle, stat }: { to: string; logo: string; name: string; subtitle: string; stat?: string }) {
-  return (
-    <Link
-      to={to}
-      aria-label={`Open ${name}`}
-      className="card group col-span-2 flex min-h-36 flex-col justify-between p-4 transition-[transform,border-color] duration-(--dur-quick) ease-(--ease-in-enter) hover:-translate-y-0.5 hover:border-border-strong tablet:col-span-4 tablet:p-6 laptop:col-span-6"
-    >
-      <div className="flex items-start justify-between gap-3">
-        <img src={logo} alt={name} className="h-auto max-h-10 w-auto min-w-0 max-w-full object-contain object-left" />
-        <ArrowUpRight aria-hidden className="hidden size-5 shrink-0 text-subtle transition-colors group-hover:text-accent tablet:block" />
+        <Card
+          title="Team calendar"
+          subtitle={device === "phone" ? "Today and the next two days" : "This week"}
+          className="col-span-full"
+          controls={
+            <Link to="/calendar" className="btn btn-ghost">
+              Open calendar
+            </Link>
+          }
+        >
+          <LazyMount fallback={<SkeletonText lines={4} />}>
+            <CalendarCard variant={device === "phone" ? "agenda" : "week"} />
+          </LazyMount>
+        </Card>
+
+        {/* 1.5: from 1440 px this becomes the side column beside the hero, news and islands (extra panel, not a stretched card). */}
+        <LazyMount
+          className="col-span-full desktop:col-span-4 desktop:col-start-9 desktop:row-span-3 desktop:row-start-1"
+          fallback={
+            <Card title="Live market data" subtitle="Delayed prices from your Twelve Data key" className="h-full">
+              <SkeletonText lines={5} />
+            </Card>
+          }
+        >
+          <MarketPanel />
+        </LazyMount>
+
+        <Checklist className="col-span-full laptop:col-span-6 desktop:col-span-4" />
+
+        <Card title="Showing up" subtitle="Process streak" className={engagementSpan}>
+          <LazyMount fallback={<SkeletonText lines={3} />}>
+            <Streak />
+          </LazyMount>
+        </Card>
+
+        <Card title="Personal bests" subtitle="Milestones in process, not profit" className={engagementSpan}>
+          <LazyMount fallback={<SkeletonText lines={3} />}>
+            <Bests />
+          </LazyMount>
+        </Card>
+
+        {showWeek ? (
+          <LazyMount className="col-span-full" fallback={<SkeletonText lines={4} />}>
+            <WeekPair />
+          </LazyMount>
+        ) : null}
       </div>
-      <p className="mt-4 text-label text-muted tablet:text-body">{subtitle}</p>
-      {stat ? <p className="num mt-1 text-label text-text">{stat}</p> : null}
-    </Link>
-  );
-}
 
-function EmptyState({ text }: { text: string }) {
-  return (
-    <div className="rounded-panel border border-dashed border-border-strong bg-surface-2/40 px-4 py-8 text-center text-body text-muted">
-      {text}
-    </div>
+      <LaunchOverlay tool={tool} />
+    </>
   );
 }

@@ -23,6 +23,7 @@ const COMMANDS: Command[] = [
   { label: "News · Alerts", to: "/settings/alerts", icon: Newspaper, keywords: "push notifications reminders" },
   { label: "Markets", to: "/markets", icon: LineChart, keywords: "prices watchlist ticker twelve data quotes" },
   { label: "Calendar", to: "/calendar", icon: CalendarDays, keywords: "tasks week" },
+  { label: "Calendar · New task", to: "/calendar?new=1", icon: CalendarDays, keywords: "add task backtest session review" },
   { label: "Tags", to: "/tags", icon: Tags, keywords: "vocabulary synonyms" },
   { label: "Settings", to: "/settings", icon: Settings, keywords: "profile password passkeys keys motion" },
   { label: "Admin · Users", to: "/admin/users", icon: Shield, keywords: "invite roles", adminOnly: true },

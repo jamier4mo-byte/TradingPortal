@@ -18,7 +18,7 @@ test("signed-out visitors are sent to the login screen", async ({ page }) => {
 
 test("Hub greets the signed-in user and shows both launch islands", async ({ page }) => {
   await signIn(page, ADMIN);
-  await expect(page.getByRole("heading", { level: 1, name: /Good (morning|afternoon|evening|night), Jamie/ })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: /(Good (morning|afternoon|evening|night)|Welcome back), Jamie/ })).toBeVisible();
   await expect(page.getByRole("link", { name: "Open Replay Journal" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Open News Room" })).toBeVisible();
   await expectNoHorizontalScroll(page);

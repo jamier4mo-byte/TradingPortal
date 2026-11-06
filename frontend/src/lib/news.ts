@@ -110,6 +110,14 @@ export interface NextEvent {
   server_now: string;
 }
 
+/** GET /api/news/today: the Hub's headline ("3 high-impact events today – USD CPI at 13:30"). */
+export interface TodayOut {
+  headline: string;
+  high_count: number;
+  events: NewsEvent[];
+  last_updated_at: string | null;
+}
+
 export const CURRENCIES = ["USD", "EUR", "GBP", "JPY", "AUD", "CAD", "CHF", "NZD", "CNY"] as const;
 export const IMPACT_ORDER: Impact[] = ["high", "medium", "low", "holiday", "none"];
 
@@ -142,6 +150,9 @@ export function useEvents(f: EventFilters) {
 }
 export function useEventDetail(id: number) {
   return useQuery({ queryKey: ["news", "event", id], queryFn: () => api.get<EventDetail>(`/api/news/events/${id}`), enabled: id > 0 });
+}
+export function useToday() {
+  return useQuery({ queryKey: ["news", "today"], queryFn: () => api.get<TodayOut>("/api/news/today"), refetchInterval: NEWS_REFRESH });
 }
 export function useNextEvent(mine = true) {
   return useQuery({

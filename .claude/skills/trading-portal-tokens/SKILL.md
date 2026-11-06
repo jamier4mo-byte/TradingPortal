@@ -79,6 +79,7 @@ Card pattern (`components/Card.tsx`): title and optional subtitle top-left, cont
 | `--dur-standard` | 250ms | Panels, tabs, fades |
 | `--dur-emphasis` | 500ms (range 400–600) | Charts drawing in, unlocks |
 | `--dur-flash` | 600ms | Price tick flash fading out (`.price-flash`), Live data in motion |
+| `--dur-launch` | 600ms (proposed) | Launch loader minimum on a tool's first open each UK day (F14); `--dur-standard` after that. Read as `dur.launch()` |
 | `--ease-in-enter` | `cubic-bezier(.16,1,.3,1)` | **Ease-out** when things enter |
 | `--ease-out-leave` | `cubic-bezier(.7,0,.84,0)` | **Ease-in** when things leave |
 | `--ease-spring` | `cubic-bezier(.34,1.4,.64,1)` | Toggles, dragged items |
@@ -89,6 +90,7 @@ Rules:
 - `prefers-reduced-motion` is honoured globally, and so is the per-user Full / Reduced / Off setting (`data-motion` on `<html>`, from `user.motion_pref`). Read `motionLevel()` from `src/lib/motion.ts` before animating; use the presets there (`pageVariants`, `panelVariants`, `spring`). `motion` is the only animation library.
 - First-load stagger is 30–50ms apart, on first load only.
 - Launch loaders run for at least about 600ms and exit as soon as the tool is ready.
+- **Hero ambience** (Hub only): the hero sets `data-daypart` (dawn 05–08 · day 08–17 · dusk 17–20 · night 20–05, UK) and `data-session` (asia · london · newyork · closed) and `.hero-atmosphere` changes only its two gradient mixes, all `color-mix()` of `--color-accent`, `--color-violet`, `--color-data-2`, `--color-news` and a little `--color-impact-medium` warmth at dawn and dusk. No new hex. Only opacity transitions, and it stays ≤ 0.55 (0.3 when markets are closed) so text keeps ≥ 4.5:1. The launch islands' accent glow (`.launch-island::after`, opacity only) is the one place the accent is used as a glow.
 - Live data: `.price-flash` (win/loss wash fading over `--dur-flash`, always with ▲/▼), `.odo-digit`/`.odo-strip` (odometer roll), `.flip-in` (a released actual; a fade in Reduced). The news countdown pulses with `.pulse` only in its last 15 minutes.
 - No looping motion at the screen edge. `.pulse` (2s, opacity only) is for cards fed by live data, never the shell. `.skeleton` shimmers at 1.4s. Both are loader rhythms outside the 150/250/500 tokens on purpose.
 - The in-app Full setting overrides the OS reduce-motion preference on purpose (a user choice); Reduced and the default follow the OS.
