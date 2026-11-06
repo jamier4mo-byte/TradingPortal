@@ -23,6 +23,11 @@ const Annotate = lazy(() => import("./pages/journal/Annotate.tsx"));
 const Matcher = lazy(() => import("./pages/journal/Matcher.tsx"));
 const JournalTrash = lazy(() => import("./pages/journal/Trash.tsx"));
 const JournalAnalytics = lazy(() => import("./pages/journal/AnalyticsPage.tsx"));
+const NewsRoom = lazy(() => import("./pages/news/NewsRoom.tsx"));
+const EventDetail = lazy(() => import("./pages/news/EventDetail.tsx"));
+const AlertsSettings = lazy(() => import("./pages/news/AlertsSettings.tsx"));
+const Markets = lazy(() => import("./pages/markets/Markets.tsx"));
+const InstrumentView = lazy(() => import("./pages/markets/InstrumentView.tsx"));
 
 function Loading() {
   return (
@@ -56,7 +61,12 @@ export default function App() {
                     <Route path="/journal/strategies/:id/trades/:tradeId" element={<TradeDetail />} />
                     <Route path="/journal/sessions/:sid/annotate" element={<Annotate />} />
                     <Route path="/journal/sessions/:sid/match" element={<Matcher />} />
-                    <Route path="/news/*" element={<Placeholder title="News Room" logo="/brand/newsroom-logo.png" />} />
+                    <Route path="/news" element={<NewsRoom />} />
+                    <Route path="/news/week" element={<NewsRoom initialView="ahead" />} />
+                    <Route path="/news/events/:id" element={<EventDetail />} />
+                    <Route path="/markets" element={<Markets />} />
+                    <Route path="/markets/:symbol" element={<InstrumentView />} />
+                    <Route path="/settings/alerts" element={<AlertsSettings />} />
                     <Route path="/calendar" element={<Placeholder title="Calendar" />} />
                     <Route path="/tags" element={<Tags />} />
                     <Route path="/settings" element={<Settings />} />

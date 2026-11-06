@@ -49,6 +49,7 @@ _COLUMNS = (
     Trade.tp_distance,
     Trade.tp_r,
     Trade.news_impact,
+    Trade.news_events,
     Trade.market_date,
     Trade.entry_price,
     Trade.initial_sl,
@@ -118,6 +119,9 @@ def load_rows(
                 tp_distance=_finite(t.tp_distance),
                 tp_r=_finite(t.tp_r),
                 news_impact=t.news_impact,
+                news_events=tuple(
+                    str(e.get("name")) for e in (t.news_events or []) if isinstance(e, dict) and e.get("name")
+                ),
                 market_date=t.market_date,
             )
         )
@@ -129,13 +133,16 @@ def _minutes(clock: str) -> int:
     return int(hh) * 60 + int(mm)
 
 
-def apply_filters(
-    rows: list[Row], f: AnalyticsFilters, *, tag_ids: set[int] | None, news_known: bool
-) -> list[Row]:
-    """Every filter is AND-ed; values within one filter are OR-ed. Outcome applies to backtest trades only."""
+def apply_filters(rows: list[Row], f: AnalyticsFilters, *, tag_ids: set[int] | None) -> list[Row]:
+    """Every filter is AND-ed; values within one filter are OR-ed. Outcome applies to backtest trades only.
+
+    News: "inside" keeps trades tagged inside a news window, "outside" those outside every window,
+    "no_data" those whose dates the news history doesn't cover. Event types keep trades inside the
+    window of any of the named events."""
     instruments = {i.upper() for i in f.instruments}
     sessions, models, weekdays = set(f.sessions), set(f.entry_models), set(f.weekdays)
     directions, outcomes, owners = set(f.directions), set(f.outcomes), set(f.owners)
+    event_types = {n.strip().lower() for n in f.news_event_types if n.strip()}
     start = _minutes(f.time_from) if f.time_from else None
     end = _minutes(f.time_to) if f.time_to else None
 
@@ -170,9 +177,10 @@ def apply_filters(
             return False
         if f.rules == "any_broken" and r.rules_kept is not False:
             return False
-        if f.news and news_known:
-            if (f.news == "inside") != (r.news_impact is not None):
-                return False
+        if f.news and r.news_status != f.news:
+            return False
+        if event_types and not any(n.lower() in event_types for n in r.news_events):
+            return False
         return True
 
     return [r for r in rows if keep(r)]
@@ -241,6 +249,7 @@ def backtest_block(rows: list[Row], rules: list[dict] | None) -> dict:
         "r_distribution": series.r_distribution(rows),
         "heatmap": series.heatmap(rows),
         "rulebook": series.rulebook(rows, rules),
+        "around_news": series.around_news(rows),
         "excursions": series.excursions(rows),
         "r_sequence": [round(r.r, 4) for r in rows if r.r is not None],
     }
@@ -256,6 +265,7 @@ def ideal_block(rows: list[Row]) -> dict:
             k: b[k] for k in ("entry_model", "weekday", "session", "hour", "direction", "instrument")
         },
         "profile": _profile_summary(rows),
+        "around_news": series.around_news(rows),
     }
 
 
@@ -296,6 +306,20 @@ def reconcile(db: Session, strategy: Strategy, kinds: list[str]) -> list[dict]:
     return out
 
 
+def news_coverage(rows: list[Row]) -> tuple[str, str | None]:
+    """ "ok" when every trade in scope has news data, "partial" when some do, "no_data" when none do."""
+    known = sum(1 for r in rows if r.news_impact is not None)
+    if rows and known == len(rows):
+        return "ok", None
+    if known:
+        missing = len(rows) - known
+        return "partial", (
+            f"News history covers {known} of {len(rows)} trades; the other {missing} show as No news data "
+            "until the history reaches their dates."
+        )
+    return "no_data", "No news data"
+
+
 def run_query(db: Session, user: User, q: AnalyticsQuery) -> dict:
     strategy = None
     if q.strategy_id is not None:
@@ -318,8 +342,8 @@ def run_query(db: Session, user: User, q: AnalyticsQuery) -> dict:
                 tag_ids.add(tag.id)
             else:
                 unresolved.append(name)
-    news_known = any(r.news_impact is not None for r in rows)
-    filtered = apply_filters(rows, q.filters, tag_ids=tag_ids, news_known=news_known)
+    news_status, news_note = news_coverage(rows)
+    filtered = apply_filters(rows, q.filters, tag_ids=tag_ids)
     ideal = [r for r in filtered if r.kind == "ideal"]
     backtest = [r for r in filtered if r.kind == "backtest"]
     primary = backtest if q.source in ("backtest", "compare") else ideal
@@ -343,10 +367,10 @@ def run_query(db: Session, user: User, q: AnalyticsQuery) -> dict:
             "ideal": len(ideal),
             "backtest": len(backtest),
         },
-        "news_status": "ok" if news_known else "no_data",
+        "news_status": news_status,
         "notes": {
             "unresolved_tags": unresolved,
-            "news": None if news_known else "No news data",
+            "news": news_note,
         },
         "registry": registry_meta(q.source),
         "options": _options(rows, users),

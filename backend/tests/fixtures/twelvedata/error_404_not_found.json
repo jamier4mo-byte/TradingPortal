@@ -1,0 +1,5 @@
+{
+ "code": 404,
+ "message": "**symbol** not found: ZZZZ/QQQ. Please specify it correctly according to API Documentation.",
+ "status": "error"
+}

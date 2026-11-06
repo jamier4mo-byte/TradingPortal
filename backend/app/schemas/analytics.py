@@ -23,7 +23,8 @@ class AnalyticsFilters(BaseModel):
     outcomes: list[Literal["win", "loss", "breakeven"]] = Field(default_factory=list, max_length=3)
     owners: list[int] = Field(default_factory=list, max_length=50)
     rules: Literal["all_kept", "any_broken"] | None = None
-    news: Literal["inside", "outside"] | None = None
+    news: Literal["inside", "outside", "no_data"] | None = None
+    news_event_types: list[str] = Field(default_factory=list, max_length=50, description="Event-type names")
 
     @field_validator("time_from", "time_to")
     @classmethod

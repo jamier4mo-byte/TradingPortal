@@ -33,7 +33,8 @@ class Row:
     sl_distance: float | None = None
     tp_distance: float | None = None
     tp_r: float | None = None
-    news_impact: str | None = None
+    news_impact: str | None = None  # "high" inside a news window, "none" outside, None no news data
+    news_events: tuple[str, ...] = ()  # names of the events whose window the entry falls in
     market_date: date | None = None  # UK date of the open
     uk_minute: int = 0  # minutes after UK midnight at the open
     weekday: int = 0  # 0 = Monday, UK
@@ -53,6 +54,10 @@ class Row:
     def booked_at(self) -> datetime:
         """P&L is booked at close (FX Replay and the old app agree); open trades book at the open."""
         return self.closed_at or self.opened_at
+
+    @property
+    def news_status(self) -> str:
+        return "inside" if self.news_impact == "high" else "outside" if self.news_impact else "no_data"
 
     @property
     def rules_kept(self) -> bool | None:

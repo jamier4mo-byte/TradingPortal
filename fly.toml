@@ -9,9 +9,11 @@ primary_region = "lhr"
 [http_service]
   internal_port = 8080
   force_https = true
-  auto_stop_machines = "stop"
+  # Always on (F7): the in-app scheduler sends news alerts by Web Push and refreshes the news feeds,
+  # so the one machine must never stop. Roughly $2–4/month on shared-cpu-1x.
+  auto_stop_machines = "off"
   auto_start_machines = true
-  min_machines_running = 0
+  min_machines_running = 1
 
 [[mounts]]
   source = "portal_data"

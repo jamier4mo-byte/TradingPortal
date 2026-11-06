@@ -33,6 +33,15 @@ export default defineConfig({
           TRADING_PORTAL_ENV: "development",
           TRADING_PORTAL_SECRET_KEY: "smoke-suite-secret-key-not-for-production-0123456789",
           TRADING_PORTAL_LOGIN_RATE_PER_MINUTE: "1000",
+          // Never call Forex Factory, JBlanked or Twelve Data from the smoke suite (fixtures and fakes only).
+          TRADING_PORTAL_FEEDS: "off",
+          TRADING_PORTAL_PRICE_PROVIDER: "fake",
+          TRADING_PORTAL_SCHEDULER: "false",
+          JBLANKED_API_KEY: "",
+          DEV_TWELVE_DATA_KEY: "",
+          VAPID_PUBLIC_KEY: "",
+          VAPID_PRIVATE_KEY: "",
+          VAPID_SUBJECT: "",
         },
       },
 });

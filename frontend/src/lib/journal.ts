@@ -2,6 +2,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api, type PublicUser, type Tag } from "./api.ts";
+import type { NewsEvent } from "./news.ts";
 
 export type TradeKind = "ideal" | "backtest" | "missed";
 export type SessionKind = "ideal" | "backtest" | "manual";
@@ -132,6 +133,8 @@ export interface Trade {
   mae_r: number | null;
   mfe_r: number | null;
   news_impact: string | null;
+  news_status?: "inside" | "outside" | "no_data";
+  news_events?: { event_id: number; name: string; currency: string; at: string; minutes_from_entry: number }[] | null;
   annotated_at: string | null;
   tags: Tag[];
   screenshots: Screenshot[];
@@ -242,7 +245,15 @@ export interface Brief {
   rules: Rule[];
   recent_improve_notes: { session_id: number; note: string; at: string; kind: SessionKind }[];
   next_uncovered: string | null;
-  news: null;
+  news: BriefNews | null;
+}
+
+export interface BriefNews {
+  month: string | null;
+  status: "ok" | "partial" | "no_data";
+  high_count: number;
+  events: NewsEvent[];
+  note: string | null;
 }
 
 export interface Trash {

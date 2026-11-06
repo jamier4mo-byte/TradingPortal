@@ -155,10 +155,13 @@ def test_tag_filter_is_synonym_aware(admin_client):
     assert out["counts"]["filtered"] == 0 and out["notes"]["unresolved_tags"] == ["no such tag"]
 
 
-def test_news_filter_reports_no_data_and_does_not_hide_trades(db, admin, admin_client):
+def test_news_filter_without_news_data_keeps_only_no_data_trades(db, admin, admin_client):
+    # Prompt 4 made the News filter live (it used to be ignored while there was no news data).
     s = seeded(db, admin, 20)
     out = query(admin_client, strategy_id=s.id, filters={"news": "inside"})
-    assert out["counts"]["filtered"] == 20 and out["news_status"] == "no_data"
+    assert out["counts"]["filtered"] == 0 and out["news_status"] == "no_data"
+    out = query(admin_client, strategy_id=s.id, filters={"news": "no_data"})
+    assert out["counts"]["filtered"] == 20
 
 
 def test_bad_filters_are_422(admin_client):

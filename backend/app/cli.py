@@ -3,6 +3,7 @@
 create-admin   ask for email and password and create the first admin (also via `fly ssh console`)
 seed-dev       fill the data dir with an admin, two members and sample records (dev only)
 migrate        alembic upgrade head
+news-backfill  load JBlanked event history month by month (resumable; respects the API limits)
 """
 
 import argparse
@@ -10,6 +11,7 @@ import getpass
 import os
 import subprocess
 import sys
+from datetime import date
 from pathlib import Path
 
 from .core.settings import get_settings
@@ -70,12 +72,14 @@ def seed_dev() -> None:
         )
         users_svc.create_invite(db, admin, role="member")
         _seed_journal(db, admin, sam)
+        _seed_news(db)
         print(
             "Seeded /tmp-style dev data:\n"
             "  admin   jamie@example.test / password-dev-1\n"
             "  member  sam@example.test   / password-dev-1  (has a Twelve Data key saved)\n"
             "  member  alex@example.test  / password-dev-1\n"
-            "  plus two proposed tags, one open invite and two strategies with imported trades"
+            "  plus two proposed tags, one open invite, two strategies with imported trades and a\n"
+            "  synthetic news week (with a year of US CPI and NFP history and price reactions)"
         )
 
 
@@ -173,6 +177,26 @@ def _seed_analytics(db, admin, sam) -> None:
     db.commit()
 
 
+def _seed_news(db) -> None:
+    """Synthetic news around now (dev only), then tag every seeded trade."""
+    from .models import utcnow
+    from .services.news import synthetic, tagging
+
+    synthetic.seed(db, utcnow())
+    tagging.retag(db)
+
+
+def news_backfill(start: str | None, max_requests: int | None) -> None:
+    from .services.news import backfill
+
+    migrate()
+    first = date.fromisoformat(start) if start else None
+    with session_factory()() as db:
+        out = backfill.run(db, start=first, max_requests=max_requests)
+    if out["status"] in ("not_configured", "refused", "error"):
+        sys.exit(1)
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="python -m app.cli")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -182,6 +206,9 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--password-env", help="read the password from this environment variable (scripts only)")
     sub.add_parser("seed-dev")
     sub.add_parser("migrate")
+    p = sub.add_parser("news-backfill")
+    p.add_argument("--from", dest="start", help="first date to load, YYYY-MM-DD (default 2023-01-01)")
+    p.add_argument("--max-requests", type=int, help="stop after N requests (default: the daily budget)")
     args = parser.parse_args(argv)
     if args.command == "create-admin":
         create_admin(args.email, os.environ.get(args.password_env) if args.password_env else None, args.name)
@@ -189,6 +216,8 @@ def main(argv: list[str] | None = None) -> None:
         seed_dev()
     elif args.command == "migrate":
         migrate()
+    elif args.command == "news-backfill":
+        news_backfill(args.start, args.max_requests)
 
 
 if __name__ == "__main__":

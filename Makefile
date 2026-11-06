@@ -11,6 +11,8 @@
 #   make dev-secrets   write a random TRADING_PORTAL_SECRET_KEY into .env if it's missing
 #   make create-admin  create the first admin (asks for email and password)
 #   make seed-dev      fill /tmp/tp-dev with an admin, two members and sample records
+#   make news-backfill load JBlanked event history once (resumable; respects the API limit)
+#   make vapid         write VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY and VAPID_SUBJECT into .env if missing
 #
 # Data lives in $TRADING_PORTAL_DATA_DIR (default ~/TradingPortal/data), never in the repo.
 
@@ -18,7 +20,7 @@ PYTHON ?= python3
 PORT   ?= 8765
 VENV   := backend/.venv
 
-.PHONY: icons setup setup-backend setup-frontend dev dev-backend dev-frontend test lint fmt build run migrate smoke smoke-browser clean dev-secrets create-admin seed-dev
+.PHONY: icons setup setup-backend setup-frontend dev dev-backend dev-frontend test lint fmt build run migrate smoke smoke-browser clean dev-secrets create-admin seed-dev news-backfill vapid
 
 setup: setup-backend setup-frontend
 
@@ -69,6 +71,12 @@ create-admin:
 
 seed-dev:
 	cd backend && TRADING_PORTAL_DATA_DIR=/tmp/tp-dev .venv/bin/python -m app.cli seed-dev
+
+news-backfill:
+	cd backend && .venv/bin/python -m app.cli news-backfill
+
+vapid:
+	cd backend && .venv/bin/python -m app.vapid_cli
 
 run:
 	cd backend && .venv/bin/alembic upgrade head && .venv/bin/uvicorn app.main:app --host 0.0.0.0 --port $(PORT)

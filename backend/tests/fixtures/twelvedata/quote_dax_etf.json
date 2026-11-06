@@ -1,0 +1,15 @@
+{
+ "symbol": "DAX",
+ "name": "Global X DAX Germany ETF",
+ "exchange": "NASDAQ",
+ "datetime": "2026-11-05",
+ "timestamp": 1793898000,
+ "open": "38.10",
+ "high": "38.40",
+ "low": "37.95",
+ "close": "38.22",
+ "previous_close": "38.05",
+ "change": "0.17",
+ "percent_change": "0.44678",
+ "is_market_open": false
+}

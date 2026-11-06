@@ -151,3 +151,46 @@ prompt's branch. If a prompt stops part-way, the next run continues from the fir
 ### 12. Follow-up: Annotate autosave race (branch `build/03c-annotate-autosave`)
 - [x] Saves once per pause, in order; Mark completed queues behind the last save; regression e2e (old code kept "B")
 - [x] lint clean · 262 pytest + Node · smoke 112/112; merged to local `main`
+
+## Prompt 4 — News Room, live prices and push alerts (branch `build/04-newsroom-prices-alerts`)
+
+### 0. Preflight
+- [x] Clean `main`; branch `build/04-newsroom-prices-alerts`
+- [x] Baseline: `make test` 262 passed
+- [x] Keys by count: `TRADING_PORTAL_SECRET_KEY` 1 · `DEV_TWELVE_DATA_KEY` 0 · `JBLANKED_API_KEY` 0 · VAPID 0 (writing the keys from chat into `.env` was refused by the permission check)
+- [x] Research: JB-News/JBlanked (free tier now 1 request a day, `/calendar/today/` only; keys are 30+ characters) and Twelve Data (1 credit per symbol, `/api_usage` costs 1, UTC-midnight reset, per-minute window, no gold or indices on Basic)
+- [x] Foundation: settings, migration `0007` (16 tables + instrument map + symbol aliases), DB leases and rate slots, network guard for tests, scheduler skeleton in the lifespan
+
+### 1. News data model and ingestion
+- [x] Event-type catalogue (30+ explanations), migration `0008`
+- [x] Forex Factory fetcher (hourly, upsert, UK/US DST), JBlanked fetcher (slot + daily budget), merge
+- [x] `make news-backfill` (resumable, records coverage); feed runs and "last updated"
+- [x] Fixture tests: parsing, DST, upserts, merge, lease, failure path
+
+### 2. Trade ↔ news link
+- [x] Tagging service (window per user, coverage, "No news data"), re-run when coverage grows
+- [x] Analytics News filter live (inside/outside, by event type) + "Around news" breakdown
+- [x] Pre-session brief news slot
+
+### 3. Prices backend
+- [x] PriceProvider protocol, TwelveDataProvider, FakePriceProvider
+- [x] Per-key minute limiter (queues), daily credits, shared cache, pins (8)
+- [x] Endpoints: search, quotes, sparkline, usage, pin/unpin; vault "Check key" calls Twelve Data
+- [x] Daily-limit paused state; price-reaction job (opt-in, capped, leftover credits)
+
+### 4. Push and the service worker
+- [x] push_subscriptions / alert_prefs / alert_deliveries services and endpoints; `make vapid`
+- [x] `public/sw.js` (push, notificationclick); Settings → Alerts flow (iOS guidance, permission on press, test, chime)
+- [x] Scheduler tests with a frozen clock
+
+### 5. News Room screens
+- [x] Header, countdown ring, calendar day/week, filters, phone list + bottom sheet
+- [x] Trading-day timeline; event detail; week ahead; alerts settings
+- [x] Market components: TickerCard, InstrumentSearch, WatchlistRow, CreditsMeter, instrument view
+- [x] `GET /api/news/today`, `GET /api/news/next`
+
+### 6. Gate 4
+- [x] Gate checks (see report; the Chromium push check is partial, see Known issues)
+- [x] `make lint`, `make test`, `make smoke` green (467 pytest + 6 Node · 144 Playwright); Hub 187.8 KB
+- [x] `/check-devices` at six widths (two rounds); design-reviewer: two passes, majors fixed
+- [x] `docs/build/PHASE-4-REPORT.md`; merged to local `main`

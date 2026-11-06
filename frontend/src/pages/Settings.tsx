@@ -9,6 +9,11 @@ import { ConfirmDialog, EmptyState, ErrorState, Field, PillToggle, SkeletonText,
 import { api, type ApiKey, type MotionPref, type Passkey, type User } from "../lib/api.ts";
 import { useAuth } from "../lib/auth.tsx";
 import { relativeTime, shortDateTime } from "../lib/format.ts";
+import { useSaveMarketSettings, useUsage } from "../lib/markets.ts";
+import { useNewsPrefs, useSaveNewsPrefs } from "../lib/news.ts";
+import { CreditsMeter } from "../components/market/CreditsMeter.tsx";
+import { Switch, ToggleChip } from "../components/ui/Toggles.tsx";
+import { Link } from "react-router-dom";
 
 const MOTION_OPTIONS = [
   { value: "full" as const, label: "Full" },
@@ -25,11 +30,13 @@ export default function Settings() {
         <ProfileCard user={user} />
         <PasswordCard />
         <PasskeysCard />
+        <NewsPrefsCard />
       </div>
       <div className="col-span-full flex flex-col gap-4 laptop:col-span-5 laptop:gap-6">
         <MotionCard user={user} />
         <BreakevenCard user={user} />
         <ApiKeysCard />
+        <LivePricesCard />
       </div>
     </div>
   );
@@ -259,11 +266,13 @@ function ApiKeysCard() {
     onError: (err) => toast({ title: "Couldn't save the key", text: err.message, tone: "loss" }),
   });
   const test = useMutation({
-    mutationFn: () => api.post<{ ok: boolean }>("/api/me/keys/twelve_data/test"),
+    mutationFn: () => api.post<{ ok: boolean; message?: string }>("/api/me/keys/twelve_data/test"),
     onSuccess: (r) => {
       void qc.invalidateQueries({ queryKey: ["keys"] });
-      toast(r.ok ? { title: "Key looks good", tone: "win" } : { title: "Key failed the check", tone: "loss" });
+      void qc.invalidateQueries({ queryKey: ["prices"] });
+      toast(r.ok ? { title: "Key works", text: r.message } : { title: "Key failed the check", text: r.message, tone: "loss" });
     },
+    onError: (err) => toast({ title: "Couldn't check the key", text: err.message, tone: "loss" }),
   });
   const del = useMutation({
     mutationFn: () => api.delete("/api/me/keys/twelve_data"),
@@ -275,7 +284,7 @@ function ApiKeysCard() {
   });
 
   return (
-    <Card title="API keys" subtitle="Your own Twelve Data key, kept encrypted on the server">
+    <Card id="keys" title="API keys" subtitle="Your own Twelve Data key, kept encrypted on the server">
       {keys.isPending ? (
         <SkeletonText lines={3} />
       ) : keys.isError ? (
@@ -304,7 +313,7 @@ function ApiKeysCard() {
               Remove
             </button>
           </div>
-          <p className="mt-3 text-label text-muted">Live prices arrive with the News Room build. Until then this just stores the key safely.</p>
+          <p className="mt-3 text-label text-muted">Check key makes one real Twelve Data request (1 credit). Your prices and searches use this key only.</p>
         </div>
       ) : (
         <EmptyState
@@ -339,6 +348,107 @@ function ApiKeysCard() {
         busy={del.isPending}
         onConfirm={() => del.mutate()}
       />
+    </Card>
+  );
+}
+
+function NewsPrefsCard() {
+  const prefs = useNewsPrefs();
+  const save = useSaveNewsPrefs();
+  const { toast } = useToast();
+  const [windowDraft, setWindowDraft] = useState<string | null>(null);
+  const done = { onSuccess: () => toast({ title: "Saved", text: "Your trades' news tags are being updated." }), onError: (err: Error) => toast({ title: "Couldn't save", text: err.message, tone: "loss" as const }) };
+  return (
+    <Card id="news" title="News Room" subtitle="The instruments you follow and your news window">
+      {prefs.isPending ? (
+        <SkeletonText lines={4} />
+      ) : prefs.isError ? (
+        <ErrorState text={prefs.error.message} onRetry={() => prefs.refetch()} />
+      ) : (
+        <div className="flex flex-col gap-4">
+          <fieldset>
+            <legend className="mb-2 text-label text-muted">Instruments I follow</legend>
+            <div className="flex flex-wrap gap-2">
+              {prefs.data.available.map((i) => {
+                const on = prefs.data.instruments.includes(i.code);
+                return (
+                  <ToggleChip
+                    key={i.code}
+                    pressed={on}
+                    label={`${i.code}, ${i.name}`}
+                    onClick={() => save.mutate({ instruments: on ? prefs.data.instruments.filter((c) => c !== i.code) : [...prefs.data.instruments, i.code] }, done)}
+                  >
+                    <span className="font-mono">{i.code}</span>
+                  </ToggleChip>
+                );
+              })}
+            </div>
+            <p className="mt-2 text-label text-muted">Filters &ldquo;My instruments only&rdquo;, today&rsquo;s news and your alerts.</p>
+          </fieldset>
+          <form
+            className="flex items-end gap-3"
+            onSubmit={(e: FormEvent) => {
+              e.preventDefault();
+              const n = Number(windowDraft);
+              if (windowDraft !== null && Number.isInteger(n) && n !== prefs.data.news_window_minutes) save.mutate({ news_window_minutes: n }, done);
+            }}
+          >
+            <div className="w-40">
+              <Field label="News window (± minutes)">
+                {(p) => (
+                  <TextInput
+                    {...p}
+                    className="num"
+                    type="number"
+                    inputMode="numeric"
+                    min={0}
+                    max={120}
+                    step={5}
+                    value={windowDraft ?? String(prefs.data.news_window_minutes)}
+                    onChange={(e) => setWindowDraft(e.target.value)}
+                  />
+                )}
+              </Field>
+            </div>
+            <button type="submit" className="btn btn-secondary" disabled={save.isPending || windowDraft === null || Number(windowDraft) === prefs.data.news_window_minutes}>
+              Save
+            </button>
+          </form>
+          <p className="text-label text-muted">
+            A trade entered within this many minutes of a high-impact event for its instrument counts as &ldquo;inside a news window&rdquo; in Analytics. Default 15.
+          </p>
+          <Link to="/settings/alerts" className="btn btn-secondary self-start">
+            News alerts
+          </Link>
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function LivePricesCard() {
+  const usage = useUsage();
+  const save = useSaveMarketSettings();
+  return (
+    <Card title="Live prices" subtitle="How your Twelve Data credits are used">
+      {usage.isPending ? (
+        <SkeletonText lines={3} />
+      ) : usage.isError ? (
+        <ErrorState text={usage.error.message} onRetry={() => usage.refetch()} />
+      ) : (
+        <div className="flex flex-col gap-4">
+          <CreditsMeter usage={usage.data} />
+          <Switch
+            checked={usage.data.allow_background_jobs}
+            onChange={(v) => save.mutate({ allow_background_jobs: v })}
+            label="Allow background jobs to use my key"
+            description={`Works out price reactions after news, from leftover credits only (at most ${usage.data.background_cap} a day). Off by default.`}
+          />
+          <Link to="/markets" className="btn btn-secondary self-start">
+            Open Markets
+          </Link>
+        </div>
+      )}
     </Card>
   );
 }

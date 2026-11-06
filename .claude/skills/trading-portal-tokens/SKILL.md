@@ -34,6 +34,7 @@ Values marked **proposed** weren't given in the Foundations doc; they're startin
 | `--color-loss` | `#FF5A66` (proposed) | Loss. **Reserved** |
 | `--color-breakeven` | `#8F99AD` (proposed) | Breakeven (≈0, out to ±$10 by default). **Reserved** |
 | `--color-impact-high / -medium / -low` | `#FF5A66` / `#FF9F43` / `#F5D547` (proposed) | News impact red/orange/yellow. **Reserved**, always with a High/Med/Low label |
+| `--color-surprise-up` / `-down` | `#5CC8FF` cyan / `#A78BFA` violet (proposed) | News actual above / below forecast. **Never** win/loss colours. Always with ▲/▼ and the difference ("▲ +0.2"); the words "Better/Worse than forecast" come from the event type's `higher_is_better`. 9.4:1 and 6.5:1 on `surface-1` |
 | `--color-live` / `--color-stale` | `#2FD27F` / `#8F99AD` (proposed) | Live dot; paused/stale |
 | `--color-owner-0` … `-7` | `#2EC4B6` teal · `#8FA3FF` periwinkle · `#FF7AC6` pink · `#D4B483` sand · `#C9A7F5` lilac · `#6FD3F2` sky · `#C2D94A` chartreuse · `#D98CB3` mauve (proposed) | Calendar owners and "logged by" chips **only** (`OwnerChip`, `ownerBg(index)`). Each user has a fixed `colour_index` 0–7. All ≥ 7:1 on `surface-1`; none is a reserved or brand hue |
 | `--chart-grid` / `--chart-axis` | `rgba(255,255,255,.05)` / `.16` | Chart gridlines (hairline, solid) and axis lines. Charts read every colour at runtime (`components/charts/theme.ts`) |
@@ -77,6 +78,7 @@ Card pattern (`components/Card.tsx`): title and optional subtitle top-left, cont
 | `--dur-quick` | 150ms | Hovers, presses |
 | `--dur-standard` | 250ms | Panels, tabs, fades |
 | `--dur-emphasis` | 500ms (range 400–600) | Charts drawing in, unlocks |
+| `--dur-flash` | 600ms | Price tick flash fading out (`.price-flash`), Live data in motion |
 | `--ease-in-enter` | `cubic-bezier(.16,1,.3,1)` | **Ease-out** when things enter |
 | `--ease-out-leave` | `cubic-bezier(.7,0,.84,0)` | **Ease-in** when things leave |
 | `--ease-spring` | `cubic-bezier(.34,1.4,.64,1)` | Toggles, dragged items |
@@ -87,6 +89,7 @@ Rules:
 - `prefers-reduced-motion` is honoured globally, and so is the per-user Full / Reduced / Off setting (`data-motion` on `<html>`, from `user.motion_pref`). Read `motionLevel()` from `src/lib/motion.ts` before animating; use the presets there (`pageVariants`, `panelVariants`, `spring`). `motion` is the only animation library.
 - First-load stagger is 30–50ms apart, on first load only.
 - Launch loaders run for at least about 600ms and exit as soon as the tool is ready.
+- Live data: `.price-flash` (win/loss wash fading over `--dur-flash`, always with ▲/▼), `.odo-digit`/`.odo-strip` (odometer roll), `.flip-in` (a released actual; a fade in Reduced). The news countdown pulses with `.pulse` only in its last 15 minutes.
 - No looping motion at the screen edge. `.pulse` (2s, opacity only) is for cards fed by live data, never the shell. `.skeleton` shimmers at 1.4s. Both are loader rhythms outside the 150/250/500 tokens on purpose.
 - The in-app Full setting overrides the OS reduce-motion preference on purpose (a user choice); Reduced and the default follow the OS.
 

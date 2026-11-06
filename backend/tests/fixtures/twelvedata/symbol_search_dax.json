@@ -1,0 +1,19 @@
+{
+ "data": [
+  {
+   "symbol": "DAX",
+   "instrument_name": "Global X DAX Germany ETF",
+   "exchange": "NASDAQ",
+   "mic_code": "XNMS",
+   "exchange_timezone": "America/New_York",
+   "instrument_type": "ETF",
+   "country": "United States",
+   "currency": "USD",
+   "access": {
+    "global": "Basic",
+    "plan": "Basic"
+   }
+  }
+ ],
+ "status": "ok"
+}

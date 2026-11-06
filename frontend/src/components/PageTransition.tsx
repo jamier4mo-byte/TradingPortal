@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from "motion/react";
 import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { useLocation } from "react-router-dom";
 
 import { motionLevel, pageVariants } from "../lib/motion.ts";
@@ -40,8 +41,10 @@ function ViewTransitionPage({ pathname, children }: { pathname: string; children
       setShown({ pathname, children });
       return;
     }
+    // flushSync: the new page must be in the DOM when the callback returns, so the browser captures it
+    // (and shared elements with matching view-transition-name morph from list to detail).
     doc.startViewTransition(() => {
-      setShown({ pathname, children });
+      flushSync(() => setShown({ pathname, children }));
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname, children]);

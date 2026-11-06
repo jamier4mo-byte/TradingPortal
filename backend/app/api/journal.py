@@ -41,6 +41,7 @@ from ..services import matcher
 from ..services import screenshots as shots_svc
 from ..services.fxreplay import CsvFormatError
 from ..services.journal import JournalError
+from ..services.news import queries as news_queries
 from ..services.screenshots import ScreenshotError
 from ..services.storage import get_storage
 
@@ -105,8 +106,10 @@ def trade_out(db, trade: Trade, user: User) -> TradeOut:
         **{
             k: getattr(trade, k)
             for k in TradeOut.model_fields
-            if k not in ("owner", "tags", "screenshots", "can_edit")
+            if k not in ("owner", "tags", "screenshots", "can_edit", "news_status", "news_events")
         },
+        news_status={"high": "inside", "none": "outside"}.get(trade.news_impact or "", "no_data"),
+        news_events=trade.news_events or [],
         owner=_owner(db, trade.owner_id),
         tags=[t for t in trade.tags],
         screenshots=[screenshot_out(s) for s in svc.live_screenshots(trade)],
@@ -258,6 +261,7 @@ def get_brief(strategy_id: int, user: CurrentUser, db: Db) -> BriefOut:
             {"session_id": s.id, "note": s.improve_note, "at": s.created_at, "kind": s.kind} for s in sessions
         ],
         next_uncovered=cov.next_uncovered,
+        news=news_queries.brief_news(db, user, strategy, cov.next_uncovered),
     )
 
 

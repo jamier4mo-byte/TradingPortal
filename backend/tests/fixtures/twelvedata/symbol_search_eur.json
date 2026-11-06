@@ -1,0 +1,61 @@
+{
+ "data": [
+  {
+   "symbol": "EUR/USD",
+   "instrument_name": "Euro / US Dollar",
+   "exchange": "Forex",
+   "mic_code": "",
+   "exchange_timezone": "UTC",
+   "instrument_type": "Physical Currency",
+   "country": "",
+   "currency": "USD",
+   "access": {
+    "global": "Basic",
+    "plan": "Basic"
+   }
+  },
+  {
+   "symbol": "EUR/GBP",
+   "instrument_name": "Euro / British Pound",
+   "exchange": "Forex",
+   "mic_code": "",
+   "exchange_timezone": "UTC",
+   "instrument_type": "Physical Currency",
+   "country": "",
+   "currency": "GBP",
+   "access": {
+    "global": "Basic",
+    "plan": "Basic"
+   }
+  },
+  {
+   "symbol": "EURN",
+   "instrument_name": "Euronav NV",
+   "exchange": "NYSE",
+   "mic_code": "XNYS",
+   "exchange_timezone": "America/New_York",
+   "instrument_type": "Common Stock",
+   "country": "United States",
+   "currency": "USD",
+   "access": {
+    "global": "Basic",
+    "plan": "Basic"
+   }
+  },
+  {
+   "symbol": "EUR/SEK",
+   "instrument_name": "Euro / Swedish Krona",
+   "exchange": "Forex",
+   "mic_code": "",
+   "exchange_timezone": "UTC",
+   "instrument_type": "Physical Currency",
+   "country": "",
+   "currency": "SEK",
+   "access": {
+    "global": "Grow",
+    "plan": "Grow"
+   }
+  }
+ ],
+ "status": "ok"
+}

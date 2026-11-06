@@ -1,0 +1,5 @@
+[
+  {"Name":"Non-Farm Employment Change","Currency":"USD","Event_ID":840030016,"Category":"Employment","Impact":"High","Date":"2026.09.04 15:30:00","Actual":22.0,"Forecast":75.0,"Previous":79.0},
+  {"Name":"CPI m/m","Currency":"USD","Event_ID":840030005,"Category":"Inflation","Impact":"High","Date":"2026.09.11 15:30:00","Actual":0.4,"Forecast":0.3,"Previous":0.2},
+  {"Name":"Federal Funds Rate","Currency":"USD","Event_ID":840050001,"Category":"Central Bank","Impact":"High","Date":"2026.09.16 21:00:00","Actual":4.0,"Forecast":4.0,"Previous":4.25}
+]

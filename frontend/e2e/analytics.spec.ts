@@ -31,7 +31,7 @@ test.describe("analytics screens are accessible and fit the screen", () => {
     test(`${route} passes axe, has no horizontal scroll and 44px targets`, async ({ page }) => {
       await page.goto(route);
       await expect(page.getByTestId("analytics-toolbar")).toBeVisible();
-      await expect(page.getByText(/\d+ of \d+ trades/)).toBeVisible();
+      await expect(page.getByText(/^\d+ of \d+ trades/)).toBeVisible();
       await page.waitForLoadState("networkidle");
       await expectNoHorizontalScroll(page);
       await expectTapTargets(page);

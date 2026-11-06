@@ -67,3 +67,24 @@ export function OfflineGlyph({ className = "" }: { className?: string }) {
     </svg>
   );
 }
+
+export function CalendarEmpty({ className = "" }: { className?: string }) {
+  return (
+    <svg {...base} className={className}>
+      <rect x="22" y="12" width="76" height="52" rx="6" className="text-border-strong" />
+      <path d="M22 26h76M40 6v12M80 6v12" className="text-border-strong" />
+      <path d="M34 38h8M52 38h8M70 38h8M34 50h8M52 50h8" className="text-muted" strokeDasharray="2 3" />
+      <circle cx="74" cy="50" r="4" className="text-accent" />
+    </svg>
+  );
+}
+
+export function PulseEmpty({ className = "" }: { className?: string }) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M8 40h26l6-14 8 28 8-20 6 6h50" className="text-accent" />
+      <path d="M8 60h104" className="text-border-strong" />
+      <path d="M20 20h14M20 14h8" className="text-muted" strokeDasharray="2 3" />
+    </svg>
+  );
+}
