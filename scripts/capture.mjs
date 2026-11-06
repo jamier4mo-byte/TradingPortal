@@ -16,6 +16,12 @@ const OUT = resolve(process.env.OUT ?? "../docs/check-devices/latest");
 const ROUTES = {
   hub: "/",
   journal: "/journal",
+  strategy: "/journal/strategies/1",
+  "strategy-backtest": "/journal/strategies/1?tab=backtest",
+  trade: "/journal/strategies/1/trades/1",
+  annotate: "/journal/sessions/1/annotate",
+  match: "/journal/sessions/1/match",
+  "journal-trash": "/journal/trash",
   news: "/news",
   calendar: "/calendar",
   login: "/login",
