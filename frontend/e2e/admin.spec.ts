@@ -35,7 +35,7 @@ test("admin saves and removes a Twelve Data key, seeing only the last 4", async 
   await expect(page.getByText("····ABCD")).toBeVisible();
   await expect(page.getByText("fake-twelve-data-key-ABCD")).toHaveCount(0);
   await page.getByRole("button", { name: "Check key" }).click();
-  await expect(page.getByText("Key looks good", { exact: true })).toBeVisible();
+  await expect(page.getByText("Key works", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Remove", exact: true }).click();
   await page.getByRole("button", { name: "Remove key" }).click();
   await expect(page.getByText("No Twelve Data key yet")).toBeVisible();

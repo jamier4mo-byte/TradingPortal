@@ -23,7 +23,7 @@ export function AroundNewsCard({ rows, status, note }: { rows: AroundNewsRow[]; 
       {status === "no_data" || rows.length === 0 ? (
         <p className="text-body text-muted">{note ?? "No news data: these trades fall outside the stored news history."}</p>
       ) : (
-        <div className="-mx-4 overflow-x-auto px-4 tablet:mx-0 tablet:px-0">
+        <div className="relative -mx-4 overflow-x-auto px-4 tablet:mx-0 tablet:px-0" role="region" tabIndex={0} aria-label="Around news table, scrolls sideways">
           <table className="w-full min-w-[30rem] text-body">
             <caption className="sr-only">Results inside and outside news windows</caption>
             <thead>

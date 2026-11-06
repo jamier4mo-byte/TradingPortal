@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Pin, PinOff } from "lucide-react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 
 import Card from "../../components/Card.tsx";
 import { PausedBanner } from "../../components/market/CreditsMeter.tsx";
@@ -24,7 +24,6 @@ export default function InstrumentView() {
   const pins = usePins();
   const { pin, unpin } = usePinMutations();
   const { toast } = useToast();
-  const navigate = useNavigate();
 
   const quote = q.data;
   const code = quote?.code ?? symbol;
@@ -35,10 +34,10 @@ export default function InstrumentView() {
   return (
     <div className="flex flex-col gap-4 laptop:gap-6">
       <div>
-        <button type="button" className="btn btn-ghost -ml-3" onClick={() => (window.history.length > 1 ? navigate(-1) : navigate("/markets"))}>
+        <Link to="/markets" className="btn btn-ghost -ml-3">
           <ArrowLeft aria-hidden className="size-4" />
           Markets
-        </button>
+        </Link>
       </div>
       {usage.data?.paused ? <PausedBanner reason={usage.data.paused_reason ?? "Live data paused – daily limit reached"} /> : null}
 
@@ -74,7 +73,7 @@ export default function InstrumentView() {
             </button>
           </div>
           {usable ? (
-            <div className="relative mt-4 grid gap-6 laptop:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] laptop:items-end">
+            <div className="relative mt-4 grid grid-cols-1 gap-6 laptop:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] laptop:items-end">
               <div>
                 <PriceFigure price={quote!.price} decimals={quote!.decimals} className="text-hero font-semibold" />
                 <p className="num mt-2 text-body">
@@ -117,7 +116,7 @@ export default function InstrumentView() {
       )}
 
       {usable ? (
-        <div className="grid gap-4 laptop:grid-cols-12 laptop:gap-6">
+        <div className="grid grid-cols-1 gap-4 laptop:grid-cols-12 laptop:gap-6">
           <Card title="Today" subtitle="From the latest delayed quote" className="laptop:col-span-5">
             <dl className="num grid grid-cols-2 gap-3 text-body">
               {[

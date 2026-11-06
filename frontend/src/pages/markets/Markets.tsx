@@ -44,7 +44,7 @@ export default function Markets() {
 
       {usage?.paused ? <PausedBanner reason={usage.paused_reason ?? "Live data paused – daily limit reached"} /> : null}
 
-      <div className="grid gap-4 laptop:grid-cols-12 laptop:gap-6">
+      <div className="grid grid-cols-1 gap-4 laptop:grid-cols-12 laptop:gap-6">
         <div className="flex flex-col gap-4 laptop:col-span-8 laptop:gap-6 desktop:col-span-9">
           <Card title="Watchlist" subtitle={pins.data ? `${pins.data.pins.length} of ${pins.data.max} pinned` : undefined}>
             <InstrumentSearch

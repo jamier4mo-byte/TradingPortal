@@ -1,5 +1,5 @@
 import { ArrowLeft } from "lucide-react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 
 import Card from "../../components/Card.tsx";
 import { CountdownRing } from "../../components/news/CountdownRing.tsx";
@@ -23,19 +23,14 @@ export default function EventDetailPage() {
   const { id } = useParams();
   const eventId = Number(id);
   const q = useEventDetail(eventId);
-  const navigate = useNavigate();
 
   return (
     <div className="flex flex-col gap-4 laptop:gap-6">
       <div>
-        <button
-          type="button"
-          className="btn btn-ghost -ml-3"
-          onClick={() => (window.history.length > 1 ? navigate(-1) : navigate("/news"))}
-        >
+        <Link to="/news" className="btn btn-ghost -ml-3">
           <ArrowLeft aria-hidden className="size-4" />
           News Room
-        </button>
+        </Link>
       </div>
       {q.isPending ? (
         <>
@@ -89,7 +84,7 @@ function DetailBody({ d }: { d: Detail }) {
         </p>
       ) : null}
 
-      <div className="grid gap-4 laptop:gap-6 desktop:grid-cols-12">
+      <div className="grid grid-cols-1 gap-4 laptop:gap-6 desktop:grid-cols-12">
         <Card title="What it is" className="desktop:col-span-5">
           {d.type?.explanation ? (
             <div className="flex flex-col gap-3 text-body">
@@ -115,7 +110,7 @@ function DetailBody({ d }: { d: Detail }) {
           {d.history.length === 0 ? (
             <EmptyState illustration={<ListEmpty />} title="No past releases stored" text={d.empty.history ?? "History builds up as each release is stored."} />
           ) : (
-            <div className="-mx-4 overflow-x-auto px-4 tablet:mx-0 tablet:px-0">
+            <div className="relative -mx-4 overflow-x-auto px-4 tablet:mx-0 tablet:px-0" role="region" tabIndex={0} aria-label="Release history table, scrolls sideways">
               <table className="w-full min-w-[30rem] text-body">
                 <caption className="sr-only">Past releases of {e.name}</caption>
                 <thead>
@@ -178,7 +173,7 @@ function Cell({ h, unit }: { h: HorizonReaction | undefined; unit: string }) {
 function Reactions({ d }: { d: Detail }) {
   return (
     <div className="flex flex-col gap-6">
-      <div className="-mx-4 overflow-x-auto px-4 tablet:mx-0 tablet:px-0">
+      <div className="relative -mx-4 overflow-x-auto px-4 tablet:mx-0 tablet:px-0" role="region" tabIndex={0} aria-label="Average price reaction table, scrolls sideways">
         <table className="w-full min-w-[28rem] text-body">
           <caption className="sr-only">Average range after releases, by instrument</caption>
           <thead>
@@ -217,7 +212,7 @@ function Reactions({ d }: { d: Detail }) {
       </div>
       <details className="group">
         <summary className="inline-flex min-h-11 cursor-pointer items-center text-body text-muted hover:text-text">Each release</summary>
-        <div className="-mx-4 mt-2 overflow-x-auto px-4 tablet:mx-0 tablet:px-0">
+        <div className="relative -mx-4 mt-2 overflow-x-auto px-4 tablet:mx-0 tablet:px-0" role="region" tabIndex={0} aria-label="Each release table, scrolls sideways">
           <table className="w-full min-w-[34rem] text-body">
             <caption className="sr-only">Range and direction after each release</caption>
             <thead>

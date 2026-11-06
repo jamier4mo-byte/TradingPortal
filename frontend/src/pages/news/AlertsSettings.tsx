@@ -67,7 +67,7 @@ export default function AlertsSettings() {
         <h1 className="text-heading font-semibold">News alerts</h1>
         <p className="mt-1 max-w-2xl text-body text-muted">A notification on your phone or computer before high-impact news for the instruments you follow.</p>
       </header>
-      <div className="grid gap-4 laptop:grid-cols-12 laptop:gap-6">
+      <div className="grid grid-cols-1 gap-4 laptop:grid-cols-12 laptop:gap-6">
         <div className="flex flex-col gap-4 laptop:col-span-6 laptop:gap-6">
           <ThisDevice />
           <Devices />
@@ -348,7 +348,7 @@ function PrefsCard() {
               </div>
             ) : (
               <p className="mt-1 text-label text-muted">
-                Change the instruments you follow in <Link to="/settings#news" className="underline underline-offset-4">Settings → News Room</Link>.
+                Change the instruments you follow in <Link to="/settings#news" className="inline-flex min-h-11 items-center underline underline-offset-4">Settings → News Room</Link>.
               </p>
             )}
           </fieldset>
