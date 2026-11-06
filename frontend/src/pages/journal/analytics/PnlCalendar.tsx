@@ -60,7 +60,7 @@ export function PnlCalendar({ days, unit }: { days: CalendarDay[]; unit: "usd" |
         <p className="min-w-0 flex-1 text-center text-body font-medium" aria-live="polite">
           {monthLabel(month)}
           <span className="num ml-2 font-normal text-muted">
-            {trades} trades · <span className={ink(total)}>{fmt(total)}</span>
+            {trades} {trades === 1 ? "trade" : "trades"} · <span className={ink(total)}>{fmt(total)}</span>
           </span>
         </p>
         <button type="button" className="btn btn-ghost size-11 px-0" aria-label="Next month with trades" disabled={idx >= months.length - 1} onClick={() => setPicked(months[idx + 1])}>

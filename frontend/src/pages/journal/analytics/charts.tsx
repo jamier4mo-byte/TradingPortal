@@ -365,7 +365,8 @@ export function OwnerLines({ owners, dim }: { owners: OwnerSplit[]; dim?: boolea
       legend: { show: false },
       xAxis: categoryAxis(t, Array.from({ length: longest }, (_, i) => String(i + 1)), { boundaryGap: false }),
       yAxis: valueAxis(t, { axisLabel: { color: t.muted, formatter: (v: number) => `${v}R` } }),
-      grid: { left: 8, right: 72, top: 16, bottom: 8, containLabel: true },
+      // No end labels: shorter histories end mid-chart and would sit on the other lines. The legend names them.
+      grid: { left: 8, right: 16, top: 16, bottom: 8, containLabel: true },
       series: owners.map((o) => ({
         id: `owner-${o.owner.id}`,
         name: o.owner.display_name,
@@ -374,7 +375,6 @@ export function OwnerLines({ owners, dim }: { owners: OwnerSplit[]; dim?: boolea
         showSymbol: false,
         lineStyle: { width: 2, color: t.owners[o.owner.colour_index % 8] },
         itemStyle: { color: t.owners[o.owner.colour_index % 8] },
-        endLabel: { show: true, color: t.text, fontFamily: t.font, formatter: (p: { value: number }) => `${o.owner.display_name} ${fmtR(p.value)}` },
       })),
     }),
     [owners, longest],

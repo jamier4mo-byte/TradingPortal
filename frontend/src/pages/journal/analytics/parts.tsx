@@ -69,7 +69,7 @@ export function AllMetrics({ kpis, registry }: { kpis: Kpis; registry: MetricMet
   );
 }
 
-export function InsightsCard({ insights, title = "Auto-insights", subtitle = "Top differences from this strategy's baseline. Slices need 8 trades; under 20 is an early signal." }: { insights: Insight[]; title?: string; subtitle?: string }) {
+export function InsightsCard({ insights, title = "Auto-insights", subtitle = "Top differences from the baseline of every trade in view, before filters. Slices need 8 trades; under 20 is an early signal." }: { insights: Insight[]; title?: string; subtitle?: string }) {
   return (
     <Card title={title} subtitle={subtitle}>
       {insights.length ? (

@@ -107,7 +107,7 @@ function CompareCard({ r }: { r: CompareRow }) {
         <Verdict holds={r.holds} />
       </div>
       <p className="text-label text-muted">
-        Ideal: {r.ideal_n} winners ({pct(r.ideal_share)}) · Backtest:{" "}
+        Ideal: {r.ideal_n} {r.ideal_n === 1 ? "winner" : "winners"} ({pct(r.ideal_share)}) · Backtest:{" "}
         <span className={avg === null ? "" : avg > 0 ? "text-win" : avg < 0 ? "text-loss" : ""}>{fmtR(avg)}</span> avg, {pct(r.backtest_win_rate)} win, n={r.backtest_n}
       </p>
     </li>
