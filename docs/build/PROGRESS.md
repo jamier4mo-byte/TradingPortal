@@ -212,13 +212,13 @@ prompt's branch. If a prompt stops part-way, the next run continues from the fir
 - [x] Tests: recurrence across DST, this-occurrence vs series, permissions; Playwright at 375 and 1440 with axe
 
 ### 2. The Hub (section 1)
-- [ ] `GET /api/hub`: welcome-back gap, process streak, personal bests, first-run checklist, week behind
-- [ ] Hero: greeting by UK time, Welcome back, ordinal date, live clock, session status line, time-of-day ambience with session tint and the weekend state
-- [ ] Today's news card (headline, my instruments, impact chips, forecast vs previous, empty state; phone: headline + top 3)
-- [ ] Launch islands with logos, mini-stats, hover lift and glow, press state, launch loaders (rewind / radar) as the real loading screen; phone tiles side by side
-- [ ] Team calendar card, live market panel (watchlist, search, credits; swipeable ticker row on the phone)
-- [ ] First-run checklist (F15), process streak, personal bests with one restrained celebration, Week behind / Week ahead from Sunday evening
-- [ ] Big screens get extra panels; everything below the fold lazy-loads; Hub initial JS ≤ 200 KB gzip
+- [x] `GET /api/hub`: welcome-back gap, process streak, personal bests, first-run checklist, week behind
+- [x] Hero: greeting by UK time, Welcome back, ordinal date, live clock, session status line, time-of-day ambience with session tint and the weekend state
+- [x] Today's news card (headline, my instruments, impact chips, forecast vs previous, empty state; phone: headline + top 3)
+- [x] Launch islands with logos, mini-stats, hover lift and glow, press state, launch loaders (rewind / radar) as the real loading screen; phone tiles side by side
+- [x] Team calendar card, live market panel (watchlist, search, credits; swipeable ticker row on the phone)
+- [x] First-run checklist (F15), process streak, personal bests with one restrained celebration, Week behind / Week ahead from Sunday evening
+- [x] Big screens get extra panels; everything below the fold lazy-loads; Hub initial JS ≤ 200 KB gzip
 
 ### 3. Motion pass (F18)
 - [ ] Page transitions (View Transitions + fallback), shared-element transitions for strategy / trade / ticker / calendar event / news event, reversed on back
