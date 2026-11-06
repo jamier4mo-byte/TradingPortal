@@ -30,6 +30,10 @@ for _name in (
     "VAPID_PUBLIC_KEY",
     "VAPID_PRIVATE_KEY",
     "VAPID_SUBJECT",
+    # Screenshot storage stays local in tests; S3 tests build their own S3Storage inside moto.
+    "STORAGE_BACKEND",
+    "BUCKET_NAME",
+    "AWS_ENDPOINT_URL_S3",
 ):
     os.environ[_name] = ""
 
@@ -67,6 +71,9 @@ from app.models import (  # noqa: E402
     Session,
     Strategy,
     Tag,
+    Task,
+    TaskCompletion,
+    TaskException,
     Trade,
     User,
     UserApiKey,
@@ -118,6 +125,9 @@ def clean_db() -> Iterator[None]:
             db.execute(delete(model))
         db.execute(delete(EventType).where(EventType.seeded.is_(False)))
         for model in (
+            TaskCompletion,
+            TaskException,
+            Task,
             Screenshot,
             Trade,
             JournalSession,

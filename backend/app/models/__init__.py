@@ -3,6 +3,7 @@
 from .api_key import UserApiKey
 from .audit import AuditLog
 from .base import Base, OwnedRecordMixin, OwnerMixin, SoftDeleteMixin, TimestampMixin, utcnow
+from .calendar import CATEGORIES, CATEGORY_LABELS, DEFAULT_TZ, Task, TaskCompletion, TaskException
 from .journal import (
     DEFAULT_REASONING_TEMPLATE,
     DEFAULT_RULES,
@@ -41,6 +42,12 @@ from .tag import TAG_CATEGORIES, Tag
 from .user import OWNER_COLOURS, Invite, Passkey, PasswordReset, Session, User
 
 __all__ = [
+    "CATEGORIES",
+    "CATEGORY_LABELS",
+    "DEFAULT_TZ",
+    "Task",
+    "TaskCompletion",
+    "TaskException",
     "IMPACTS",
     "AlertDelivery",
     "AlertPrefs",
