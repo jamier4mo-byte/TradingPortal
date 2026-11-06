@@ -100,5 +100,5 @@ prompt's branch. If a prompt stops part-way, the next run continues from the fir
 - [x] Keyboard-only Annotate mode completes 8 trades (Playwright)
 - [x] Coverage/unlock unit tests (gap month, year boundary, midnight UK, deleted, exactly 6)
 - [x] Member 403 + read-only banner
-- [ ] `make lint`, `make test`, `make smoke` green; `/check-devices` clean; design-reviewer no blockers/majors
-- [ ] `docs/build/PHASE-2-REPORT.md`; merged to local `main`
+- [x] `make lint`, `make test`, `make smoke` green (208 pytest, 76 Playwright); `/check-devices` clean at 360/375/430/768/1440/1920; design-reviewer: two passes, no blockers or majors left
+- [x] `docs/build/PHASE-2-REPORT.md`; merged to local `main`
