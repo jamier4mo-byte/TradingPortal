@@ -449,6 +449,15 @@ export function outcomeTone(o: Outcome | null | undefined): "win" | "loss" | "br
 export function hasReason(t: Trade): boolean {
   return Object.values(t.reasoning ?? {}).some((v) => String(v ?? "").trim()) || Boolean(t.notes?.trim());
 }
+/** What a "complete" trade would still be missing: named so the warning can list it. Never blocks. */
+export function missingForCompletion(t: Trade): string[] {
+  const out: string[] = [];
+  const shots = (t.kind === "missed" ? (["entry"] as const) : LABELLED_SLOTS).filter((s) => !slotShot(t, s));
+  if (shots.length) out.push(`${shots.map((s) => (t.kind === "missed" ? "the setup" : SLOT_LABEL[s])).join(", ")} ${shots.length === 1 ? "screenshot" : "screenshots"}`);
+  if (!hasReason(t)) out.push("the reasoning");
+  return out;
+}
+
 /** Completed is a manual mark Jamie sets once the three images and the reasoning are in. */
 export function isCompleted(t: Trade): boolean {
   return t.annotated_at !== null;

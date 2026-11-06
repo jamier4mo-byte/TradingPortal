@@ -54,7 +54,8 @@ Jamie's flow: import the CSV, then for each trade upload three labelled images (
 - "Completed" is a manual mark (`PATCH /api/trades/{id}` with `annotated: true|false`), no longer computed from screenshots and reasons. The session inbox reads "10 trades · 24/30 screenshots · 8/10 reasons · 8/10 completed"; Finish annotating turns into Review once every trade is marked.
 - Annotate mode: the three slots side by side, ⌘V fills HTF → Entry → Outcome then focuses the reason, a **Mark completed** button in the footer (⌘⇧↵ marks and moves on), progress dots and the header count follow the manual mark. Trade detail and the quick log show the same three slots; trade lists show a Completed chip and which of the three images are missing.
 - After an import the primary button is **Annotate trades**; the bulk matcher remains as a secondary route and now has HTF/Entry/Outcome columns (filenames like `T03_htf`, `3h`, `3e`, `3o`; the sequence fallback fills HTF, Entry, Outcome per trade).
-- Tests: 211 pytest, 76 Playwright (the keyboard-only Annotate run now pastes three images per trade and marks each completed with ⌘⇧↵).
+- **Mark completed** warns when any of the three images or the reasoning is missing (a dialog lists exactly what) and lets you mark it anyway; ⌘⇧↵ shows the same dialog. Never restricts.
+- Tests: 211 pytest, 76 Playwright (the keyboard-only Annotate run pastes three images per trade, marks each completed with ⌘⇧↵, and confirms the warning on an empty trade).
 
 ## Assumptions
 1. **Duplicate key is (strategy, destination kind, FX Replay id)**, not (strategy, id). The gate asks for an Ideal import followed by a Backtest import of the same file that takes *all* trades, then a third import that is all duplicates; that only works if the ideal catalogue and the backtest ledger are separate destinations. A winner can therefore sit in both. Within a destination a re-import skips duplicates and reports them.
@@ -78,7 +79,7 @@ Jamie's flow: import the CSV, then for each trade upload three labelled images (
 6. Reasoning template fields are fixed per strategy at creation; should editing the template later re-key old trades' reasoning?
 7. Session windows are Asia 00–08, London 08–13, New York 13–22 UK time; keep these?
 8. Missed setups: one screenshot and a reason, kept out of P&L. Should they appear in the Annotate stepper too?
-9. Should a trade be allowed to be marked completed with an image or the reasoning still missing (allowed now, so you stay in control), or should the button warn first?
+9. ~~Should Mark completed warn when something is missing?~~ Answered 6 Nov: it warns ("This trade still has no HTF, Entry screenshots and the reasoning") and never restricts.
 
 ## Known issues
 - Real screenshots match by sequence only (see the gate row): no filename hint and no capture time to go on.

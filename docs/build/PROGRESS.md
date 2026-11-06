@@ -106,4 +106,5 @@ prompt's branch. If a prompt stops part-way, the next run continues from the fir
 ### 7. Follow-up: manual annotation flow (branch `build/02b-manual-annotation`)
 - [x] Slots HTF / Entry / Outcome (+ extras); migration `0005`; `annotated_at` and the manual completed mark
 - [x] Annotate mode: three slots, Mark completed (⌘⇧↵), inbox counts completed; matcher and lists updated
+- [x] Mark completed warns about missing images or reasoning, never restricts (branch `build/02c-completion-warning`)
 - [x] 211 pytest · 76 Playwright · lint clean; merged to local `main`

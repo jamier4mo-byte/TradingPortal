@@ -167,18 +167,24 @@ test("annotate mode completes 8 trades with the keyboard only", async ({ page, c
     await page.keyboard.press("ControlOrMeta+Shift+Enter"); // mark completed and move on
   }
   await expect(page.getByRole("heading", { level: 1, name: "Trade 9/10" })).toBeVisible();
+  // Trade 9 has nothing yet: ⌘⇧↵ warns, and confirming marks it and moves on
+  await page.keyboard.press("ControlOrMeta+Shift+Enter");
+  const warn = page.getByRole("dialog", { name: "Mark completed anyway?" });
+  await expect(warn).toBeVisible();
+  await warn.getByRole("button", { name: "Mark completed anyway" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Trade 10/10" })).toBeVisible();
+  await expect(page.getByText("9/10 completed")).toBeVisible();
   await page.keyboard.press("k");
-  await expect(page.getByRole("heading", { level: 1, name: "Trade 8/10" })).toBeVisible();
-  await page.keyboard.press("j");
   await expect(page.getByRole("heading", { level: 1, name: "Trade 9/10" })).toBeVisible();
-  await expect(page.getByText("8/10 completed")).toBeVisible();
+  await page.keyboard.press("j");
+  await expect(page.getByRole("heading", { level: 1, name: "Trade 10/10" })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page).toHaveURL(new RegExp(`/journal/strategies/${id}$`));
-  await expect(page.getByText("10 trades · 24/30 screenshots · 8/10 reasons · 8/10 completed")).toBeVisible();
+  await expect(page.getByText("10 trades · 24/30 screenshots · 8/10 reasons · 9/10 completed")).toBeVisible();
   const res = await api(context, "GET", `/api/journal/sessions/${session.id}/trades`);
   const trades = (await res.json()) as { reasoning: Record<string, string>; annotated_at: string | null; screenshots: { slot: string }[] }[];
   expect(trades.filter((t) => t.reasoning.htf_bias?.startsWith("Bullish"))).toHaveLength(8);
-  expect(trades.filter((t) => t.annotated_at)).toHaveLength(8);
+  expect(trades.filter((t) => t.annotated_at)).toHaveLength(9);
   expect(trades.filter((t) => ["htf", "entry", "outcome"].every((slot) => t.screenshots.some((s) => s.slot === slot)))).toHaveLength(8);
 });
 
@@ -223,6 +229,16 @@ test("trade detail shows the gallery and the trash restores a deleted trade", as
   const { trades } = await importCsv(context, id, "ideal");
   await page.goto(`/journal/strategies/${id}/trades/${trades[0].id}`);
   await expect(page.getByText("No screenshots yet")).toBeVisible();
+  // Mark completed warns about what's missing but never blocks
+  await page.getByRole("button", { name: "Mark completed" }).click();
+  const warning = page.getByRole("dialog", { name: "Mark completed anyway?" });
+  await expect(warning).toBeVisible();
+  await expect(warning.getByText(/no HTF, Entry, Outcome screenshots and the reasoning/)).toBeVisible();
+  await warning.getByRole("button", { name: "Cancel" }).click();
+  await expect(page.getByRole("button", { name: "Mark completed" })).toHaveAttribute("aria-pressed", "false");
+  await page.getByRole("button", { name: "Mark completed" }).click();
+  await warning.getByRole("button", { name: "Mark completed anyway" }).click();
+  await expect(page.getByRole("button", { name: "Completed" })).toHaveAttribute("aria-pressed", "true");
   await page.getByRole("button", { name: "Delete trade" }).click();
   await page.getByRole("button", { name: "Move to Trash" }).click();
   await expect(page).toHaveURL(new RegExp(`/journal/strategies/${id}`));
