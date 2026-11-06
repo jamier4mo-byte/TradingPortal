@@ -77,12 +77,7 @@ function DetailBody({ d }: { d: Detail }) {
             <ImpactChip impact={e.impact} />
           </div>
           {e.title !== e.name ? <p className="mt-1 text-label text-muted">Listed as &ldquo;{e.title}&rdquo;</p> : null}
-          <Figures event={e} flip className="mt-4 max-w-lg" />
-          {e.surprise ? (
-            <p className="mt-2">
-              <SurpriseBadge surprise={e.surprise} withWords />
-            </p>
-          ) : null}
+          <Figures event={e} words className="mt-4 max-w-xl" />
           {e.instruments.length ? <p className="mt-3 text-body text-muted">Moves {e.instruments.map((i) => displaySymbol(i, i)).join(", ")}</p> : null}
         </div>
         {secs > 0 && secs < 7 * 86400 ? <CountdownRing secondsLeft={secs} label={`${e.currency} ${e.name}`} /> : null}
@@ -94,8 +89,8 @@ function DetailBody({ d }: { d: Detail }) {
         </p>
       ) : null}
 
-      <div className="grid gap-4 laptop:grid-cols-12 laptop:gap-6">
-        <Card title="What it is" className="laptop:col-span-5">
+      <div className="grid gap-4 laptop:gap-6 desktop:grid-cols-12">
+        <Card title="What it is" className="desktop:col-span-5">
           {d.type?.explanation ? (
             <div className="flex flex-col gap-3 text-body">
               <p>{d.type.explanation}</p>
@@ -116,7 +111,7 @@ function DetailBody({ d }: { d: Detail }) {
           )}
         </Card>
 
-        <Card title="Release history" subtitle="Actual, forecast, previous and surprise" className="laptop:col-span-7">
+        <Card title="Release history" subtitle="Actual, forecast, previous and surprise" className="desktop:col-span-7">
           {d.history.length === 0 ? (
             <EmptyState illustration={<ListEmpty />} title="No past releases stored" text={d.empty.history ?? "History builds up as each release is stored."} />
           ) : (
@@ -152,7 +147,7 @@ function DetailBody({ d }: { d: Detail }) {
           )}
         </Card>
 
-        <Card title="Price reaction" subtitle="Range in the 5, 15 and 60 minutes after each release" className="laptop:col-span-12">
+        <Card title="Price reaction" subtitle="Range in the 5, 15 and 60 minutes after each release" className="desktop:col-span-12">
           {d.reactions.length === 0 ? (
             <EmptyState illustration={<PulseEmpty />} title="No price reactions yet" text={d.empty.reactions ?? "Reactions are worked out once per release from Twelve Data price history."} />
           ) : (

@@ -55,7 +55,7 @@ export default function InstrumentView() {
               </h1>
               <p className="text-body text-muted">{quote!.name}</p>
             </div>
-            <LiveDot live={quote!.status === "ok" && !usage.data?.paused} className="ml-auto" />
+            {usable ? <LiveDot live={quote!.status === "ok" && !usage.data?.paused} className="ml-auto" /> : <span className="ml-auto" />}
             <button
               type="button"
               className="btn btn-secondary"

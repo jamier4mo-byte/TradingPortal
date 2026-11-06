@@ -76,7 +76,7 @@ export function TickerCard({
           <p className="truncate font-mono text-body font-semibold">{label}</p>
           <p className="truncate text-label text-muted">{quote.name}</p>
         </div>
-        <LiveDot live={live} className="ml-auto shrink-0" />
+        {usable ? <LiveDot live={live} className="ml-auto shrink-0" /> : null}
       </div>
 
       {usable ? (

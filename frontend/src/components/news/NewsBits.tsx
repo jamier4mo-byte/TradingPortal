@@ -50,7 +50,7 @@ export function SurpriseBadge({ surprise, withWords = false }: { surprise: Surpr
 }
 
 /** Actual · Forecast · Previous, in a fixed grid so columns line up in a list. */
-export function Figures({ event, flip = false, className = "" }: { event: NewsEvent; flip?: boolean; className?: string }) {
+export function Figures({ event, flip = false, words = false, className = "" }: { event: NewsEvent; flip?: boolean; words?: boolean; className?: string }) {
   return (
     <dl className={`grid grid-cols-3 gap-x-3 text-label ${className}`}>
       <div className="min-w-0">
@@ -65,7 +65,7 @@ export function Figures({ event, flip = false, className = "" }: { event: NewsEv
           )}
           {event.surprise ? (
             <span className="block">
-              <SurpriseBadge surprise={event.surprise} />
+              <SurpriseBadge surprise={event.surprise} withWords={words} />
             </span>
           ) : null}
         </dd>
