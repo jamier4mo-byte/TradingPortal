@@ -225,3 +225,17 @@ def test_five_thousand_trades_come_back_fast(db, admin, admin_client):
     assert out["counts"]["filtered"] == 5000
     print(f"\n5,000-trade analytics query: {elapsed * 1000:.0f} ms")
     assert elapsed < 1.0
+
+
+def test_session_insights_for_the_recap(db, admin, admin_client):
+    s = new_strategy(admin_client)
+    result = do_import(admin_client, s["id"], "backtest")
+    out = admin_client.get(f"/api/journal/sessions/{result['session']['id']}/insights")
+    assert out.status_code == 200, out.text
+    body = out.json()
+    assert body["session_trades"] == 10 and body["min_slice"] == 8
+    assert isinstance(body["top"], list)
+    assert (
+        body["session_vs_baseline"] is None
+    )  # the session is the whole strategy: nothing to compare against
+    assert admin_client.get("/api/journal/sessions/99999/insights").status_code == 404

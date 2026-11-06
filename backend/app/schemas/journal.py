@@ -77,6 +77,8 @@ class StatsOut(BaseModel):
     avg_r: float | None
     total_pnl: float | None
     rules_followed_rate: float | None
+    profit_factor: float | None = None
+    max_dd_r: float | None = None
 
 
 class StrategyIn(BaseModel):

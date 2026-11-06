@@ -77,7 +77,7 @@ def coverage_out(cov: rules.Coverage) -> CoverageOut:
 
 
 def strategy_out(db, strategy: Strategy, user: User) -> StrategyOut:
-    card = svc.strategy_card(db, strategy)
+    card = svc.strategy_card(db, strategy, user.breakeven_threshold)
     card["coverage"] = coverage_out(card["coverage"])
     card["backtest_stats"] = StatsOut(**card["backtest_stats"]) if card["backtest_stats"] else None
     return StrategyOut(
@@ -124,7 +124,7 @@ def session_out(db, session: JournalSession, user: User) -> SessionOut:
         },
         owner=_owner(db, session.owner_id),
         progress=SessionProgressOut(**svc.session_progress(db, session)),
-        stats=StatsOut(**svc.headline_stats(trades)),
+        stats=StatsOut(**svc.headline_stats(trades, user.breakeven_threshold)),
         can_edit=_can_edit(session, user),
     )
 

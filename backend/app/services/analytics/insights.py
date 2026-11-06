@@ -79,6 +79,56 @@ def _describe(metric: str, s: float, b: float) -> tuple[float, str] | None:
     return None
 
 
+def slice_insight(
+    slice_rows: list[Row], base: dict[str, float | None], source: str, name: str, dim: str, key: str
+) -> dict | None:
+    """The single biggest difference between a slice and the baseline measures, or None."""
+    n = len(slice_rows)
+    best: tuple[float, str, str, float, float] | None = None
+    for metric, s in _measures(slice_rows, source).items():
+        b = base.get(metric)
+        if s is None or b is None:
+            continue
+        described = _describe(metric, s, b)
+        if not described or abs(described[0]) < MIN_EFFECT:
+            continue
+        if best is None or abs(described[0]) > abs(best[0]):
+            best = (described[0], described[1], metric, s, b)
+    if not best:
+        return None
+    rel, phrase, metric, s, b = best
+    early = n < SOLID_SLICE
+    return {
+        "dimension": dim,
+        "key": key,
+        "metric": metric,
+        "text": f"{name}: {phrase}, n={n}" + (" · early signal" if early else ""),
+        "n": n,
+        "early": early,
+        "slice_value": round(s, 4),
+        "baseline_value": round(b, 4),
+        "effect": round(rel, 4),
+        "score": abs(rel) * math.sqrt(n),
+    }
+
+
+def session_insights(session_rows: list[Row], strategy_rows: list[Row], source: str) -> dict:
+    """For the session recap: this session against the strategy's baseline, plus the strategy's top 3."""
+    vs = None
+    if len(session_rows) >= MIN_SLICE and len(strategy_rows) > len(session_rows):
+        vs = slice_insight(
+            session_rows, _measures(strategy_rows, source), source, "This session", "session", ""
+        )
+        if vs:
+            vs["score"] = round(vs["score"], 4)
+    return {
+        "session_vs_baseline": vs,
+        "session_trades": len(session_rows),
+        "min_slice": MIN_SLICE,
+        "top": insights(strategy_rows, source),
+    }
+
+
 def insights(rows: list[Row], source: str = "backtest", limit: int = 3) -> list[dict]:
     """Top `limit` slice-vs-baseline differences, one per slice, biggest (effect × √n) first."""
     if len(rows) < MIN_SLICE + 1:
@@ -95,39 +145,9 @@ def insights(rows: list[Row], source: str = "backtest", limit: int = 3) -> list[
             n = len(slice_rows)
             if n < MIN_SLICE or n == len(rows):
                 continue
-            measured = _measures(slice_rows, source)
-            best: tuple[float, str, str, float, float] | None = None
-            for metric, s in measured.items():
-                b = base.get(metric)
-                if s is None or b is None:
-                    continue
-                described = _describe(metric, s, b)
-                if not described:
-                    continue
-                rel, phrase = described
-                if abs(rel) < MIN_EFFECT:
-                    continue
-                if best is None or abs(rel) > abs(best[0]):
-                    best = (rel, phrase, metric, s, b)
-            if not best:
-                continue
-            rel, phrase, metric, s, b = best
-            early = n < SOLID_SLICE
-            text = f"{name(k)}: {phrase}, n={n}" + (" · early signal" if early else "")
-            candidates.append(
-                {
-                    "dimension": dim,
-                    "key": k,
-                    "metric": metric,
-                    "text": text,
-                    "n": n,
-                    "early": early,
-                    "slice_value": round(s, 4),
-                    "baseline_value": round(b, 4),
-                    "effect": round(rel, 4),
-                    "score": abs(rel) * math.sqrt(n),
-                }
-            )
+            found = slice_insight(slice_rows, base, source, name(k), dim, k)
+            if found:
+                candidates.append(found)
     candidates.sort(key=lambda c: (-c["score"], c["dimension"], c["key"]))
     for c in candidates:
         c["score"] = round(c["score"], 4)
