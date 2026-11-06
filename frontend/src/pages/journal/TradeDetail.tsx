@@ -5,8 +5,9 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import Card from "../../components/Card.tsx";
 import { Chip, ConfirmDialog, ErrorState, OwnerChip, ReadOnlyBanner, SkeletonCard, useToast } from "../../components/ui/index.ts";
 import { api } from "../../lib/api.ts";
-import { fmtDuration, fmtPnl, fmtPrice, fmtR, fmtUkDateTime, isCompleted, LABELLED_SLOTS, SLOT_LABEL, type Trade, useInvalidateJournal, useStrategy, useTrade, useUpdateTrade } from "../../lib/journal.ts";
+import { fmtDuration, fmtPnl, fmtPrice, fmtR, fmtUkDateTime, isCompleted, LABELLED_SLOTS, missingForCompletion, SLOT_LABEL, type Trade, useInvalidateJournal, useStrategy, useTrade, useUpdateTrade } from "../../lib/journal.ts";
 import { useState } from "react";
+import { CompleteDialog } from "./components/CompleteDialog.tsx";
 import { Gallery } from "./components/Gallery.tsx";
 import { OutcomeChip, SideChip } from "./components/OutcomeChip.tsx";
 import { ScreenshotSlot } from "./components/ScreenshotSlot.tsx";
@@ -29,7 +30,14 @@ function Detail({ trade: t, templateFields, rules }: { trade: Trade; templateFie
   const [current, setCurrent] = useState(t);
   if (current.id !== t.id || current.updated_at < t.updated_at) setCurrent(t);
   const update = useUpdateTrade();
-  const toggleCompleted = () => update.mutate({ id: current.id, body: { annotated: !isCompleted(current) } }, { onSuccess: setCurrent });
+  const [missing, setMissing] = useState<string[] | null>(null);
+  const markCompleted = (value: boolean) => update.mutate({ id: current.id, body: { annotated: value } }, { onSuccess: setCurrent });
+  const toggleCompleted = () => {
+    if (isCompleted(current)) return markCompleted(false);
+    const gaps = missingForCompletion(current);
+    if (gaps.length) return setMissing(gaps); // warn, never restrict
+    markCompleted(true);
+  };
   const del = useMutation({
     mutationFn: () => api.delete(`/api/trades/${t.id}`),
     onSuccess: () => {
@@ -165,6 +173,15 @@ function Detail({ trade: t, templateFields, rules }: { trade: Trade; templateFie
         </Card>
       </div>
 
+      <CompleteDialog
+        missing={missing}
+        busy={update.isPending}
+        onCancel={() => setMissing(null)}
+        onConfirm={() => {
+          setMissing(null);
+          markCompleted(true);
+        }}
+      />
       <ConfirmDialog open={deleting} onOpenChange={setDeleting} title="Move this trade to Trash?" text="It can be restored for 30 days." confirmLabel="Move to Trash" danger busy={del.isPending} onConfirm={() => del.mutate()} />
     </div>
   );

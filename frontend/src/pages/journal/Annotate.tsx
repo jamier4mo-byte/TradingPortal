@@ -5,8 +5,9 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import { ErrorState, Field, SkeletonText, TextInput, useToast } from "../../components/ui/index.ts";
 import { imageFiles, prepareImage } from "../../lib/images.ts";
-import { fmtR, fmtUkDateTime, isCompleted, LABELLED_SLOTS, type Slot, SLOT_LABEL, slotShot, type Trade, type TradePatch, uploadScreenshot, useSession, useSessionTrades, useStrategy, useUpdateTrade } from "../../lib/journal.ts";
+import { fmtR, fmtUkDateTime, isCompleted, LABELLED_SLOTS, missingForCompletion, type Slot, SLOT_LABEL, slotShot, type Trade, type TradePatch, uploadScreenshot, useSession, useSessionTrades, useStrategy, useUpdateTrade } from "../../lib/journal.ts";
 import { OutcomeChip, SideChip } from "./components/OutcomeChip.tsx";
+import { CompleteDialog } from "./components/CompleteDialog.tsx";
 import { ScreenshotSlot } from "./components/ScreenshotSlot.tsx";
 import { TagInput } from "./components/TagInput.tsx";
 
@@ -131,8 +132,8 @@ function Stepper({ strategyId, trades, canEdit }: { strategyId: number; trades: 
       if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
         e.preventDefault();
         if (e.shiftKey && canEdit && !isCompleted(local[trade.id] ?? trade)) {
-          flush();
-          update.mutate({ id: trade.id, body: { annotated: true } }, { onSuccess: onShot });
+          toggleCompleted(true);
+          return;
         }
         go(index + 1);
         return;
@@ -143,16 +144,45 @@ function Stepper({ strategyId, trades, canEdit }: { strategyId: number; trades: 
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [exit, go, index, canEdit, flush, local, trade, update]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exit, go, index, canEdit, local, trade]);
 
   useEffect(() => () => flush(), [flush]);
 
   const done = useMemo(() => trades.filter((t) => isCompleted(local[t.id] ?? t)).length, [trades, local]);
   const completed = isCompleted(trade);
-  const toggleCompleted = () => {
-    // Completed is Jamie's own call: flush the autosave first so the mark lands on the saved trade.
-    flush();
-    update.mutate({ id: trade.id, body: { annotated: !completed } }, { onSuccess: onShot, onError: (err) => toast({ title: "Couldn't save", text: err.message, tone: "loss" }) });
+  const [missing, setMissing] = useState<string[] | null>(null);
+  const [advanceAfter, setAdvanceAfter] = useState(false);
+  const markCompleted = useCallback(
+    (value: boolean, thenNext = false) => {
+      // Completed is Jamie's own call: flush the autosave first so the mark lands on the saved trade.
+      flush();
+      update.mutate(
+        { id: trade.id, body: { annotated: value } },
+        {
+          onSuccess: (t) => {
+            onShot(t);
+            if (thenNext) go(index + 1);
+          },
+          onError: (err) => toast({ title: "Couldn't save", text: err.message, tone: "loss" }),
+        },
+      );
+    },
+    [flush, update, trade.id, go, index, toast],
+  );
+  const toggleCompleted = (thenNext = false) => {
+    if (completed) {
+      markCompleted(false);
+      return;
+    }
+    const gaps = missingForCompletion(trade);
+    if (gaps.length) {
+      // Warn, never restrict: the dialog lists what's missing and still lets the mark through.
+      setMissing(gaps);
+      setAdvanceAfter(thenNext);
+      return;
+    }
+    markCompleted(true, thenNext);
   };
   const reasoning = trade.reasoning ?? {};
   const rulesFollowed = trade.rules_followed ?? {};
@@ -323,7 +353,7 @@ function Stepper({ strategyId, trades, canEdit }: { strategyId: number; trades: 
           <button
             type="button"
             className={`btn ml-auto tablet:ml-0 ${completed ? "btn-ghost" : "btn-secondary"}`}
-            onClick={toggleCompleted}
+            onClick={() => toggleCompleted(false)}
             disabled={update.isPending}
             aria-pressed={completed}
           >
@@ -341,6 +371,15 @@ function Stepper({ strategyId, trades, canEdit }: { strategyId: number; trades: 
           </button>
         )}
       </footer>
+      <CompleteDialog
+        missing={missing}
+        busy={update.isPending}
+        onCancel={() => setMissing(null)}
+        onConfirm={() => {
+          setMissing(null);
+          markCompleted(true, advanceAfter);
+        }}
+      />
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
