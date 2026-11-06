@@ -4,6 +4,7 @@ Rows are read with one column select plus one tag select (no ORM objects, no scr
 come back well inside the 300 ms budget.
 """
 
+import math
 from collections import Counter
 from datetime import UTC
 
@@ -55,6 +56,11 @@ _COLUMNS = (
 )
 
 
+def _finite(v: float | None) -> float | None:
+    """Belt and braces: a non-finite number stored before validation existed is treated as missing."""
+    return v if v is None or math.isfinite(v) else None
+
+
 def _aware(dt):
     return dt if dt is None or dt.tzinfo else dt.replace(tzinfo=UTC)
 
@@ -97,8 +103,8 @@ def load_rows(
                 owner_id=t.owner_id,
                 strategy_id=t.strategy_id,
                 session_id=t.session_id,
-                r=t.r_multiple,
-                pnl=t.pnl,
+                r=_finite(t.r_multiple),
+                pnl=_finite(t.pnl),
                 outcome=t.outcome,
                 entry_model=t.entry_model,
                 session_label=t.session_label,
@@ -106,11 +112,11 @@ def load_rows(
                 tags=tuple(n for _, n in own_tags),
                 tag_ids=frozenset(i for i, _ in own_tags),
                 rules=dict(t.rules_followed or {}),
-                mae_r=t.mae_r,
-                mfe_r=mfe,
-                sl_distance=t.sl_distance,
-                tp_distance=t.tp_distance,
-                tp_r=t.tp_r,
+                mae_r=_finite(t.mae_r),
+                mfe_r=_finite(mfe),
+                sl_distance=_finite(t.sl_distance),
+                tp_distance=_finite(t.tp_distance),
+                tp_r=_finite(t.tp_r),
                 news_impact=t.news_impact,
                 market_date=t.market_date,
             )

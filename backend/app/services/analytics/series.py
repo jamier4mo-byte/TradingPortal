@@ -152,15 +152,20 @@ def histogram(
     values: list[float], width: float, *, max_bins: int = 40, floor_at: float | None = None
 ) -> list[dict]:
     """Fixed-width bins from floor(min) to ceil(max). Widens the bin if there would be too many."""
+    values = [v for v in values if math.isfinite(v)]
     if not values:
         return []
     lo = math.floor(min(values) / width) * width
     if floor_at is not None:
         lo = max(lo, floor_at)
     hi = max(values)
-    while (hi - lo) / width + 1 > max_bins:
+    for _ in range(64):  # bounded: each pass doubles the width
+        if (hi - lo) / width + 1 <= max_bins:
+            break
         width *= 2
         lo = math.floor(min(values) / width) * width
+    if (hi - lo) / width + 1 > max_bins:  # absurd spreads: fall back to exactly max_bins bins
+        width = (hi - lo) / (max_bins - 1) or 1.0
     n_bins = int((hi - lo) // width) + 1
     counts = [0] * n_bins
     for v in values:

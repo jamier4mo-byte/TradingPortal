@@ -10,6 +10,7 @@ that zone and gets aware UTC datetimes back.
 
 import csv
 import io
+import math
 import re
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -104,9 +105,12 @@ def _float(value: str, column: str, *, required: bool) -> float | None:
             raise RowError(f"{column} is empty")
         return None
     try:
-        return float(value.replace(",", ""))
+        number = float(value.replace(",", ""))
     except ValueError as exc:
         raise RowError(f"{column} '{value}' is not a number") from exc
+    if not math.isfinite(number):
+        raise RowError(f"{column} '{value}' is not a finite number")
+    return number
 
 
 def parse_clock(value: str, column: str) -> datetime:

@@ -239,3 +239,24 @@ def test_session_insights_for_the_recap(db, admin, admin_client):
         body["session_vs_baseline"] is None
     )  # the session is the whole strategy: nothing to compare against
     assert admin_client.get("/api/journal/sessions/99999/insights").status_code == 404
+
+
+def test_non_finite_numbers_never_reach_the_analytics(admin_client):
+    """An 'inf' in a CSV or an Infinity in JSON is refused; histograms cope with odd stored values anyway."""
+    from app.services.analytics.series import histogram
+    from app.services.fxreplay import parse_csv
+
+    bad = SAMPLE.replace(b",250.0,", b",inf,", 1)
+    result = parse_csv(bad)
+    assert any("not a finite number" in p for p in result.problems)
+    s = new_strategy(admin_client)
+    res = admin_client.post(
+        f"/api/strategies/{s['id']}/trades",
+        content=b'{"kind":"backtest","instrument":"NAS100","side":"buy","opened_at":"2026-03-03T10:00:00Z",'
+        b'"r_multiple":Infinity}',
+        headers={"Content-Type": "application/json"},
+    )
+    assert res.status_code == 422
+    assert histogram([float("inf"), float("nan")], 0.5) == []
+    bins = histogram([0.0, 1e300], 0.5)
+    assert len(bins) <= 40 and sum(b["n"] for b in bins) == 2
