@@ -1,16 +1,16 @@
-import { Check, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Check, CheckCircle2, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import { ErrorState, Field, SkeletonText, TextInput, useToast } from "../../components/ui/index.ts";
 import { imageFiles, prepareImage } from "../../lib/images.ts";
-import { fmtR, fmtUkDateTime, hasReason, type Slot, slotShot, type Trade, type TradePatch, uploadScreenshot, useSession, useSessionTrades, useStrategy, useUpdateTrade } from "../../lib/journal.ts";
+import { fmtR, fmtUkDateTime, isCompleted, LABELLED_SLOTS, type Slot, SLOT_LABEL, slotShot, type Trade, type TradePatch, uploadScreenshot, useSession, useSessionTrades, useStrategy, useUpdateTrade } from "../../lib/journal.ts";
 import { OutcomeChip, SideChip } from "./components/OutcomeChip.tsx";
 import { ScreenshotSlot } from "./components/ScreenshotSlot.tsx";
 import { TagInput } from "./components/TagInput.tsx";
 
-/** Annotate mode (U4): a full-screen "Trade 3/10" stepper. Cmd+V fills Entry, then Exit, then focuses
+/** Annotate mode (U4): a full-screen "Trade 3/10" stepper. Cmd+V fills HTF, Entry, then Outcome, then focuses
  *  the reason; Enter on the last field moves on. J/K step, Esc exits. Everything autosaves. */
 export default function Annotate() {
   const sid = Number(useParams().sid);
@@ -100,7 +100,7 @@ function Stepper({ strategyId, trades, canEdit }: { strategyId: number; trades: 
 
   const onShot = (t: Trade) => setLocal((l) => ({ ...l, [t.id]: t }));
 
-  // Global paste: Entry → Exit → extra. After the exit lands, the first reason field takes focus.
+  // Global paste: HTF → Entry → Outcome → extra. After the outcome lands, the first reason field takes focus.
   useEffect(() => {
     const onPaste = async (e: ClipboardEvent) => {
       if (e.defaultPrevented || !canEdit) return;
@@ -108,16 +108,16 @@ function Stepper({ strategyId, trades, canEdit }: { strategyId: number; trades: 
       if (!file) return;
       e.preventDefault();
       const current = local[trade.id] ?? trade;
-      const slot: Slot | null = !slotShot(current, "entry") ? "entry" : !slotShot(current, "exit") ? "exit" : current.screenshots.filter((s) => s.slot === "extra").length < 3 ? "extra" : null;
+      const slot: Slot | null = LABELLED_SLOTS.find((s) => !slotShot(current, s)) ?? (current.screenshots.filter((s) => s.slot === "extra").length < 3 ? "extra" : null);
       if (!slot) {
-        toast({ title: "All five slots are full", text: "Remove one to paste another." });
+        toast({ title: "All six slots are full", text: "Remove one to paste another." });
         return;
       }
       try {
         const prepared = await prepareImage(file, file.name || "pasted.png");
         const updated = await uploadScreenshot(trade.id, prepared.full, slot, { thumb: prepared.thumb, capturedAt: prepared.capturedAt, originalFilename: prepared.name });
         onShot(updated);
-        if (slot === "exit") firstFieldRef.current?.focus();
+        if (slot === "outcome") firstFieldRef.current?.focus();
       } catch (err) {
         toast({ title: "Paste failed", text: err instanceof Error ? err.message : undefined, tone: "loss" });
       }
@@ -130,6 +130,10 @@ function Stepper({ strategyId, trades, canEdit }: { strategyId: number; trades: 
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
         e.preventDefault();
+        if (e.shiftKey && canEdit && !isCompleted(local[trade.id] ?? trade)) {
+          flush();
+          update.mutate({ id: trade.id, body: { annotated: true } }, { onSuccess: onShot });
+        }
         go(index + 1);
         return;
       }
@@ -139,11 +143,17 @@ function Stepper({ strategyId, trades, canEdit }: { strategyId: number; trades: 
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [exit, go, index]);
+  }, [exit, go, index, canEdit, flush, local, trade, update]);
 
   useEffect(() => () => flush(), [flush]);
 
-  const done = useMemo(() => trades.filter((t) => (local[t.id] ?? t)).filter((t) => hasReason(local[t.id] ?? t) && slotShot(local[t.id] ?? t, "entry") && slotShot(local[t.id] ?? t, "exit")).length, [trades, local]);
+  const done = useMemo(() => trades.filter((t) => isCompleted(local[t.id] ?? t)).length, [trades, local]);
+  const completed = isCompleted(trade);
+  const toggleCompleted = () => {
+    // Completed is Jamie's own call: flush the autosave first so the mark lands on the saved trade.
+    flush();
+    update.mutate({ id: trade.id, body: { annotated: !completed } }, { onSuccess: onShot, onError: (err) => toast({ title: "Couldn't save", text: err.message, tone: "loss" }) });
+  };
   const reasoning = trade.reasoning ?? {};
   const rulesFollowed = trade.rules_followed ?? {};
 
@@ -179,7 +189,7 @@ function Stepper({ strategyId, trades, canEdit }: { strategyId: number; trades: 
           <span className="text-label text-muted" aria-live="polite">
             {saveState === "saving" ? "Saving…" : saveState === "saved" ? <span className="inline-flex items-center gap-1"><Check aria-hidden className="size-3.5" /> Autosaved</span> : null}
           </span>
-          <span className="num text-label text-muted">{done}/{trades.length} done</span>
+          <span className="num text-label text-muted">{done}/{trades.length} completed</span>
           <kbd className="hidden rounded-panel border border-border px-1.5 font-mono text-label text-muted laptop:inline">Esc</kbd>
           <button type="button" className="btn btn-ghost size-11 px-0" aria-label="Exit annotate mode" onClick={exit}>
             <X aria-hidden className="size-5" />
@@ -196,9 +206,20 @@ function Stepper({ strategyId, trades, canEdit }: { strategyId: number; trades: 
               <span className="num text-muted">{fmtUkDateTime(trade.opened_at)}</span>
               <span className="num font-medium">{fmtR(trade.r_multiple)}</span>
             </p>
-            <div className="grid gap-4 tablet:grid-cols-2">
-              <ScreenshotSlot trade={trade} slot="entry" shot={slotShot(trade, "entry")} label="Entry" size="lg" onChange={onShot} disabled={!canEdit} onPasted={() => undefined} />
-              <ScreenshotSlot trade={trade} slot="exit" shot={slotShot(trade, "exit")} label="Exit" size="lg" onChange={onShot} disabled={!canEdit} onPasted={() => firstFieldRef.current?.focus()} />
+            <div className="grid gap-4 tablet:grid-cols-3">
+              {LABELLED_SLOTS.map((slot) => (
+                <ScreenshotSlot
+                  key={slot}
+                  trade={trade}
+                  slot={slot}
+                  shot={slotShot(trade, slot)}
+                  label={SLOT_LABEL[slot]}
+                  size="lg"
+                  onChange={onShot}
+                  disabled={!canEdit}
+                  onPasted={slot === "outcome" ? () => firstFieldRef.current?.focus() : undefined}
+                />
+              ))}
             </div>
             <div className="grid grid-cols-3 gap-3">
               {trade.screenshots
@@ -209,7 +230,7 @@ function Stepper({ strategyId, trades, canEdit }: { strategyId: number; trades: 
               {trade.screenshots.filter((s) => s.slot === "extra").length < 3 && canEdit ? <ScreenshotSlot trade={trade} slot="extra" label="Extra" onChange={onShot} /> : null}
             </div>
             <p className="hidden text-label text-muted laptop:block">
-              <kbd className="rounded-panel border border-border px-1 font-mono">⌘V</kbd> fills Entry, then Exit, then the reason. <kbd className="rounded-panel border border-border px-1 font-mono">J</kbd>/<kbd className="rounded-panel border border-border px-1 font-mono">K</kbd> next and previous. <kbd className="rounded-panel border border-border px-1 font-mono">⌘↵</kbd> next trade.
+              <kbd className="rounded-panel border border-border px-1 font-mono">⌘V</kbd> fills HTF, Entry, then Outcome, then the reason. <kbd className="rounded-panel border border-border px-1 font-mono">J</kbd>/<kbd className="rounded-panel border border-border px-1 font-mono">K</kbd> next and previous. <kbd className="rounded-panel border border-border px-1 font-mono">⌘↵</kbd> next trade, <kbd className="rounded-panel border border-border px-1 font-mono">⌘⇧↵</kbd> mark completed and move on.
             </p>
           </section>
 
@@ -225,7 +246,7 @@ function Stepper({ strategyId, trades, canEdit }: { strategyId: number; trades: 
                     disabled={!canEdit}
                     onChange={(e) => patch({ reasoning: { ...reasoning, [f.key]: e.target.value } })}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter") {
+                      if (e.key === "Enter" && !e.metaKey && !e.ctrlKey) {
                         e.preventDefault();
                         const next = (e.currentTarget.form ?? document).querySelectorAll<HTMLInputElement>("input[data-reason]")[i + 1];
                         if (next) next.focus();
@@ -288,22 +309,34 @@ function Stepper({ strategyId, trades, canEdit }: { strategyId: number; trades: 
         <ol className="mx-auto hidden items-center gap-1 tablet:flex" aria-label="Trades in this session">
           {trades.map((t, i) => {
             const tt = local[t.id] ?? t;
-            const complete = hasReason(tt) && slotShot(tt, "entry") && slotShot(tt, "exit");
+            const complete = isCompleted(tt);
             return (
               <li key={t.id}>
-                <button type="button" aria-label={`Trade ${i + 1}${complete ? ", done" : ""}`} aria-current={i === index ? "step" : undefined} onClick={() => go(i)} className="grid size-11 place-items-center">
+                <button type="button" aria-label={`Trade ${i + 1}${complete ? ", completed" : ""}`} aria-current={i === index ? "step" : undefined} onClick={() => go(i)} className="grid size-11 place-items-center">
                   <span className={`block rounded-full ${i === index ? "size-3.5 border-2 border-accent bg-bg" : complete ? "size-2.5 bg-accent" : "size-2.5 bg-surface-2 ring-1 ring-border-input"}`} />
                 </button>
               </li>
             );
           })}
         </ol>
+        {canEdit ? (
+          <button
+            type="button"
+            className={`btn ml-auto tablet:ml-0 ${completed ? "btn-ghost" : "btn-secondary"}`}
+            onClick={toggleCompleted}
+            disabled={update.isPending}
+            aria-pressed={completed}
+          >
+            <CheckCircle2 aria-hidden className="size-4" /> <span className="hidden tablet:inline">{completed ? "Completed" : "Mark completed"}</span>
+            <span className="tablet:hidden">{completed ? "Done" : "Complete"}</span>
+          </button>
+        ) : null}
         {index === trades.length - 1 ? (
-          <button type="button" className="btn btn-primary ml-auto tablet:ml-0" onClick={exit}>
+          <button type="button" className={`btn btn-primary ${canEdit ? "" : "ml-auto"} tablet:ml-0`} onClick={exit}>
             <Check aria-hidden className="size-4" /> Finish
           </button>
         ) : (
-          <button type="button" className="btn btn-primary ml-auto tablet:ml-0" onClick={() => go(index + 1)}>
+          <button type="button" className={`btn btn-primary ${canEdit ? "" : "ml-auto"} tablet:ml-0`} onClick={() => go(index + 1)}>
             Next <ChevronRight aria-hidden className="size-4" /> <kbd className="hidden font-mono text-label text-on-accent laptop:inline">J</kbd>
           </button>
         )}

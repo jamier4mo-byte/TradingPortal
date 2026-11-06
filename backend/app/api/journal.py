@@ -435,15 +435,14 @@ def match_screenshots(session_id: int, body: MatchIn, user: CurrentUser, db: Db)
     trades = svc.session_trades(db, session)
     refs = []
     for i, t in enumerate(trades, start=1):
-        live = [s.slot for s in t.screenshots if s.deleted_at is None]
+        live = {s.slot for s in t.screenshots if s.deleted_at is None}
         refs.append(
             matcher.TradeRef(
                 id=t.id,
                 index=i,
                 opened_at=t.opened_at,
                 closed_at=t.closed_at,
-                has_entry="entry" in live,
-                has_exit="exit" in live,
+                filled=tuple(sorted(live & set(matcher.LABELLED))),
             )
         )
     files = [

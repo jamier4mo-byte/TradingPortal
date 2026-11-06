@@ -1,9 +1,9 @@
-import { ImageOff, Tag } from "lucide-react";
+import { CheckCircle2, ImageOff, Tag } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { Chip, EmptyState, OwnerChip } from "../../../components/ui/index.ts";
 import { ChartEmpty } from "../../../components/ui/Illustrations.tsx";
-import { fmtDuration, fmtPnl, fmtR, fmtUkDate, fmtUkTime, hasReason, slotShot, type Trade } from "../../../lib/journal.ts";
+import { fmtDuration, fmtPnl, fmtR, fmtUkDate, fmtUkTime, hasReason, isCompleted, LABELLED_SLOTS, SLOT_LABEL, slotShot, type Trade } from "../../../lib/journal.ts";
 import { useDevice } from "../../../lib/useMediaQuery.ts";
 import { OutcomeChip, SideChip } from "./OutcomeChip.tsx";
 
@@ -19,12 +19,23 @@ function RulesFollowed({ t }: { t: Trade }) {
 }
 
 function MissingShots({ t }: { t: Trade }) {
-  const missing = (["entry", "exit"] as const).filter((s) => !slotShot(t, s));
+  const missing = LABELLED_SLOTS.filter((s) => !slotShot(t, s));
   if (!missing.length) return null;
+  const names = missing.map((s) => SLOT_LABEL[s]);
   return (
-    <span className="inline-flex items-center gap-1 rounded-pill border border-border-strong px-2 py-0.5 text-label text-muted" title={`Missing ${missing.join(" and ")} screenshot`}>
+    <span className="inline-flex items-center gap-1 rounded-pill border border-border-strong px-2 py-0.5 text-label text-muted" title={`Missing ${names.join(", ")} screenshot`}>
       <ImageOff aria-hidden className="size-3" />
-      {missing.length === 2 ? "No shots" : `No ${missing[0]}`}
+      {missing.length === LABELLED_SLOTS.length ? "No shots" : `No ${names.join(", ")}`}
+    </span>
+  );
+}
+
+function Completed({ t }: { t: Trade }) {
+  if (!isCompleted(t)) return null;
+  return (
+    <span className="inline-flex items-center gap-1 rounded-pill border border-accent/60 px-2 py-0.5 text-label text-accent">
+      <CheckCircle2 aria-hidden className="size-3" />
+      Completed
     </span>
   );
 }
@@ -62,6 +73,7 @@ export function TradeList({ trades, strategyId, mode, emptyTitle, emptyText, emp
                 <span>{t.session_label}</span>
                 {t.entry_model ? <span>{t.entry_model}</span> : null}
                 {backtest ? <span className="num">{fmtPnl(t.pnl)}</span> : null}
+                <Completed t={t} />
                 <MissingShots t={t} />
                 {!hasReason(t) ? <span>No reason yet</span> : null}
               </div>
@@ -90,7 +102,7 @@ export function TradeList({ trades, strategyId, mode, emptyTitle, emptyText, emp
             {backtest ? <th scope="col" className="border-b border-border px-2 py-2 text-right font-normal">P&amp;L</th> : null}
             {backtest ? <th scope="col" className="border-b border-border px-2 py-2 font-normal">Outcome</th> : null}
             {backtest ? <th scope="col" className="border-b border-border px-2 py-2 text-right font-normal">Rules</th> : null}
-            <th scope="col" className="border-b border-border px-2 py-2 font-normal">Shots</th>
+            <th scope="col" className="border-b border-border px-2 py-2 font-normal">Status</th>
             {showOwner ? <th scope="col" className="border-b border-border px-2 py-2 font-normal">By</th> : null}
           </tr>
         </thead>
@@ -116,6 +128,7 @@ export function TradeList({ trades, strategyId, mode, emptyTitle, emptyText, emp
               {backtest ? <td className="border-b border-border px-2 py-2.5 text-right"><RulesFollowed t={t} /></td> : null}
               <td className="border-b border-border px-2 py-2.5">
                 <span className="flex items-center gap-1.5">
+                  <Completed t={t} />
                   <MissingShots t={t} />
                   {t.tags.length ? <Chip><Tag aria-hidden className="size-3" /> <span className="num">{t.tags.length}</span></Chip> : null}
                 </span>

@@ -9,7 +9,7 @@ from .tags import TagOut
 Kind = Literal["ideal", "backtest", "missed"]
 SessionKind = Literal["ideal", "backtest", "manual"]
 Side = Literal["buy", "sell"]
-Slot = Literal["entry", "exit", "extra"]
+Slot = Literal["htf", "entry", "outcome", "extra"]
 Stage = Literal["ideal", "ready", "backtesting"]
 
 
@@ -187,6 +187,7 @@ class TradeOut(BaseModel):
     mae_r: float | None
     mfe_r: float | None
     news_impact: str | None
+    annotated_at: datetime | None
     tags: list[TagOut]
     screenshots: list[ScreenshotOut]
     created_at: datetime
@@ -236,6 +237,7 @@ class TradeUpdateIn(BaseModel):
     mae_r: float | None = None
     mfe_r: float | None = None
     tags: list[str] | None = Field(default=None, max_length=30)
+    annotated: bool | None = None  # mark the trade completed (or not) by hand
 
 
 class SessionProgressOut(BaseModel):
@@ -244,6 +246,7 @@ class SessionProgressOut(BaseModel):
     screenshots_target: int
     reasons: int
     reasons_target: int
+    completed: int
 
 
 class SessionOut(BaseModel):

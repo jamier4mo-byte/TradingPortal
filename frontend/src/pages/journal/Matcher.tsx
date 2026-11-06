@@ -7,7 +7,7 @@ import Card from "../../components/Card.tsx";
 import { ErrorState, SkeletonText, useToast } from "../../components/ui/index.ts";
 import { api } from "../../lib/api.ts";
 import { imageFiles, type PreparedImage, prepareImage } from "../../lib/images.ts";
-import { fmtR, fmtUkDateTime, fmtUkTime, type Match, type Slot, slotShot, type Trade, uploadScreenshot, useInvalidateJournal, useSession, useSessionTrades } from "../../lib/journal.ts";
+import { fmtR, fmtUkDateTime, fmtUkTime, LABELLED_SLOTS, type LabelledSlot, type Match, SLOT_LABEL, slotShot, type Trade, uploadScreenshot, useInvalidateJournal, useSession, useSessionTrades } from "../../lib/journal.ts";
 import { dur, easeEnter, motionLevel } from "../../lib/motion.ts";
 import { useDevice } from "../../lib/useMediaQuery.ts";
 
@@ -18,7 +18,7 @@ interface Item {
   preview: string;
   prepared?: PreparedImage;
   tradeId: number | null;
-  slot: Exclude<Slot, "extra"> | null;
+  slot: LabelledSlot | null;
   confidence: Confidence;
   reason: string;
   state: "preparing" | "ready" | "uploading" | "done" | "error";
@@ -28,7 +28,7 @@ interface Item {
 const CONF_LABEL: Record<Confidence, string> = { high: "Sure", medium: "Likely", low: "Guess", none: "Unmatched" };
 
 /** Bulk matcher (U3): drop every screenshot at once; pair by filename, then capture time, then order.
- *  A trades × (Entry, Exit) grid with confidence badges and an Unmatched tray. Drag or tap to fix. */
+ *  A trades × (HTF, Entry, Outcome) grid with confidence badges and an Unmatched tray. Drag or tap to fix. */
 export default function Matcher() {
   const sid = Number(useParams().sid);
   const session = useSession(sid);
@@ -90,7 +90,7 @@ function MatcherScreen({ sessionId, strategyId, trades, canEdit, timezone }: { s
       cur.map((it) => {
         const m = matches.find((x) => x.file.startsWith(`${it.key}::`));
         if (!m) return it;
-        const slot = m.slot === "entry" || m.slot === "exit" ? m.slot : null;
+        const slot = m.slot && (LABELLED_SLOTS as readonly string[]).includes(m.slot) ? (m.slot as LabelledSlot) : null;
         const clash = m.trade_id && slot && taken.has(`${m.trade_id}:${slot}`);
         return clash ? { ...it, tradeId: null, slot: null, confidence: "none", reason: "slot already filled" } : { ...it, tradeId: m.trade_id, slot, confidence: m.confidence, reason: m.reason };
       }),
@@ -104,7 +104,7 @@ function MatcherScreen({ sessionId, strategyId, trades, canEdit, timezone }: { s
   };
 
   /** Put `key` into (tradeId, slot); whatever was there swaps into the moved item's old place. */
-  const place = (key: string, tradeId: number | null, slot: Exclude<Slot, "extra"> | null) => {
+  const place = (key: string, tradeId: number | null, slot: LabelledSlot | null) => {
     setItems((cur) => {
       const moving = cur.find((i) => i.key === key);
       if (!moving) return cur;
@@ -149,7 +149,7 @@ function MatcherScreen({ sessionId, strategyId, trades, canEdit, timezone }: { s
   const auto = items.filter((i) => i.tradeId && i.confidence !== "none").length;
   const readyCount = items.filter((i) => i.tradeId && i.state === "ready").length;
 
-  const cell = (t: Trade, slot: "entry" | "exit") => {
+  const cell = (t: Trade, slot: LabelledSlot) => {
     const item = items.find((i) => i.tradeId === t.id && i.slot === slot);
     const existing = slotShot(t, slot);
     const id = `${t.id}:${slot}`;
@@ -159,7 +159,7 @@ function MatcherScreen({ sessionId, strategyId, trades, canEdit, timezone }: { s
         type="button"
         key={id}
         disabled={!canEdit}
-        aria-label={`${slot === "entry" ? "Entry" : "Exit"} for trade ${trades.indexOf(t) + 1}${item ? `: ${item.name}, ${CONF_LABEL[item.confidence]}` : existing ? ": already has a screenshot" : ": empty"}`}
+        aria-label={`${SLOT_LABEL[slot]} for trade ${trades.indexOf(t) + 1}${item ? `: ${item.name}, ${CONF_LABEL[item.confidence]}` : existing ? ": already has a screenshot" : ": empty"}`}
         aria-pressed={picked === item?.key}
         onClick={() => {
           if (picked) place(picked, t.id, slot);
@@ -202,7 +202,7 @@ function MatcherScreen({ sessionId, strategyId, trades, canEdit, timezone }: { s
             <span className="relative rounded-pill border border-border bg-bg px-1.5 py-0.5">Already added</span>
           </>
         ) : (
-          <span>{slot === "entry" ? "Entry" : "Exit"}</span>
+          <span>{SLOT_LABEL[slot]}</span>
         )}
       </button>
     );
@@ -217,7 +217,7 @@ function MatcherScreen({ sessionId, strategyId, trades, canEdit, timezone }: { s
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-heading font-semibold">Match screenshots</h1>
           <span className="num text-body text-muted">
-            {trades.length} trades · {trades.length * 2} slots
+            {trades.length} trades · {trades.length * LABELLED_SLOTS.length} slots
           </span>
           {items.length ? (
             <span className="num text-body text-muted" aria-live="polite">
@@ -249,7 +249,7 @@ function MatcherScreen({ sessionId, strategyId, trades, canEdit, timezone }: { s
             <span className="text-text">{device === "phone" ? "Choose from Photos" : "Drop all the screenshots here"}</span>
             {device === "phone" ? "" : " or click to choose"}
           </span>
-          <span className="text-label">Named like T03_entry or 3x, or by the time they were taken ({timezone === "UTC" ? "UTC" : "UK"} chart time).</span>
+          <span className="text-label">Named like T03_htf, T03_entry or 3o, or by the time they were taken ({timezone === "UTC" ? "UTC" : "UK"} chart time).</span>
         </button>
       ) : null}
       <input ref={inputRef} type="file" accept="image/*" multiple className="hidden" tabIndex={-1} aria-label="Screenshots" onChange={(e) => void addFiles(Array.from(e.target.files ?? [])).then(() => (e.target.value = ""))} />
@@ -262,9 +262,8 @@ function MatcherScreen({ sessionId, strategyId, trades, canEdit, timezone }: { s
               <p className="num flex items-center gap-2 text-body">
                 <span className="text-muted">{i + 1}.</span> <span className="font-mono">{t.instrument}</span> {fmtUkTime(t.opened_at)} <span className="ml-auto">{fmtR(t.r_multiple)}</span>
               </p>
-              <div className="mt-2 grid grid-cols-2 gap-2">
-                {cell(t, "entry")}
-                {cell(t, "exit")}
+              <div className="mt-2 grid grid-cols-3 gap-2">
+                {LABELLED_SLOTS.map((slot) => cell(t, slot))}
               </div>
             </li>
           ))}
@@ -272,10 +271,13 @@ function MatcherScreen({ sessionId, strategyId, trades, canEdit, timezone }: { s
         </Card>
       ) : (
         <Card title="Trades" subtitle={picked ? "Now tap where it belongs" : "Tap a thumbnail to pick it up, then tap its slot. Or drag."}>
-          <div className="grid max-w-[1100px] grid-cols-[minmax(0,1fr)_200px_200px] gap-x-4 gap-y-2 desktop:grid-cols-[minmax(0,1fr)_240px_240px]">
+          <div className="grid max-w-[1300px] grid-cols-[minmax(0,1fr)_180px_180px_180px] gap-x-4 gap-y-2 desktop:grid-cols-[minmax(0,1fr)_220px_220px_220px]">
             <span className="text-label text-muted">Trade</span>
-            <span className="text-label text-muted">Entry</span>
-            <span className="text-label text-muted">Exit</span>
+            {LABELLED_SLOTS.map((slot) => (
+              <span key={slot} className="text-label text-muted">
+                {SLOT_LABEL[slot]}
+              </span>
+            ))}
             {trades.map((t, i) => (
               <Fragment key={t.id}>
                 <div className="flex min-h-11 flex-col justify-center">
@@ -286,8 +288,7 @@ function MatcherScreen({ sessionId, strategyId, trades, canEdit, timezone }: { s
                     {fmtUkDateTime(t.opened_at)} → {fmtUkTime(t.closed_at)}
                   </p>
                 </div>
-                {cell(t, "entry")}
-                {cell(t, "exit")}
+                {LABELLED_SLOTS.map((slot) => cell(t, slot))}
               </Fragment>
             ))}
           </div>

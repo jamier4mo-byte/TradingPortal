@@ -265,11 +265,11 @@ export function ImportDrawer({ open, onClose, strategy, destination: initial = "
                 </p>
                 {result.report.imported > 0 ? (
                   <div className="flex flex-col gap-2">
-                    <button type="button" className="btn btn-primary" onClick={() => navigate(`/journal/sessions/${result.session.id}/match`)}>
-                      Add the screenshots
-                    </button>
-                    <button type="button" className="btn btn-secondary" onClick={() => navigate(`/journal/sessions/${result.session.id}/annotate`)}>
+                    <button type="button" className="btn btn-primary" onClick={() => navigate(`/journal/sessions/${result.session.id}/annotate`)}>
                       Annotate trades
+                    </button>
+                    <button type="button" className="btn btn-secondary" onClick={() => navigate(`/journal/sessions/${result.session.id}/match`)}>
+                      Match screenshots in bulk
                     </button>
                     <button type="button" className="btn btn-ghost" onClick={close}>
                       Later

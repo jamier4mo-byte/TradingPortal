@@ -6,6 +6,7 @@ from .base import Base, OwnedRecordMixin, OwnerMixin, SoftDeleteMixin, Timestamp
 from .journal import (
     DEFAULT_REASONING_TEMPLATE,
     DEFAULT_RULES,
+    LABELLED_SLOTS,
     MAX_EXTRA_SCREENSHOTS,
     SLOTS,
     Instrument,
@@ -21,6 +22,7 @@ from .user import OWNER_COLOURS, Invite, Passkey, PasswordReset, Session, User
 __all__ = [
     "DEFAULT_REASONING_TEMPLATE",
     "DEFAULT_RULES",
+    "LABELLED_SLOTS",
     "MAX_EXTRA_SCREENSHOTS",
     "SLOTS",
     "Instrument",

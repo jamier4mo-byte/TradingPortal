@@ -32,7 +32,7 @@ export function SessionInbox({ sessions, strategyId, onRecap }: { sessions: Jour
     <ul className="flex flex-col gap-2">
       {sessions.map((s) => {
         const p = s.progress;
-        const complete = p.trades > 0 && p.screenshots >= p.screenshots_target && p.reasons >= p.reasons_target;
+        const complete = p.trades > 0 && p.completed >= p.trades;
         return (
           <li key={s.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-panel border border-border bg-surface-2 px-3 py-2">
             <div className="min-w-0 flex-1">
@@ -40,7 +40,7 @@ export function SessionInbox({ sessions, strategyId, onRecap }: { sessions: Jour
                 <span className="capitalize">{s.kind}</span> session · {fmtRange(s.range_start, s.range_end)}
               </p>
               <p className="num text-label text-muted">
-                {p.trades} trades · {p.screenshots}/{p.screenshots_target} screenshots · {p.reasons}/{p.reasons_target} reasons · {relativeTime(s.created_at)}
+                {p.trades} trades · {p.screenshots}/{p.screenshots_target} screenshots · {p.reasons}/{p.reasons_target} reasons · {p.completed}/{p.trades} completed · {relativeTime(s.created_at)}
               </p>
             </div>
             <OwnerChip name={s.owner.display_name} colourIndex={s.owner.colour_index} compact />

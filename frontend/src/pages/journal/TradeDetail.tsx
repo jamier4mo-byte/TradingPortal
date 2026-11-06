@@ -1,11 +1,11 @@
 import { useMutation } from "@tanstack/react-query";
-import { ArrowLeft, ClipboardList, Trash2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, ClipboardList, Trash2 } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import Card from "../../components/Card.tsx";
 import { Chip, ConfirmDialog, ErrorState, OwnerChip, ReadOnlyBanner, SkeletonCard, useToast } from "../../components/ui/index.ts";
 import { api } from "../../lib/api.ts";
-import { fmtDuration, fmtPnl, fmtPrice, fmtR, fmtUkDateTime, type Trade, useInvalidateJournal, useStrategy, useTrade } from "../../lib/journal.ts";
+import { fmtDuration, fmtPnl, fmtPrice, fmtR, fmtUkDateTime, isCompleted, LABELLED_SLOTS, SLOT_LABEL, type Trade, useInvalidateJournal, useStrategy, useTrade, useUpdateTrade } from "../../lib/journal.ts";
 import { useState } from "react";
 import { Gallery } from "./components/Gallery.tsx";
 import { OutcomeChip, SideChip } from "./components/OutcomeChip.tsx";
@@ -28,6 +28,8 @@ function Detail({ trade: t, templateFields, rules }: { trade: Trade; templateFie
   const [deleting, setDeleting] = useState(false);
   const [current, setCurrent] = useState(t);
   if (current.id !== t.id || current.updated_at < t.updated_at) setCurrent(t);
+  const update = useUpdateTrade();
+  const toggleCompleted = () => update.mutate({ id: current.id, body: { annotated: !isCompleted(current) } }, { onSuccess: setCurrent });
   const del = useMutation({
     mutationFn: () => api.delete(`/api/trades/${t.id}`),
     onSuccess: () => {
@@ -56,10 +58,18 @@ function Detail({ trade: t, templateFields, rules }: { trade: Trade; templateFie
           <h1 className="font-mono text-heading font-semibold">{current.instrument}</h1>
           <SideChip side={current.side} />
           {current.kind === "backtest" ? <OutcomeChip outcome={current.outcome} /> : <Chip>{current.kind === "missed" ? "Missed setup" : "Ideal trade"}</Chip>}
+          {isCompleted(current) ? (
+            <Chip dot dotClass="bg-accent">
+              Completed
+            </Chip>
+          ) : null}
           <span className="num text-body text-muted">{fmtUkDateTime(current.opened_at)} UK</span>
           <OwnerChip name={current.owner.display_name} colourIndex={current.owner.colour_index} compact />
           {current.can_edit ? (
             <div className="ml-auto flex items-center gap-2">
+              <button type="button" className={`btn ${isCompleted(current) ? "btn-ghost" : "btn-secondary"}`} onClick={toggleCompleted} disabled={update.isPending} aria-pressed={isCompleted(current)}>
+                <CheckCircle2 aria-hidden className="size-4" /> {isCompleted(current) ? "Completed" : "Mark completed"}
+              </button>
               {current.session_id ? (
                 <Link to={`/journal/sessions/${current.session_id}/annotate?trade=${current.id}`} className="btn btn-secondary">
                   <ClipboardList aria-hidden className="size-4" /> Annotate
@@ -77,9 +87,14 @@ function Detail({ trade: t, templateFields, rules }: { trade: Trade; templateFie
       <Card title="Screenshots" subtitle="Swipe between them; tap to zoom">
         <Gallery shots={current.screenshots} />
         {current.can_edit ? (
-          <div className="mt-4 grid grid-cols-2 gap-3 tablet:grid-cols-3">
-            <ScreenshotSlot trade={current} slot="entry" shot={current.screenshots.find((s) => s.slot === "entry")} label="Entry" onChange={setCurrent} />
-            {current.kind === "missed" ? null : <ScreenshotSlot trade={current} slot="exit" shot={current.screenshots.find((s) => s.slot === "exit")} label="Exit" onChange={setCurrent} />}
+          <div className="mt-4 grid grid-cols-2 gap-3 tablet:grid-cols-4">
+            {current.kind === "missed" ? (
+              <ScreenshotSlot trade={current} slot="entry" shot={current.screenshots.find((s) => s.slot === "entry")} label="The setup" onChange={setCurrent} />
+            ) : (
+              LABELLED_SLOTS.map((slot) => (
+                <ScreenshotSlot key={slot} trade={current} slot={slot} shot={current.screenshots.find((s) => s.slot === slot)} label={SLOT_LABEL[slot]} onChange={setCurrent} />
+              ))
+            )}
             {current.screenshots.filter((s) => s.slot === "extra").length < 3 ? <ScreenshotSlot trade={current} slot="extra" label="Extra" onChange={setCurrent} /> : null}
           </div>
         ) : null}

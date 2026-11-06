@@ -348,9 +348,10 @@ def test_session_progress_and_improve_note(admin_client):
     assert out["session"]["progress"] == {
         "trades": 6,
         "screenshots": 0,
-        "screenshots_target": 12,
+        "screenshots_target": 18,
         "reasons": 0,
         "reasons_target": 6,
+        "completed": 0,
     }
     t = out["trades"][0]
     admin_client.patch(f"/api/trades/{t['id']}", json={"reasoning": {"htf_bias": "bearish"}})
@@ -363,6 +364,13 @@ def test_session_progress_and_improve_note(admin_client):
         f"/api/journal/sessions/{sid}", json={"improve_note": "Wait for the FVG to fill"}
     ).json()
     assert sess["progress"]["screenshots"] == 1 and sess["progress"]["reasons"] == 1
+    assert sess["progress"]["completed"] == 0
+    # Completed is a manual mark, not a computed state
+    done = admin_client.patch(f"/api/trades/{t['id']}", json={"annotated": True}).json()
+    assert done["annotated_at"] is not None
+    assert admin_client.get(f"/api/journal/sessions/{sid}").json()["progress"]["completed"] == 1
+    undone = admin_client.patch(f"/api/trades/{t['id']}", json={"annotated": False}).json()
+    assert undone["annotated_at"] is None
     assert sess["improve_note"] == "Wait for the FVG to fill"
     brief = admin_client.get(f"/api/strategies/{s['id']}/brief").json()
     assert brief["recent_improve_notes"][0]["note"] == "Wait for the FVG to fill"
@@ -483,7 +491,7 @@ def test_type_is_checked_by_magic_bytes_and_keys_stay_in_the_store(admin_client)
     res = admin_client.post(
         f"/api/trades/{t['id']}/screenshots",
         files={"file": ("../../x.png", png_bytes(), "image/png")},
-        data={"slot": "exit"},
+        data={"slot": "outcome"},
     )
     assert res.status_code == 201
     storage = get_storage()
@@ -503,7 +511,7 @@ def test_browser_made_webp_and_thumbnail_are_stored_as_sent(admin_client):
             "file": ("a.webp", full.getvalue(), "image/webp"),
             "thumb": ("a.thumb.webp", thumb.getvalue(), "image/webp"),
         },
-        data={"slot": "exit"},
+        data={"slot": "outcome"},
     )
     assert res.status_code == 201, res.text
     shot = res.json()["screenshots"][0]
@@ -523,12 +531,12 @@ def test_move_and_delete_screenshot(admin_client):
     other = admin_client.post(
         f"/api/trades/{b['id']}/screenshots",
         files={"file": ("y.png", png_bytes(), "image/png")},
-        data={"slot": "exit"},
+        data={"slot": "outcome"},
     ).json()["screenshots"][0]
     moved = admin_client.patch(
-        f"/api/screenshots/{shot['id']}", json={"trade_id": b["id"], "slot": "exit"}
+        f"/api/screenshots/{shot['id']}", json={"trade_id": b["id"], "slot": "outcome"}
     ).json()
-    assert moved["trade_id"] == b["id"] and moved["slot"] == "exit"
+    assert moved["trade_id"] == b["id"] and moved["slot"] == "outcome"
     # the one that held the slot swapped into the vacated place
     a_shots = admin_client.get(f"/api/trades/{a['id']}").json()["screenshots"]
     assert [x["id"] for x in a_shots] == [other["id"]] and a_shots[0]["slot"] == "entry"
@@ -541,18 +549,18 @@ def test_match_endpoint_pairs_files_with_the_sessions_trades(admin_client):
     s = new_strategy(admin_client)
     out = do_import(admin_client, s["id"], "ideal")
     sid, trades = out["session"]["id"], out["trades"]
-    files = [{"name": f"T0{i}_{slot}.png"} for i in range(1, 7) for slot in ("entry", "exit")]
+    files = [{"name": f"T0{i}_{slot}.png"} for i in range(1, 7) for slot in ("htf", "entry", "outcome")]
     files += [{"name": "spare.png", "captured_at": datetime(2026, 11, 5, 23, 25, tzinfo=UTC).isoformat()}]
     res = admin_client.post(f"/api/journal/sessions/{sid}/match", json={"files": files})
     assert res.status_code == 200, res.text
     matches = res.json()
-    assert sum(1 for m in matches if m["trade_id"] is not None) == 12
+    assert sum(1 for m in matches if m["trade_id"] is not None) == 18
     assert matches[0] == {
-        "file": "T01_entry.png",
+        "file": "T01_htf.png",
         "trade_id": trades[0]["id"],
-        "slot": "entry",
+        "slot": "htf",
         "confidence": "high",
-        "reason": "filename says trade 1 entry",
+        "reason": "filename says trade 1 htf",
     }
     assert matches[-1]["trade_id"] is None and matches[-1]["confidence"] == "none"
     # hash-named files fall back to sequence
@@ -561,13 +569,9 @@ def test_match_endpoint_pairs_files_with_the_sessions_trades(admin_client):
         for i, h in enumerate("abcdefghijklmnop")
     ]
     matches = admin_client.post(f"/api/journal/sessions/{sid}/match", json={"files": files}).json()
-    assert all(m["trade_id"] is not None and m["confidence"] == "low" for m in matches[:12])
-    assert all(m["trade_id"] is None for m in matches[12:])
-    assert (
-        matches[0]["slot"] == "entry"
-        and matches[1]["slot"] == "exit"
-        and matches[1]["trade_id"] == trades[0]["id"]
-    )
+    assert all(m["trade_id"] is not None and m["confidence"] == "low" for m in matches)  # 16 files, 18 slots
+    assert [m["slot"] for m in matches[:3]] == ["htf", "entry", "outcome"]
+    assert matches[2]["trade_id"] == trades[0]["id"]
 
 
 def test_member_cannot_see_nothing_but_can_see_everything_read_only(member, admin_client):
