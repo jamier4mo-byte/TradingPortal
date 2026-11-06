@@ -10,6 +10,9 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App.tsx";
 import { ToastProvider } from "./components/ui/index.ts";
 import { AuthProvider } from "./lib/auth.tsx";
+import { registerServiceWorker } from "./lib/push.ts";
+
+window.addEventListener("load", () => void registerServiceWorker());
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
