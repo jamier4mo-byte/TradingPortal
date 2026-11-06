@@ -136,10 +136,10 @@ prompt's branch. If a prompt stops part-way, the next run continues from the fir
 - [x] Export for AI zip, Copy for AI, CSV export, print stylesheet; export tests
 
 ### 10. Gate 3
-- [ ] Reconcile ✓ on the real CSV; KPI table in the report
-- [ ] Metric tests pass on every fixture
-- [ ] Filters morph charts; URL round-trips
-- [ ] AI export unzips; README_prompt reads well
-- [ ] `make lint`, `make test`, `make smoke` green; bundle budget
-- [ ] `/check-devices` clean at six widths; design-reviewer no blockers/majors
-- [ ] `docs/build/PHASE-3-REPORT.md`; merged to local `main`
+- [x] Reconcile ✓ on the real CSV; KPI table in the report
+- [x] Metric tests pass on every fixture
+- [x] Filters morph charts; URL round-trips
+- [x] AI export unzips; README_prompt reads well
+- [x] `make lint`, `make test`, `make smoke` green (260 pytest + 6 Node · 110 Playwright); bundle 185.1 KB
+- [x] `/check-devices` clean at six widths (`docs/check-devices/2026-11-06-p3/`); design-reviewer: pass 1 four majors fixed, pass 2 none
+- [x] `docs/build/PHASE-3-REPORT.md`; merged to local `main`
