@@ -63,18 +63,18 @@ Branch `build/03-analytics-export`, 6 Nov 2026. Gate 3: see the checklist below.
 - The session recap gains "How it compares". Strategy cards show six real headline stats.
 - `make test` now also runs the front end's Node unit tests (`node --test`, Monte Carlo). The bundle check fails if ECharts ever reaches the Hub.
 
-**Tests**: 262 pytest (51 new), 6 Node unit tests, and the e2e suite at 1440 and 375 px with axe (see the gate).
+**Tests**: 260 pytest (49 new), 6 Node unit tests (`make test` runs both), and 110 Playwright tests at 1440 and 375 px with axe (`e2e/analytics.spec.ts` adds 18 checks per width).
 
 ## Gate 3 checklist
 
 | Check | Result | How verified |
 |---|---|---|
-| Real CSV: the Reconcile line is ✓ and the KPIs are written down | _pending_ | |
-| Every metric test passes on hand-computed fixtures (mixed, all wins, all losses, breakeven-heavy, single trade, none) | _pending_ | |
-| Changing a filter morphs the charts; the URL round-trips the state | _pending_ | |
-| The AI export unzips cleanly and `README_prompt.md` reads well | _pending_ | |
-| `make lint`, `make test`, `make smoke` green; bundle budget | _pending_ | |
-| `/check-devices` clean for Analytics, Compare and Export at all six widths; design-reviewer has no blockers or majors | _pending_ | |
+| Real CSV: the Reconcile line is ✓ and the KPIs are written down | Pass | `Samples/02:11:26 Backtest x8 Trades.csv` imported as Backtest into a throwaway `/tmp/tp-gate3`: CSV 8 rows · Σ rPnL $5,475.76 = app 8 trades · $5,475.76; FX Replay's balance change ($1,000 → $6,475.76) matches. KPI table below. Also `test_real_sample_reconciles` (skips where the file isn't present) |
+| Every metric test passes on hand-computed fixtures (mixed, all wins, all losses, breakeven-heavy, single trade, none) | Pass | `tests/test_metrics.py` (19): every registry metric against the worked numbers in its docstring, plus breakdowns, calendar, equity, drawdown, streaks, histogram, rulebook costs, Compare capture, insights (8-trade minimum, "early signal" under 20). `test_analytics_api.py` (19): every filter, scope, split, permissions, threshold, insights baseline, 5,000 trades in 144 ms. Monte Carlo: 6 seeded Node tests |
+| Changing a filter morphs the charts; the URL round-trips the state | Pass | Charts merge new data into the same series ids (ECharts `replaceMerge`), with the previous frame dimmed while it loads (TanStack `keepPreviousData`). Checked by hand: Mon → 33 of 160 trades, the curve bends in place. e2e "a filter lands in the URL, narrows every number, and survives a reload" (both widths) and "the source switch keeps its place in the URL" |
+| The AI export unzips cleanly and `README_prompt.md` reads well | Pass | The real CSV's export: `testzip()` clean; README, strategy.md, trades.jsonl and manifest read through by hand (fixed on the way: pipes in formulas broke the Markdown table; R values had 15 decimals; "0 screenshots" now says none were added). `tests/test_export.py` (11): layout, manifest SHA-256s, JSONL fields, images ≤ 1,568 px WebP, filters respected, no secrets or emails even when a member exports everyone's data, CSV formula neutralising, Copy for AI |
+| `make lint`, `make test`, `make smoke` green; bundle budget | Pass | lint clean (ruff, oxlint, tsc, bundle **185.1 KB** of 200; ECharts is a lazy 201 KB chunk and the check now fails if it ever reaches the Hub); 260 pytest + 6 Node; **110 Playwright** |
+| `/check-devices` clean for Analytics, Compare and Export at all six widths; design-reviewer has no blockers or majors | Pass | `docs/check-devices/2026-11-06-p3/` (36 screenshots: analytics, ideal, compare, export, all-strategies, journal × 360/375/430/768/1440/1920; not committed). Fixed on the way: the strategy grid header overflowed the phone by 26 px (it wraps now), and owner-line end labels collided. design-reviewer pass 1: 0 blockers, 4 majors (print contrast and blank lazy charts in Save as PDF, hard-coded motion timings, no offline state), all fixed with most minors and nits; pass 2: all four resolved, **no new blockers or majors ("ship")**; three of its new minors fixed (the afterprint redraw keeps motion and touch, an offline first load shows an offline state, CountUp no longer writes the final number before counting) |
 
 ## KPIs for the sample CSV (`Samples/02:11:26 Backtest x8 Trades.csv`, imported as Backtest)
 
@@ -127,7 +127,13 @@ Compare these with FX Replay's own Analytics page for the same session.
 7. The phone hides Expectancy from the 2×2 KPI grid; it's still in "Every metric". Want a different four?
 
 ## Known issues
-- _filled in after the gate_
+- **Save as PDF** was checked in code and through the print tokens, not by printing from Safari and Chrome. Whether background colours print depends on the browser's "Background graphics" option. Pressing ⌘P directly (rather than Export → Save as PDF) prints only the charts that have already scrolled into view.
+- The ECharts chunk is 201 KB gzip. It's lazy and never on the Hub, but it's the heaviest download on the Analytics tab. An SVG renderer or fewer components could trim it in Prompt 5.
+- Design-review minors left open: the print wait (`+900 ms`) and heatmap stagger (30 ms) are timings outside `@theme`; the Drawer description and Card subtitles are plain strings, so "160 trades" and "1,000" in them aren't `.num`; the 5-tile KPI strip leaves a gap on tablet (3 + 2).
+- Insights on the tiny Samples CSV: none (8 trades, all winners, no 8-trade slice that differs from the rest). They appear on larger sets, such as the dev seed.
+- The FX Replay "ideal" price is used as MFE for imported trades (Assumption 8; Open question 2).
+- Context7 still rejects calls, so ECharts 6 and TanStack Query APIs were read from the installed packages.
+- The local preview server needed `python -m uvicorn`: the venv's `uvicorn` launcher script has a stale interpreter path. `make dev` and `make run` call `.venv/bin/uvicorn` and may need `make setup-backend` to refresh the venv.
 
 ## Jamie's check (10 min)
 1. `make dev`, sign in, open your NAS100 strategy (or import `Samples/02:11:26 Backtest x8 Trades.csv` as **Backtest** into a new one) → **Analytics** tab.

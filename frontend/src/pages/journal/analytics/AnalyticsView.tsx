@@ -46,7 +46,7 @@ export default function AnalyticsView({ strategy }: { strategy?: Strategy }) {
   const online = useOnline();
   // Offline, a filter change can't load: keep the last results at full strength and say so, rather than dim forever.
   const dim = result.isPlaceholderData && online;
-  const offlineNote = !online ? "Offline: showing the last results loaded. Filters and exports work again when you're back." : null;
+  const offlineNote = !online && result.data ? "Offline: showing the last results loaded. Filters and exports work again when you're back." : null;
   const nFilters = activeFilterCount(st.filters);
   const filtersText = useMemo(() => describe(st.filters, st.source), [st.filters, st.source]);
   const showOwners = !strategy || (data?.options.owners.length ?? 0) > 1;
@@ -86,6 +86,12 @@ export default function AnalyticsView({ strategy }: { strategy?: Strategy }) {
   );
 
   const body = (() => {
+    if (result.isPending && !online)
+      return (
+        <div className="card">
+          <EmptyState illustration={<ChartEmpty />} title="You're offline" text="Analytics loads when you're back online. Nothing was loaded on this device yet." />
+        </div>
+      );
     if (result.isPending) return <AnalyticsSkeleton />;
     if (result.isError || !data) return <div className="card"><ErrorState title="Analytics didn't load" text={result.error?.message} onRetry={() => result.refetch()} /></div>;
     if (data.counts.in_scope === 0) return <NothingYet source={st.source} strategy={strategy} />;

@@ -126,21 +126,22 @@ export function Chart({
   // Save as PDF: redraw with the light print tokens, without animation, then back again.
   useEffect(() => {
     if (!ready) return;
-    const redraw = () => {
+    const redraw = (printing: boolean) => {
       const instance = chart.current;
       if (!instance) return;
       const t = readTokens();
-      instance.setOption({ ...baseOption(t, "off", false), ...option(t, { phone }) } as Parameters<Instance["setOption"]>[0], { replaceMerge: ["series", "xAxis", "yAxis", "visualMap"] });
+      const base = printing ? baseOption(t, "off", false) : baseOption(t, motionLevel(), touch);
+      instance.setOption({ ...base, ...option(t, { phone }) } as Parameters<Instance["setOption"]>[0], { replaceMerge: ["series", "xAxis", "yAxis", "visualMap"] });
     };
     const before = () => {
       setPrintMode(true);
       resizeChart();
-      redraw();
+      redraw(true);
     };
     const after = () => {
       setPrintMode(false);
       resizeChart();
-      redraw();
+      redraw(false);
     };
     const resizeChart = () => chart.current?.resize();
     window.addEventListener("beforeprint", before);
@@ -149,7 +150,7 @@ export function Chart({
       window.removeEventListener("beforeprint", before);
       window.removeEventListener("afterprint", after);
     };
-  }, [ready, option, phone]);
+  }, [ready, option, phone, touch]);
 
   return (
     <figure className={`m-0 flex min-w-0 flex-col gap-2 ${className}`}>

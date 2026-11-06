@@ -9,6 +9,7 @@ import { dur, easeEnter, motionLevel } from "../../lib/motion.ts";
 export function CountUp({ value, format, className = "" }: { value: number | null | undefined; format: (v: number | null) => string; className?: string }) {
   const ref = useRef<HTMLSpanElement>(null);
   const last = useRef<number | null>(null);
+  const animating = useRef(false);
   const formatRef = useRef(format);
   formatRef.current = format;
   const label = format(value ?? null);
@@ -23,6 +24,7 @@ export function CountUp({ value, format, className = "" }: { value: number | nul
       el.textContent = fmt(value ?? null);
       return;
     }
+    animating.current = true;
     const controls = animate(from ?? 0, value, {
       duration: dur.emphasis(),
       ease: [...easeEnter],
@@ -30,16 +32,20 @@ export function CountUp({ value, format, className = "" }: { value: number | nul
         el.textContent = fmt(v);
       },
       onComplete: () => {
+        animating.current = false;
         el.textContent = fmt(value);
       },
     });
-    return () => controls.stop();
+    return () => {
+      animating.current = false;
+      controls.stop();
+    };
   }, [value]);
 
-  // Same value, new format (e.g. a unit switch): just rewrite the text.
+  // A new format with no count-up running (e.g. a unit switch): just rewrite the text.
   useLayoutEffect(() => {
-    if (ref.current && last.current === (value ?? null)) ref.current.textContent = label;
-  }, [label, value]);
+    if (ref.current && !animating.current) ref.current.textContent = label;
+  }, [label]);
 
   return (
     <span className={className}>
