@@ -3,7 +3,7 @@ import { type FormEvent, useState } from "react";
 
 import { Drawer, Field, PillToggle, TextInput, useToast } from "../../../components/ui/index.ts";
 import { api } from "../../../lib/api.ts";
-import { type Side, type Strategy, type Trade, type TradeKind, useInstruments, useInvalidateJournal } from "../../../lib/journal.ts";
+import { LABELLED_SLOTS, type Side, SLOT_LABEL, type Strategy, type Trade, type TradeKind, useInstruments, useInvalidateJournal } from "../../../lib/journal.ts";
 import { ScreenshotSlot } from "./ScreenshotSlot.tsx";
 import { TagInput } from "./TagInput.tsx";
 
@@ -120,9 +120,14 @@ export function QuickLogDrawer({ open, onClose, strategy, kind: initialKind = "i
     <Drawer open={open} onOpenChange={(o) => !o && close()} title={saved ? "Screenshots" : title} description={saved ? "Paste or drop the chart. Then log another or close." : `${strategy.name} · defaults filled in`}>
       {saved ? (
         <div className="flex flex-col gap-4">
-          <div className={`grid gap-3 ${kind === "missed" ? "" : "grid-cols-2"}`}>
-            <ScreenshotSlot trade={saved} slot="entry" shot={saved.screenshots.find((s) => s.slot === "entry")} label={kind === "missed" ? "The setup" : "Entry"} onChange={setSaved} autoFocus />
-            {kind === "missed" ? null : <ScreenshotSlot trade={saved} slot="exit" shot={saved.screenshots.find((s) => s.slot === "exit")} label="Exit" onChange={setSaved} />}
+          <div className={`grid gap-3 ${kind === "missed" ? "" : "grid-cols-3"}`}>
+            {kind === "missed" ? (
+              <ScreenshotSlot trade={saved} slot="entry" shot={saved.screenshots.find((s) => s.slot === "entry")} label="The setup" onChange={setSaved} autoFocus />
+            ) : (
+              LABELLED_SLOTS.map((slot, i) => (
+                <ScreenshotSlot key={slot} trade={saved} slot={slot} shot={saved.screenshots.find((s) => s.slot === slot)} label={SLOT_LABEL[slot]} onChange={setSaved} autoFocus={i === 0} />
+              ))
+            )}
           </div>
           <div className="flex gap-2">
             <button type="button" className="btn btn-secondary flex-1" onClick={reset}>

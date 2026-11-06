@@ -6,7 +6,11 @@ import { api, type PublicUser, type Tag } from "./api.ts";
 export type TradeKind = "ideal" | "backtest" | "missed";
 export type SessionKind = "ideal" | "backtest" | "manual";
 export type Side = "buy" | "sell";
-export type Slot = "entry" | "exit" | "extra";
+export type Slot = "htf" | "entry" | "outcome" | "extra";
+/** The three images Jamie fills per trade, in order. */
+export const LABELLED_SLOTS = ["htf", "entry", "outcome"] as const;
+export type LabelledSlot = (typeof LABELLED_SLOTS)[number];
+export const SLOT_LABEL: Record<Slot, string> = { htf: "HTF", entry: "Entry", outcome: "Outcome", extra: "Extra" };
 export type Outcome = "win" | "loss" | "breakeven";
 export type Stage = "ideal" | "ready" | "backtesting";
 
@@ -126,6 +130,7 @@ export interface Trade {
   mae_r: number | null;
   mfe_r: number | null;
   news_impact: string | null;
+  annotated_at: string | null;
   tags: Tag[];
   screenshots: Screenshot[];
   created_at: string;
@@ -140,6 +145,7 @@ export interface SessionProgress {
   screenshots_target: number;
   reasons: number;
   reasons_target: number;
+  completed: number;
 }
 
 export interface JournalSession {
@@ -341,7 +347,7 @@ export function useInvalidateJournal() {
   };
 }
 
-export type TradePatch = Omit<Partial<Trade>, "tags"> & { tags?: string[] };
+export type TradePatch = Omit<Partial<Trade>, "tags"> & { tags?: string[]; annotated?: boolean };
 
 export function useUpdateTrade() {
   const qc = useQueryClient();
@@ -442,6 +448,10 @@ export function outcomeTone(o: Outcome | null | undefined): "win" | "loss" | "br
 /** A trade "has a reason" once any template field or the notes carry text. */
 export function hasReason(t: Trade): boolean {
   return Object.values(t.reasoning ?? {}).some((v) => String(v ?? "").trim()) || Boolean(t.notes?.trim());
+}
+/** Completed is a manual mark Jamie sets once the three images and the reasoning are in. */
+export function isCompleted(t: Trade): boolean {
+  return t.annotated_at !== null;
 }
 export function slotShot(t: Trade, slot: Slot): Screenshot | undefined {
   return t.screenshots.find((s) => s.slot === slot);

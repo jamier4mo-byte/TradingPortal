@@ -16,7 +16,7 @@ export function RecapCard({ session, onClose, className = "" }: { session: Journ
   const { toast } = useToast();
   const [note, setNote] = useState(session.improve_note);
   const best = (trades.data ?? []).filter((t) => t.r_multiple !== null).sort((a, b) => (b.r_multiple ?? 0) - (a.r_multiple ?? 0))[0] as Trade | undefined;
-  const shot = best?.screenshots.find((s) => s.slot === "exit") ?? best?.screenshots[0];
+  const shot = best?.screenshots.find((s) => s.slot === "outcome") ?? best?.screenshots.find((s) => s.slot === "entry") ?? best?.screenshots[0];
   const s = session.stats;
   const saveNote = async () => {
     if (note === session.improve_note) return;

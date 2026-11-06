@@ -46,6 +46,16 @@ Branch `build/02-journal-loop`, 6 Nov 2026. Gate 2: see the checklist below.
 | `/check-devices` clean at all six widths for the journal screens, Annotate mode and the matcher | Pass | `docs/check-devices/2026-11-06/` (48 screenshots of journal, strategy, backtest tab, trade, annotate, match, trash, hub at 360/375/430/768/1440/1920). Fixed on the way: the Annotate overlay sat under the sidebar (portal), session rows overflowed on the phone, the tablet header squeezed the title, the trade table wrapped dates |
 | design-reviewer: no blockers or majors | Pass | First pass: 0 blockers, 6 majors (reserved green/orange used for status, a fake-timed import stepper, a 3.4:1 kbd, a stretched row link, a scrolling table on tablet), all fixed plus 16 of the 22 minors/nits. Second pass: 0 blockers, 1 new major (the stepper's scroll reset was a no-op inside the Radix dialog), fixed, plus its minors (observable import stages, sticky Date column, matcher card style, step dots, duplicate scroll lock, Reduced-motion rule for `page-enter` utilities). Left as minors: Sparkline/StatTile sharing, extra panels at 1920+, a few `.num` labels, drawn checkbox ticks |
 
+## Addendum (6 Nov 2026): three labelled images and a manual completed mark
+
+Jamie's flow: import the CSV, then for each trade upload three labelled images (HTF, Entry, Outcome), write the reasoning, and mark the trade completed by hand. Branch `build/02b-manual-annotation`.
+
+- Screenshot slots are now `htf`, `entry`, `outcome` plus up to 3 `extra`. Migration `0005` renames stored `exit` slots to `outcome` and adds `trades.annotated_at`.
+- "Completed" is a manual mark (`PATCH /api/trades/{id}` with `annotated: true|false`), no longer computed from screenshots and reasons. The session inbox reads "10 trades · 24/30 screenshots · 8/10 reasons · 8/10 completed"; Finish annotating turns into Review once every trade is marked.
+- Annotate mode: the three slots side by side, ⌘V fills HTF → Entry → Outcome then focuses the reason, a **Mark completed** button in the footer (⌘⇧↵ marks and moves on), progress dots and the header count follow the manual mark. Trade detail and the quick log show the same three slots; trade lists show a Completed chip and which of the three images are missing.
+- After an import the primary button is **Annotate trades**; the bulk matcher remains as a secondary route and now has HTF/Entry/Outcome columns (filenames like `T03_htf`, `3h`, `3e`, `3o`; the sequence fallback fills HTF, Entry, Outcome per trade).
+- Tests: 211 pytest, 76 Playwright (the keyboard-only Annotate run now pastes three images per trade and marks each completed with ⌘⇧↵).
+
 ## Assumptions
 1. **Duplicate key is (strategy, destination kind, FX Replay id)**, not (strategy, id). The gate asks for an Ideal import followed by a Backtest import of the same file that takes *all* trades, then a third import that is all duplicates; that only works if the ideal catalogue and the backtest ledger are separate destinations. A winner can therefore sit in both. Within a destination a re-import skips duplicates and reports them.
 2. The table is `journal_sessions` (model `JournalSession`) because `sessions` is already the sign-in table.
@@ -68,6 +78,7 @@ Branch `build/02-journal-loop`, 6 Nov 2026. Gate 2: see the checklist below.
 6. Reasoning template fields are fixed per strategy at creation; should editing the template later re-key old trades' reasoning?
 7. Session windows are Asia 00–08, London 08–13, New York 13–22 UK time; keep these?
 8. Missed setups: one screenshot and a reason, kept out of P&L. Should they appear in the Annotate stepper too?
+9. Should a trade be allowed to be marked completed with an image or the reasoning still missing (allowed now, so you stay in control), or should the button warn first?
 
 ## Known issues
 - Real screenshots match by sequence only (see the gate row): no filename hint and no capture time to go on.

@@ -102,3 +102,8 @@ prompt's branch. If a prompt stops part-way, the next run continues from the fir
 - [x] Member 403 + read-only banner
 - [x] `make lint`, `make test`, `make smoke` green (208 pytest, 76 Playwright); `/check-devices` clean at 360/375/430/768/1440/1920; design-reviewer: two passes, no blockers or majors left
 - [x] `docs/build/PHASE-2-REPORT.md`; merged to local `main`
+
+### 7. Follow-up: manual annotation flow (branch `build/02b-manual-annotation`)
+- [x] Slots HTF / Entry / Outcome (+ extras); migration `0005`; `annotated_at` and the manual completed mark
+- [x] Annotate mode: three slots, Mark completed (⌘⇧↵), inbox counts completed; matcher and lists updated
+- [x] 211 pytest · 76 Playwright · lint clean; merged to local `main`

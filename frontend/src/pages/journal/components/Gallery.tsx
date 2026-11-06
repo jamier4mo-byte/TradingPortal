@@ -4,7 +4,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 
 import type { Screenshot } from "../../../lib/journal.ts";
 
-const SLOT_LABEL: Record<string, string> = { entry: "Entry", exit: "Exit", extra: "Extra" };
+import { SLOT_LABEL } from "../../../lib/journal.ts";
 
 /** Swipeable thumbnails (scroll-snap); tap opens the full-resolution viewer with pinch and wheel zoom.
  *  Thumbnails load first; the full image only when opened. */

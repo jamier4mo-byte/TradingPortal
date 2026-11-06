@@ -89,9 +89,9 @@ test("import flow: upload → preview → confirm, winners only, undo and restor
   await expect(page.getByText("2 rows can't be read")).toBeVisible();
   await page.getByRole("button", { name: "Import 6 trades" }).click();
   await expect(page.getByText("6 trades imported").first()).toBeVisible();
-  await expect(page.getByRole("button", { name: "Add the screenshots" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Annotate trades" })).toBeVisible();
   await page.getByRole("button", { name: "Later" }).click();
-  await expect(page.getByText("6 trades · 0/12 screenshots")).toBeVisible();
+  await expect(page.getByText("6 trades · 0/18 screenshots")).toBeVisible();
 
   // Undo from the toast, then undo the undo
   await page.getByRole("button", { name: "Undo", exact: true }).click();
@@ -99,7 +99,7 @@ test("import flow: upload → preview → confirm, winners only, undo and restor
   await expect(page.getByText("No ideal trades yet")).toBeVisible();
   await page.getByRole("button", { name: "Undo", exact: true }).click();
   await expect(page.getByText("Import restored", { exact: true })).toBeVisible();
-  await expect(page.getByText("6 trades · 0/12 screenshots")).toBeVisible();
+  await expect(page.getByText("6 trades · 0/18 screenshots")).toBeVisible();
 
   // Backtest is its own ledger and takes every row; importing the same file again is all duplicates
   const id = Number(page.url().match(/strategies\/(\d+)/)?.[1]);
@@ -116,7 +116,7 @@ test("import flow: upload → preview → confirm, winners only, undo and restor
   await expect(page.getByRole("button", { name: "Import 0 trades" })).toBeDisabled();
 });
 
-test("bulk matcher pairs 16 dropped files by name and saves them all", async ({ page, context }) => {
+test("bulk matcher pairs 24 dropped files by name and saves them all", async ({ page, context }) => {
   await signIn(page, ADMIN);
   const id = await newStrategy(context, "Matcher e2e");
   const { session } = await importCsv(context, id, "backtest");
@@ -124,23 +124,25 @@ test("bulk matcher pairs 16 dropped files by name and saves them all", async ({ 
   await expect(page.getByRole("heading", { level: 1, name: "Match screenshots" })).toBeVisible();
   const files = [];
   for (let i = 1; i <= 8; i++) {
+    files.push({ name: `T0${i}_htf.png`, mimeType: "image/png", buffer: PNG });
     files.push({ name: `T0${i}_entry.png`, mimeType: "image/png", buffer: PNG });
-    files.push({ name: `t${i}-exit.png`, mimeType: "image/png", buffer: PNG });
+    files.push({ name: `t${i}-outcome.png`, mimeType: "image/png", buffer: PNG });
   }
   await page.getByLabel("Screenshots", { exact: true }).setInputFiles(files);
-  await expect(page.getByText("16 of 16 matched automatically")).toBeVisible();
+  await expect(page.getByText("24 of 24 matched automatically")).toBeVisible();
   await expect(page.getByRole("button", { name: /Entry for trade 3: T03_entry.png, Sure/ })).toBeVisible();
-  // Fix one by tapping: pick up trade 1's entry and drop it on trade 10's exit, then put it back
+  await expect(page.getByRole("button", { name: /HTF for trade 3: T03_htf.png, Sure/ })).toBeVisible();
+  // Fix one by tapping: pick up trade 1's entry and drop it on trade 10's outcome, then put it back
   await page.getByRole("button", { name: /Entry for trade 1: T01_entry.png/ }).click();
-  await page.getByRole("button", { name: /Exit for trade 10: empty/ }).click();
-  await expect(page.getByRole("button", { name: /Exit for trade 10: T01_entry.png/ })).toBeVisible();
-  await page.getByRole("button", { name: /Exit for trade 10: T01_entry.png/ }).click();
+  await page.getByRole("button", { name: /Outcome for trade 10: empty/ }).click();
+  await expect(page.getByRole("button", { name: /Outcome for trade 10: T01_entry.png/ })).toBeVisible();
+  await page.getByRole("button", { name: /Outcome for trade 10: T01_entry.png/ }).click();
   await page.getByRole("button", { name: /Entry for trade 1: empty/ }).click();
-  await page.getByRole("button", { name: /Save all \(16\)/ }).click();
+  await page.getByRole("button", { name: /Save all \(24\)/ }).click();
   await expect(page).toHaveURL(new RegExp(`/journal/sessions/${session.id}/annotate`), { timeout: 30_000 });
   const res = await api(context, "GET", `/api/journal/sessions/${session.id}`);
   const body = (await res.json()) as { progress: { screenshots: number } };
-  expect(body.progress.screenshots).toBe(16);
+  expect(body.progress.screenshots).toBe(24);
 });
 
 test("annotate mode completes 8 trades with the keyboard only", async ({ page, context }) => {
@@ -152,27 +154,32 @@ test("annotate mode completes 8 trades with the keyboard only", async ({ page, c
   await expect(page.getByRole("dialog", { name: "Trade 1/10" })).toBeVisible();
   for (let i = 1; i <= 8; i++) {
     await expect(page.getByRole("heading", { level: 1, name: `Trade ${i}/10` })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Add HTF screenshot/ })).toBeVisible(); // stepper mounted, paste listener live
+    await pasteImage(page, `htf-${i}.png`);
+    await expect(page.getByRole("button", { name: /^HTF screenshot/ })).toBeVisible();
     await pasteImage(page, `entry-${i}.png`);
     await expect(page.getByRole("button", { name: /^Entry screenshot/ })).toBeVisible();
-    await pasteImage(page, `exit-${i}.png`);
-    await expect(page.getByRole("button", { name: /^Exit screenshot/ })).toBeVisible();
+    await pasteImage(page, `outcome-${i}.png`);
+    await expect(page.getByRole("button", { name: /^Outcome screenshot/ })).toBeVisible();
     await expect(page.getByLabel("HTF bias", { exact: true })).toBeFocused();
     await page.keyboard.type(`Bullish ${i}`);
-    for (let f = 0; f < 6; f++) await page.keyboard.press("Enter"); // through the six template fields → next trade
+    for (let f = 0; f < 5; f++) await page.keyboard.press("Enter"); // to the last template field
+    await page.keyboard.press("ControlOrMeta+Shift+Enter"); // mark completed and move on
   }
   await expect(page.getByRole("heading", { level: 1, name: "Trade 9/10" })).toBeVisible();
   await page.keyboard.press("k");
   await expect(page.getByRole("heading", { level: 1, name: "Trade 8/10" })).toBeVisible();
   await page.keyboard.press("j");
   await expect(page.getByRole("heading", { level: 1, name: "Trade 9/10" })).toBeVisible();
-  await expect(page.getByText("8/10 done")).toBeVisible();
+  await expect(page.getByText("8/10 completed")).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page).toHaveURL(new RegExp(`/journal/strategies/${id}$`));
-  await expect(page.getByText("10 trades · 16/20 screenshots · 8/10 reasons")).toBeVisible();
+  await expect(page.getByText("10 trades · 24/30 screenshots · 8/10 reasons · 8/10 completed")).toBeVisible();
   const res = await api(context, "GET", `/api/journal/sessions/${session.id}/trades`);
-  const trades = (await res.json()) as { reasoning: Record<string, string>; screenshots: { slot: string }[] }[];
+  const trades = (await res.json()) as { reasoning: Record<string, string>; annotated_at: string | null; screenshots: { slot: string }[] }[];
   expect(trades.filter((t) => t.reasoning.htf_bias?.startsWith("Bullish"))).toHaveLength(8);
-  expect(trades.filter((t) => t.screenshots.some((s) => s.slot === "entry") && t.screenshots.some((s) => s.slot === "exit"))).toHaveLength(8);
+  expect(trades.filter((t) => t.annotated_at)).toHaveLength(8);
+  expect(trades.filter((t) => ["htf", "entry", "outcome"].every((slot) => t.screenshots.some((s) => s.slot === slot)))).toHaveLength(8);
 });
 
 test("quick log remembers values and opens from the phone's + button", async ({ page }, testInfo) => {
