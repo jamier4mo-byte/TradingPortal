@@ -12,7 +12,7 @@ def dt(y, m, d, h=10):
 def test_constants_are_the_rule():
     assert rules.COVERAGE_MONTHS == 6
     assert rules.MIN_UNLOCK_TRADES == 6
-    assert rules.DEFAULT_BREAKEVEN_THRESHOLD == 2.0
+    assert rules.DEFAULT_BREAKEVEN_THRESHOLD == 10.0  # Jamie, 6 Nov 2026: ±$10
 
 
 def test_empty():
@@ -73,3 +73,45 @@ def test_session_windows_in_uk_time():
     assert rules.session_label(datetime(2026, 7, 1, 12, 0, tzinfo=UTC)) == "New York"  # 13:00 BST
     assert rules.session_label(datetime(2026, 7, 1, 21, 30, tzinfo=UTC)) == "Out of session"  # 22:30 BST
     assert rules.session_label(datetime(2026, 1, 1, 8, 0, tzinfo=UTC)) == "London"  # GMT
+
+
+def test_new_accounts_default_to_ten_dollars(db):
+    from tests.conftest import make_user
+
+    user = make_user(db, email="new@example.test")
+    assert user.breakeven_threshold == 10.0
+
+
+def test_migration_0006_moves_the_old_default_and_relabels_trades(db):
+    """Accounts on the old ±$2 move to ±$10 and their stored outcomes follow; custom settings stay."""
+    import subprocess
+    import sys
+    from datetime import UTC, datetime
+
+    from sqlalchemy import text
+
+    from app.models import Strategy, Trade
+    from tests.conftest import BACKEND, make_user
+
+    old = make_user(db, email="old@example.test")
+    custom = make_user(db, email="custom@example.test")
+    old.breakeven_threshold, custom.breakeven_threshold = 2.0, 25.0
+    s = Strategy(owner_id=old.id, name="x")
+    db.add(s)
+    db.commit()
+    when = datetime(2026, 3, 3, 10, tzinfo=UTC)
+    for owner, pnl in ((old, 5.0), (old, 50.0), (custom, 20.0)):
+        db.add(Trade(owner_id=owner.id, strategy_id=s.id, kind="backtest", instrument="NAS100", side="buy",
+                     opened_at=when, market_date=when.date(), pnl=pnl, outcome="win"))  # fmt: skip
+    db.commit()
+    db.close()
+    subprocess.run(
+        [sys.executable, "-m", "alembic", "downgrade", "0005"], cwd=BACKEND, check=True, capture_output=True
+    )
+    subprocess.run(
+        [sys.executable, "-m", "alembic", "upgrade", "head"], cwd=BACKEND, check=True, capture_output=True
+    )
+    thresholds = dict(db.execute(text("SELECT email, breakeven_threshold FROM users")).all())
+    assert thresholds["old@example.test"] == 10.0 and thresholds["custom@example.test"] == 25.0
+    outcomes = sorted(db.execute(text("SELECT pnl, outcome FROM trades")).all())
+    assert outcomes == [(5.0, "breakeven"), (20.0, "breakeven"), (50.0, "win")]

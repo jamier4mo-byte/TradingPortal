@@ -143,3 +143,7 @@ prompt's branch. If a prompt stops part-way, the next run continues from the fir
 - [x] `make lint`, `make test`, `make smoke` green (260 pytest + 6 Node · 110 Playwright); bundle 185.1 KB
 - [x] `/check-devices` clean at six widths (`docs/check-devices/2026-11-06-p3/`); design-reviewer: pass 1 four majors fixed, pass 2 none
 - [x] `docs/build/PHASE-3-REPORT.md`; merged to local `main`
+
+### 11. Follow-up: Jamie's answers (branch `build/03b-breakeven-10`)
+- [x] Breakeven ±$10 in $ (default, migration `0006` moves the old ±$2 and re-labels outcomes); Monte Carlo defaults to 10R; exit efficiency keeps FX Replay's best price
+- [x] 262 pytest + Node · lint clean · smoke 109/110 (the 1 is the intermittent Annotate e2e, see Known issues); merged to local `main`

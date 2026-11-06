@@ -12,7 +12,7 @@ UK_TZ = ZoneInfo("Europe/London")
 
 COVERAGE_MONTHS = 6  # consecutive covered months needed to unlock the Backtest tab
 MIN_UNLOCK_TRADES = 6  # implied by 1+ trade per month; kept explicit so the rule reads in one line
-DEFAULT_BREAKEVEN_THRESHOLD = 2.0  # account currency; |P&L| <= threshold is breakeven
+DEFAULT_BREAKEVEN_THRESHOLD = 10.0  # account currency ($); |P&L| <= threshold is breakeven (Jamie, 6 Nov)
 
 # UK session windows (start inclusive, end exclusive) in minutes from midnight, UK local time.
 SESSION_WINDOWS: tuple[tuple[str, int, int], ...] = (

@@ -5,7 +5,7 @@ Every metric has an id, a label, a unit, the formula text the UI shows as a tool
 (no trades, no losses for a profit factor) rather than 0, so the UI can say why.
 
 Conventions, matched to FX Replay where its docs say (docs/build/research/fxreplay-metrics.md):
-- Win rate = wins ÷ (wins + losses). Breakevens (|P&L| ≤ threshold, default $2) are left out.
+- Win rate = wins ÷ (wins + losses). Breakevens (|P&L| ≤ threshold, default $10) are left out.
 - P&L is booked at close: the equity curve, drawdown and streaks run in close order.
 - Profit factor = gross profit of wins ÷ gross loss of losses. No losses → None ("undefined").
 - Drawdown is peak-to-trough on the cumulative curve, starting from 0 before the first trade. Negative or 0.
@@ -320,7 +320,7 @@ REGISTRY: tuple[Metric, ...] = (
         "breakevens",
         "Breakevens",
         "count",
-        "P&L within ± the breakeven threshold (default $2).",
+        "P&L within ± the breakeven threshold (default $10).",
         _count("breakevens"),
         "neutral",
     ),

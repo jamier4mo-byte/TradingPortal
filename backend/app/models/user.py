@@ -28,7 +28,7 @@ class User(TimestampMixin, Base):
     last_seen_at: Mapped[datetime | None] = mapped_column(UTCDateTime, nullable=True)
     # Per-user preferences (Settings page)
     motion_pref: Mapped[str] = mapped_column(String(8), nullable=False, default="full")
-    breakeven_threshold: Mapped[float] = mapped_column(Float, nullable=False, default=2.0)
+    breakeven_threshold: Mapped[float] = mapped_column(Float, nullable=False, default=10.0)
 
     sessions: Mapped[list["Session"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     passkeys: Mapped[list["Passkey"]] = relationship(back_populates="user", cascade="all, delete-orphan")

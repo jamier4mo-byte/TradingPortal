@@ -236,7 +236,7 @@ function BreakevenCard({ user }: { user: User }) {
           Save
         </button>
       </form>
-      <p className="mt-3 text-label text-muted">Default 2. Used by every stat in the Replay Journal.</p>
+      <p className="mt-3 text-label text-muted">Default 10. A trade within ± this many dollars of zero is a breakeven, in every stat in the Replay Journal.</p>
     </Card>
   );
 }

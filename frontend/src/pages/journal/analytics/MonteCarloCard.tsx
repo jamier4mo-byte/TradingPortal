@@ -11,7 +11,8 @@ const SEED = 20261106;
 
 /** 1,000 bootstrap paths of the R sequence, computed in a Web Worker so the page never stalls. */
 export function MonteCarloCard({ rs }: { rs: number[] }) {
-  const [threshold, setThreshold] = useState(5);
+  // 10R: at 1% risk a trade, a 10% drawdown, the usual max-loss line. Anyone can type another figure.
+  const [threshold, setThreshold] = useState(10);
   const [result, setResult] = useState<MonteCarloResult | null>(null);
   const worker = useRef<Worker | null>(null);
   const seq = useRef(0);
