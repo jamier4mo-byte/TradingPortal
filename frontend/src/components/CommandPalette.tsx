@@ -16,6 +16,8 @@ interface Command {
 const COMMANDS: Command[] = [
   { label: "Hub", to: "/", icon: Home, keywords: "home dashboard" },
   { label: "Replay Journal", to: "/journal", icon: BookOpen, keywords: "strategies trades backtest" },
+  { label: "Journal · Trash", to: "/journal/trash", icon: BookOpen, keywords: "deleted restore" },
+  { label: "Journal · Log a trade", to: "/journal?quicklog=1", icon: BookOpen, keywords: "quick log new ideal trade" },
   { label: "News Room", to: "/news", icon: Newspaper, keywords: "calendar events" },
   { label: "Calendar", to: "/calendar", icon: CalendarDays, keywords: "tasks week" },
   { label: "Tags", to: "/tags", icon: Tags, keywords: "vocabulary synonyms" },

@@ -37,3 +37,6 @@ docs/claude-setup/setup-run.log
 
 # Per-machine Claude Code permissions
 .claude/settings.local.json
+
+# Jamie's real FX Replay files: read only, never committed
+/Samples/

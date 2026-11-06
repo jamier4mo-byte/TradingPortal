@@ -14,6 +14,7 @@ from pathlib import Path
 
 from .core.settings import get_settings
 from .db import session_factory
+from .services import journal as journal_svc
 from .services import keys as keys_svc
 from .services import tags as tags_svc
 from .services import users as users_svc
@@ -68,13 +69,44 @@ def seed_dev() -> None:
             db, sam, name="Consequent encroachment", category="pd_array", synonyms=["CE", "50% of FVG"]
         )
         users_svc.create_invite(db, admin, role="member")
+        _seed_journal(db, admin, sam)
         print(
             "Seeded /tmp-style dev data:\n"
             "  admin   jamie@example.test / password-dev-1\n"
             "  member  sam@example.test   / password-dev-1  (has a Twelve Data key saved)\n"
             "  member  alex@example.test  / password-dev-1\n"
-            "  plus two proposed tags and one open invite"
+            "  plus two proposed tags, one open invite and two strategies with imported trades"
         )
+
+
+def _seed_journal(db, admin, sam) -> None:
+    """A strategy each, with the synthetic FX Replay fixture imported, so the journal screens have data."""
+    fixture = BACKEND / "tests" / "fixtures" / "fxreplay-sample.csv"
+    if not fixture.exists():
+        return
+    data = fixture.read_bytes()
+    strategy = journal_svc.create_strategy(
+        db,
+        admin,
+        name="NAS100 silver bullet",
+        description="10:00–11:00 New York FVG entries after a liquidity sweep.",
+        instruments=["NAS100"],
+        timeframes=["5m", "1m"],
+        entry_models=["FVG", "Breaker"],
+    )
+    journal_svc.confirm_import(db, admin, strategy, data, destination="ideal", filename="fxreplay-sample.csv")
+    journal_svc.confirm_import(
+        db, admin, strategy, data, destination="backtest", filename="fxreplay-sample.csv"
+    )
+    other = journal_svc.create_strategy(
+        db,
+        sam,
+        name="EURUSD London reversal",
+        instruments=["EURUSD"],
+        timeframes=["15m"],
+        entry_models=["OTE"],
+    )
+    journal_svc.confirm_import(db, sam, other, data, destination="ideal", filename="fxreplay-sample.csv")
 
 
 def main(argv: list[str] | None = None) -> None:

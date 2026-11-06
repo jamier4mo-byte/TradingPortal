@@ -53,8 +53,26 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   return (await res.json()) as T;
 }
 
+async function upload<T>(path: string, form: FormData): Promise<T> {
+  const headers: Record<string, string> = { Accept: "application/json", [CSRF_HEADER]: await ensureCsrf() };
+  const res = await fetch(path, { method: "POST", headers, credentials: "same-origin", body: form });
+  if (res.status === 401) unauthorised.dispatchEvent(new Event("unauthorised"));
+  if (!res.ok) {
+    let detail = res.statusText;
+    try {
+      const data = await res.json();
+      detail = typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail ?? data);
+    } catch {
+      /* no JSON body */
+    }
+    throw new ApiError(res.status, detail);
+  }
+  return (await res.json()) as T;
+}
+
 export const api = {
   get: <T>(path: string) => request<T>("GET", path),
+  upload,
   post: <T>(path: string, body?: unknown) => request<T>("POST", path, body ?? {}),
   put: <T>(path: string, body?: unknown) => request<T>("PUT", path, body ?? {}),
   patch: <T>(path: string, body?: unknown) => request<T>("PATCH", path, body ?? {}),

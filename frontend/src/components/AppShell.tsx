@@ -30,7 +30,7 @@ import { OfflineBanner, ownerBg } from "./ui/index.ts";
 
 const TOOLS = [
   { to: "/", label: "Hub", icon: Home, end: true, dot: "live" },
-  { to: "/journal", label: "Replay Journal", short: "Journal", icon: BookOpen, dot: "stale" },
+  { to: "/journal", label: "Replay Journal", short: "Journal", icon: BookOpen, dot: "live" },
   { to: "/news", label: "News Room", short: "News", icon: Newspaper, dot: "stale" },
   { to: "/calendar", label: "Calendar", icon: CalendarDays, dot: "stale" },
 ];
@@ -238,8 +238,8 @@ export default function AppShell({ children }: { children: ReactNode }) {
       <button
         type="button"
         className="fixed right-4 bottom-[calc(72px+env(safe-area-inset-bottom))] z-20 grid size-14 place-items-center rounded-full bg-accent text-on-accent shadow-none tablet:hidden"
-        aria-label="Quick log (coming with the Replay Journal)"
-        onClick={() => navigate("/journal")}
+        aria-label="Quick log a trade"
+        onClick={() => navigate("/journal?quicklog=1")}
       >
         <Plus aria-hidden className="size-6" strokeWidth={2} />
       </button>

@@ -16,6 +16,12 @@ const More = lazy(() => import("./pages/More.tsx"));
 const AdminUsers = lazy(() => import("./pages/admin/Users.tsx"));
 const Components = lazy(() => import("./pages/dev/Components.tsx"));
 const Placeholder = lazy(() => import("./pages/Placeholder.tsx"));
+const JournalIndex = lazy(() => import("./pages/journal/JournalIndex.tsx"));
+const StrategyPage = lazy(() => import("./pages/journal/StrategyPage.tsx"));
+const TradeDetail = lazy(() => import("./pages/journal/TradeDetail.tsx"));
+const Annotate = lazy(() => import("./pages/journal/Annotate.tsx"));
+const Matcher = lazy(() => import("./pages/journal/Matcher.tsx"));
+const JournalTrash = lazy(() => import("./pages/journal/Trash.tsx"));
 
 function Loading() {
   return (
@@ -42,7 +48,12 @@ export default function App() {
                 <Suspense fallback={<Loading />}>
                   <Routes>
                     <Route path="/" element={<Hub />} />
-                    <Route path="/journal/*" element={<Placeholder title="Replay Journal" logo="/brand/replayjournal-logo.png" />} />
+                    <Route path="/journal" element={<JournalIndex />} />
+                    <Route path="/journal/trash" element={<JournalTrash />} />
+                    <Route path="/journal/strategies/:id" element={<StrategyPage />} />
+                    <Route path="/journal/strategies/:id/trades/:tradeId" element={<TradeDetail />} />
+                    <Route path="/journal/sessions/:sid/annotate" element={<Annotate />} />
+                    <Route path="/journal/sessions/:sid/match" element={<Matcher />} />
                     <Route path="/news/*" element={<Placeholder title="News Room" logo="/brand/newsroom-logo.png" />} />
                     <Route path="/calendar" element={<Placeholder title="Calendar" />} />
                     <Route path="/tags" element={<Tags />} />

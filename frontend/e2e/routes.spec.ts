@@ -57,9 +57,9 @@ test("components gallery shows every state", async ({ page }) => {
     await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
   }
   await page.getByRole("button", { name: "With undo" }).click();
-  await expect(page.getByText("Task marked done")).toBeVisible();
+  await expect(page.getByText("Task marked done", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Undo", exact: true }).click();
-  await expect(page.getByText("Undone")).toBeVisible();
+  await expect(page.getByText("Undone", { exact: true })).toBeVisible();
   await page.getByRole("radio", { name: "Others" }).click();
   await expect(page).toHaveURL(/scope=others/);
 });

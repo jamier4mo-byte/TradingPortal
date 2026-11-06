@@ -30,21 +30,37 @@ from app.api.auth import login_limiter  # noqa: E402
 from app.core.deps import CSRF_COOKIE, CSRF_HEADER  # noqa: E402
 from app.db import session_factory  # noqa: E402
 from app.main import app  # noqa: E402
-from app.models import AuditLog, Invite, Passkey, PasswordReset, Session, Tag, User, UserApiKey  # noqa: E402
+from app.models import (  # noqa: E402
+    AuditLog,
+    Instrument,
+    Invite,
+    JournalSession,
+    Passkey,
+    PasswordReset,
+    Screenshot,
+    Session,
+    Strategy,
+    Tag,
+    Trade,
+    User,
+    UserApiKey,
+    trade_tags,
+)
 from app.services import users as users_svc  # noqa: E402
 from app.services.passkeys import challenges  # noqa: E402
+from app.services.storage import get_storage  # noqa: E402
 
 
-def _seed_tags() -> list[tuple[str, str, str, list[str]]]:
-    spec = importlib.util.spec_from_file_location(
-        "seed", BACKEND / "migrations" / "versions" / "0003_seed_tags.py"
-    )
+def _migration(name: str):
+    spec = importlib.util.spec_from_file_location("seed", BACKEND / "migrations" / "versions" / name)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    return module.SEED_TAGS
+    return module
 
 
-SEED_TAGS = _seed_tags()
+SEED_TAGS = _migration("0003_seed_tags.py").SEED_TAGS
+SEED_INSTRUMENTS = _migration("0004_journal.py").SEED_INSTRUMENTS
+FIXTURES = Path(__file__).parent / "fixtures"
 
 PASSWORD = "correct-horse-battery"
 
@@ -54,7 +70,22 @@ def clean_db() -> Iterator[None]:
     """Each test starts with empty user tables and the seeded tags exactly as the migration left them."""
     yield
     with session_factory()() as db:
-        for model in (Tag, AuditLog, UserApiKey, Passkey, PasswordReset, Invite, Session, User):
+        db.execute(delete(trade_tags))
+        for model in (
+            Screenshot,
+            Trade,
+            JournalSession,
+            Strategy,
+            Instrument,
+            Tag,
+            AuditLog,
+            UserApiKey,
+            Passkey,
+            PasswordReset,
+            Invite,
+            Session,
+            User,
+        ):
             db.execute(delete(model))
         db.add_all(
             [
@@ -62,7 +93,24 @@ def clean_db() -> Iterator[None]:
                 for n, slug, c, syn in SEED_TAGS
             ]
         )
+        db.add_all(
+            [
+                Instrument(
+                    symbol=sym,
+                    name=name,
+                    asset_class=cls,
+                    pip_size=pip,
+                    unit=unit,
+                    price_decimals=dec,
+                    aliases=al,
+                )
+                for sym, name, cls, pip, unit, dec, al in SEED_INSTRUMENTS
+            ]
+        )
         db.commit()
+    storage = get_storage()
+    if hasattr(storage, "wipe"):
+        storage.wipe()
     login_limiter.reset()
     challenges.clear()
 

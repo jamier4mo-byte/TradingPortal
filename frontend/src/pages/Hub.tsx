@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 
 import Card from "../components/Card.tsx";
 import { useAuth } from "../lib/auth.tsx";
+import { relativeTime } from "../lib/format.ts";
+import { useSummary } from "../lib/journal.ts";
 import { greeting, session, ukClock, ukDate } from "../lib/time.ts";
 import { useNow } from "../lib/useNow.ts";
 
@@ -11,6 +13,15 @@ export default function Hub() {
   const now = useNow();
   const sess = session(now);
   const { user } = useAuth();
+  const summary = useSummary();
+  const last = summary.data?.last_session;
+  const journalStat = summary.data
+    ? last
+      ? `Last session: ${last.trade_count} ${last.trade_count === 1 ? "trade" : "trades"} · ${relativeTime(last.created_at)}`
+      : summary.data.strategies
+        ? `${summary.data.strategies} ${summary.data.strategies === 1 ? "strategy" : "strategies"} · no sessions yet`
+        : "Create your first strategy"
+    : undefined;
   return (
     <div className="grid grid-cols-4 gap-4 tablet:grid-cols-8 laptop:grid-cols-12 laptop:gap-6">
       {/* Hero greeting — the only place atmosphere is allowed */}
@@ -41,6 +52,7 @@ export default function Hub() {
         logo="/brand/replayjournal-logo.png"
         name="Replay Journal"
         subtitle="Ideal trades, backtests and analytics"
+        stat={journalStat}
       />
       <LaunchIsland to="/news" logo="/brand/newsroom-logo.png" name="News Room" subtitle="Economic calendar and alerts" />
 
@@ -64,7 +76,7 @@ export default function Hub() {
   );
 }
 
-function LaunchIsland({ to, logo, name, subtitle }: { to: string; logo: string; name: string; subtitle: string }) {
+function LaunchIsland({ to, logo, name, subtitle, stat }: { to: string; logo: string; name: string; subtitle: string; stat?: string }) {
   return (
     <Link
       to={to}
@@ -76,6 +88,7 @@ function LaunchIsland({ to, logo, name, subtitle }: { to: string; logo: string; 
         <ArrowUpRight aria-hidden className="hidden size-5 shrink-0 text-subtle transition-colors group-hover:text-accent tablet:block" />
       </div>
       <p className="mt-4 text-label text-muted tablet:text-body">{subtitle}</p>
+      {stat ? <p className="num mt-1 text-label text-text">{stat}</p> : null}
     </Link>
   );
 }
