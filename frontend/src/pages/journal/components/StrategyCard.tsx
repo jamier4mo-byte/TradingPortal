@@ -22,7 +22,7 @@ export function StrategyCard({ strategy }: { strategy: Strategy }) {
             {[...s.instruments, ...s.timeframes].join(" · ") || "No instruments yet"}
           </p>
         </div>
-        <Chip dot dotClass={s.stage === "backtesting" ? "bg-win" : s.stage === "ready" ? "bg-accent" : "bg-muted"}>
+        <Chip dot dotClass={s.stage === "ideal" ? "bg-muted" : "bg-accent"}>
           {STAGE_LABEL[s.stage]}
         </Chip>
       </div>
@@ -30,7 +30,7 @@ export function StrategyCard({ strategy }: { strategy: Strategy }) {
       <div className="mt-4 flex items-end justify-between gap-3">
         <div>
           <p className="num text-heading font-semibold leading-none">{s.ideal_count}</p>
-          <p className="mt-1 text-label text-muted">ideal {s.ideal_count === 1 ? "trade" : "trades"} · {fmtRange(s.range_start, s.range_end)}</p>
+          <p className="num mt-1 text-label text-muted">ideal {s.ideal_count === 1 ? "trade" : "trades"} · {fmtRange(s.range_start, s.range_end)}</p>
         </div>
         <Sparkline values={s.sparkline} width={120} height={36} />
       </div>
@@ -58,7 +58,7 @@ export function StrategyCard({ strategy }: { strategy: Strategy }) {
 
       <div className="mt-auto flex items-center justify-between gap-2 pt-4">
         <OwnerChip name={s.owner.display_name} colourIndex={s.owner.colour_index} deactivated={s.owner.status === "deactivated"} />
-        <span className="text-label text-muted">Updated {relativeTime(s.updated_at)}</span>
+        <span className="num text-label text-muted">Updated {relativeTime(s.updated_at)}</span>
       </div>
     </Link>
   );

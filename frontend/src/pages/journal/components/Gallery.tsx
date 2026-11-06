@@ -1,6 +1,6 @@
 import { ChevronLeft, ChevronRight, X, ZoomIn } from "lucide-react";
 import { type PointerEvent, useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import * as Dialog from "@radix-ui/react-dialog";
 
 import type { Screenshot } from "../../../lib/journal.ts";
 
@@ -20,7 +20,7 @@ export function Gallery({ shots }: { shots: Screenshot[] }) {
           <li key={s.id} className="w-[86%] shrink-0 snap-center tablet:w-[60%] laptop:w-[48%]">
             <button type="button" onClick={() => setOpen(i)} className="group relative block w-full overflow-hidden rounded-panel border border-border bg-surface-2 focus-visible:border-accent" aria-label={`Open ${SLOT_LABEL[s.slot]} screenshot at full size`}>
               <img src={s.thumb_url} alt="" className="aspect-video w-full object-cover" loading={i < 2 ? "eager" : "lazy"} />
-              <span className="absolute left-2 top-2 rounded-pill border border-border bg-bg/80 px-2 py-0.5 text-label">{SLOT_LABEL[s.slot]}</span>
+              <span className="absolute left-2 top-2 rounded-pill border border-border bg-bg px-2 py-0.5 text-label">{SLOT_LABEL[s.slot]}</span>
               <span className="absolute right-2 bottom-2 grid size-8 place-items-center rounded-full bg-bg/80 text-muted group-hover:text-text">
                 <ZoomIn aria-hidden className="size-4" />
               </span>
@@ -50,7 +50,6 @@ function Viewer({ shots, index, onIndex, onClose }: { shots: Screenshot[]; index
   useEffect(() => {
     closeRef.current?.focus();
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
       if (e.key === "ArrowRight") onIndex(Math.min(shots.length - 1, index + 1));
       if (e.key === "ArrowLeft") onIndex(Math.max(0, index - 1));
       if (e.key === "+" || e.key === "=") setScale((s) => Math.min(6, s * 1.25));
@@ -100,12 +99,16 @@ function Viewer({ shots, index, onIndex, onClose }: { shots: Screenshot[]; index
     if (scale <= 1.02) setOffset({ x: 0, y: 0 });
   };
 
-  return createPortal(
-    <div role="dialog" aria-modal="true" aria-label={`${SLOT_LABEL[shot.slot]} screenshot ${index + 1} of ${shots.length}`} className="fixed inset-0 z-50 flex flex-col bg-bg">
-      <div className="safe-top flex min-h-14 items-center gap-2 border-b border-border px-(--gutter-phone)">
-        <span className="text-body">
-          {SLOT_LABEL[shot.slot]} <span className="num text-muted">{index + 1}/{shots.length}</span>
-        </span>
+  return (
+    <Dialog.Root open modal onOpenChange={(o) => !o && onClose()}>
+      <Dialog.Portal>
+        <Dialog.Content aria-label={`${SLOT_LABEL[shot.slot]} screenshot ${index + 1} of ${shots.length}`} aria-describedby={undefined} className="fixed inset-0 z-50 flex flex-col bg-bg outline-none">
+      <div className="safe-top flex min-h-14 items-center gap-2 border-b border-border px-(--gutter-phone) tablet:px-(--gutter-tablet) desktop:px-(--gutter-desktop)">
+        <Dialog.Title asChild>
+          <span className="text-body">
+            {SLOT_LABEL[shot.slot]} <span className="num text-muted">{index + 1}/{shots.length}</span>
+          </span>
+        </Dialog.Title>
         <span className="num ml-2 text-label text-muted">{Math.round(scale * 100)}%</span>
         <div className="ml-auto flex items-center gap-1">
           <button type="button" className="btn btn-ghost size-11 px-0" aria-label="Zoom out" onClick={() => setScale((s) => Math.max(1, s / 1.25))}>
@@ -143,7 +146,8 @@ function Viewer({ shots, index, onIndex, onClose }: { shots: Screenshot[]; index
         />
         {scale === 1 ? <img src={shot.full_url} alt="" aria-hidden className="absolute inset-0 m-auto max-h-full max-w-full object-contain opacity-0" loading="lazy" /> : null}
       </div>
-    </div>,
-    document.body,
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }

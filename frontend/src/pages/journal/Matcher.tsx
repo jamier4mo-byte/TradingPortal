@@ -1,6 +1,6 @@
 import { ArrowLeft, Check, ImagePlus } from "lucide-react";
 import { motion } from "motion/react";
-import { type DragEvent, useEffect, useRef, useState } from "react";
+import { type DragEvent, Fragment, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import Card from "../../components/Card.tsx";
@@ -180,17 +180,17 @@ function MatcherScreen({ sessionId, strategyId, trades, canEdit, timezone }: { s
         draggable={!!item}
         onDragStart={(e) => item && e.dataTransfer.setData("text/plain", item.key)}
         className={`relative flex aspect-video min-h-11 w-full items-center justify-center overflow-hidden rounded-panel border bg-surface-2 text-label text-muted transition-colors duration-(--dur-quick) ${
-          isOver || picked === item?.key ? "border-accent" : picked && !item ? "border-dashed border-accent/60" : item ? "border-border" : "border-dashed border-border-strong"
+          isOver || picked === item?.key ? "border-accent" : picked && !item ? "border-dashed border-accent/60" : item ? "border-border" : "border-dashed border-input"
         }`}
       >
         {item ? (
           <>
             <img src={item.preview} alt="" className={`absolute inset-0 size-full object-cover ${item.state === "done" ? "" : item.state === "uploading" ? "opacity-60" : ""}`} />
-            <span className={`absolute left-1.5 top-1.5 rounded-pill border px-1.5 py-0.5 text-label ${item.confidence === "high" ? "border-win/50 bg-bg/85 text-win" : item.confidence === "medium" ? "border-accent/50 bg-bg/85 text-accent" : "border-impact-medium/50 bg-bg/85 text-impact-medium"}`}>
+            <span className={`absolute left-1.5 top-1.5 rounded-pill border px-1.5 py-0.5 text-label ${item.confidence === "high" ? "border-accent bg-bg text-accent" : item.confidence === "medium" ? "border-accent/50 bg-bg text-text" : "border-border-strong bg-bg text-muted"}`}>
               {CONF_LABEL[item.confidence]}
             </span>
             {item.state === "done" ? (
-              <span className="absolute right-1.5 bottom-1.5 grid size-6 place-items-center rounded-full bg-win text-bg">
+              <span className="absolute right-1.5 bottom-1.5 grid size-6 place-items-center rounded-full bg-accent text-on-accent">
                 <Check aria-hidden className="size-3.5" strokeWidth={3} />
               </span>
             ) : null}
@@ -199,7 +199,7 @@ function MatcherScreen({ sessionId, strategyId, trades, canEdit, timezone }: { s
         ) : existing ? (
           <>
             <img src={existing.thumb_url} alt="" className="absolute inset-0 size-full object-cover opacity-50" />
-            <span className="relative rounded-pill border border-border bg-bg/85 px-1.5 py-0.5">Already added</span>
+            <span className="relative rounded-pill border border-border bg-bg px-1.5 py-0.5">Already added</span>
           </>
         ) : (
           <span>{slot === "entry" ? "Entry" : "Exit"}</span>
@@ -242,7 +242,7 @@ function MatcherScreen({ sessionId, strategyId, trades, canEdit, timezone }: { s
           }}
           onDragLeave={() => setOver(null)}
           onDrop={onDrop}
-          className={`flex min-h-24 flex-col items-center justify-center gap-1 rounded-card border border-dashed bg-surface-1 px-4 text-center text-body text-muted ${over === "zone" ? "border-accent" : "border-border-strong hover:border-muted"}`}
+          className={`flex min-h-24 flex-col items-center justify-center gap-1 rounded-card border border-dashed bg-surface-1 px-4 text-center text-body text-muted ${over === "zone" ? "border-accent" : "border-input hover:border-muted"}`}
         >
           <ImagePlus aria-hidden className="size-5" strokeWidth={1.5} />
           <span>
@@ -254,7 +254,7 @@ function MatcherScreen({ sessionId, strategyId, trades, canEdit, timezone }: { s
       ) : null}
       <input ref={inputRef} type="file" accept="image/*" multiple className="hidden" tabIndex={-1} aria-label="Screenshots" onChange={(e) => void addFiles(Array.from(e.target.files ?? [])).then(() => (e.target.value = ""))} />
 
-      {device === "phone" ? (
+      {device !== "desktop" ? (
         <ul className="flex flex-col gap-2" aria-label="Trades">
           {trades.map((t, i) => (
             <li key={t.id} className="card p-3">
@@ -275,7 +275,7 @@ function MatcherScreen({ sessionId, strategyId, trades, canEdit, timezone }: { s
             <span className="text-label text-muted">Entry</span>
             <span className="text-label text-muted">Exit</span>
             {trades.map((t, i) => (
-              <motion.div key={t.id} className="contents" initial={false}>
+              <Fragment key={t.id}>
                 <div className="flex min-h-11 flex-col justify-center">
                   <p className="num text-body">
                     <span className="text-muted">{i + 1}.</span> <span className="font-mono">{t.instrument}</span> {t.side === "buy" ? "long" : "short"} <span className={`ml-2 font-medium ${(t.r_multiple ?? 0) > 0 ? "text-win" : (t.r_multiple ?? 0) < 0 ? "text-loss" : ""}`}>{fmtR(t.r_multiple)}</span>
@@ -286,7 +286,7 @@ function MatcherScreen({ sessionId, strategyId, trades, canEdit, timezone }: { s
                 </div>
                 {cell(t, "entry")}
                 {cell(t, "exit")}
-              </motion.div>
+              </Fragment>
             ))}
           </div>
         </Card>
@@ -312,8 +312,8 @@ function MatcherScreen({ sessionId, strategyId, trades, canEdit, timezone }: { s
                   className={`relative block h-24 w-40 overflow-hidden rounded-panel border bg-surface-2 ${picked === i.key ? "border-accent" : "border-border"}`}
                 >
                   <img src={i.preview} alt="" className="size-full object-cover" />
-                  <span className="absolute inset-x-0 bottom-0 truncate bg-bg/85 px-1.5 py-0.5 text-left text-label">{i.name}</span>
-                  {i.state === "error" ? <span className="absolute inset-x-0 top-0 bg-bg/85 px-1.5 text-label text-loss">{i.error}</span> : null}
+                  <span className="absolute inset-x-0 bottom-0 truncate bg-bg px-1.5 py-0.5 text-left text-label">{i.name}</span>
+                  {i.state === "error" ? <span className="absolute inset-x-0 top-0 bg-bg px-1.5 text-label text-loss">{i.error}</span> : null}
                 </button>
               </motion.li>
             ))}

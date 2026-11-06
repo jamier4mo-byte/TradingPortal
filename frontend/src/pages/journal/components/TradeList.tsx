@@ -1,5 +1,5 @@
 import { ImageOff, Tag } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { Chip, EmptyState, OwnerChip } from "../../../components/ui/index.ts";
 import { ChartEmpty } from "../../../components/ui/Illustrations.tsx";
@@ -22,7 +22,7 @@ function MissingShots({ t }: { t: Trade }) {
   const missing = (["entry", "exit"] as const).filter((s) => !slotShot(t, s));
   if (!missing.length) return null;
   return (
-    <span className="inline-flex items-center gap-1 rounded-pill border border-impact-medium/50 px-2 py-0.5 text-label text-impact-medium" title={`Missing ${missing.join(" and ")} screenshot`}>
+    <span className="inline-flex items-center gap-1 rounded-pill border border-border-strong px-2 py-0.5 text-label text-muted" title={`Missing ${missing.join(" and ")} screenshot`}>
       <ImageOff aria-hidden className="size-3" />
       {missing.length === 2 ? "No shots" : `No ${missing[0]}`}
     </span>
@@ -40,11 +40,12 @@ export function TradeList({ trades, strategyId, mode, emptyTitle, emptyText, emp
   showOwner?: boolean;
 }) {
   const device = useDevice();
+  const navigate = useNavigate();
   if (!trades.length) return <EmptyState illustration={<ChartEmpty />} title={emptyTitle} text={emptyText} action={emptyAction} />;
   const href = (t: Trade) => `/journal/strategies/${strategyId}/trades/${t.id}`;
   const backtest = mode === "backtest";
 
-  if (device === "phone") {
+  if (device !== "desktop") {
     return (
       <ul className="flex flex-col gap-2" aria-label="Trades">
         {trades.map((t) => (
@@ -76,28 +77,28 @@ export function TradeList({ trades, strategyId, mode, emptyTitle, emptyText, emp
       <table className="w-full min-w-[880px] border-separate border-spacing-0 whitespace-nowrap text-body">
         <thead>
           <tr className="text-left text-label text-muted">
-            <th className="border-b border-border px-2 py-2 font-normal">Date</th>
-            <th className="border-b border-border px-2 py-2 font-normal">Time</th>
-            <th className="border-b border-border px-2 py-2 font-normal">Instrument</th>
-            <th className="border-b border-border px-2 py-2 font-normal">Side</th>
-            <th className="border-b border-border px-2 py-2 font-normal">Session</th>
-            <th className="border-b border-border px-2 py-2 font-normal">Model</th>
-            <th className="border-b border-border px-2 py-2 text-right font-normal">SL</th>
-            <th className="border-b border-border px-2 py-2 text-right font-normal">TP</th>
-            <th className="border-b border-border px-2 py-2 text-right font-normal">Held</th>
-            <th className="border-b border-border px-2 py-2 text-right font-normal">R</th>
-            {backtest ? <th className="border-b border-border px-2 py-2 text-right font-normal">P&amp;L</th> : null}
-            {backtest ? <th className="border-b border-border px-2 py-2 font-normal">Outcome</th> : null}
-            {backtest ? <th className="border-b border-border px-2 py-2 text-right font-normal">Rules</th> : null}
-            <th className="border-b border-border px-2 py-2 font-normal">Shots</th>
-            {showOwner ? <th className="border-b border-border px-2 py-2 font-normal">By</th> : null}
+            <th scope="col" className="border-b border-border px-2 py-2 font-normal">Date</th>
+            <th scope="col" className="border-b border-border px-2 py-2 font-normal">Time</th>
+            <th scope="col" className="border-b border-border px-2 py-2 font-normal">Instrument</th>
+            <th scope="col" className="border-b border-border px-2 py-2 font-normal">Side</th>
+            <th scope="col" className="border-b border-border px-2 py-2 font-normal">Session</th>
+            <th scope="col" className="border-b border-border px-2 py-2 font-normal">Model</th>
+            <th scope="col" className="border-b border-border px-2 py-2 text-right font-normal">SL</th>
+            <th scope="col" className="border-b border-border px-2 py-2 text-right font-normal">TP</th>
+            <th scope="col" className="border-b border-border px-2 py-2 text-right font-normal">Held</th>
+            <th scope="col" className="border-b border-border px-2 py-2 text-right font-normal">R</th>
+            {backtest ? <th scope="col" className="border-b border-border px-2 py-2 text-right font-normal">P&amp;L</th> : null}
+            {backtest ? <th scope="col" className="border-b border-border px-2 py-2 font-normal">Outcome</th> : null}
+            {backtest ? <th scope="col" className="border-b border-border px-2 py-2 text-right font-normal">Rules</th> : null}
+            <th scope="col" className="border-b border-border px-2 py-2 font-normal">Shots</th>
+            {showOwner ? <th scope="col" className="border-b border-border px-2 py-2 font-normal">By</th> : null}
           </tr>
         </thead>
         <tbody>
           {trades.map((t) => (
-            <tr key={t.id} className="group relative hover:bg-surface-2">
+            <tr key={t.id} className="cursor-pointer hover:bg-surface-2" onClick={() => navigate(href(t))}>
               <td className="num border-b border-border px-2 py-0">
-                <Link to={href(t)} className="flex min-h-11 items-center after:absolute after:inset-0 after:content-['']" aria-label={`Open trade on ${fmtUkDate(t.opened_at)} ${fmtUkTime(t.opened_at)} ${t.instrument}`}>
+                <Link to={href(t)} onClick={(e) => e.stopPropagation()} className="flex min-h-11 items-center" aria-label={`Open trade on ${fmtUkDate(t.opened_at)} ${fmtUkTime(t.opened_at)} ${t.instrument}`}>
                   {fmtUkDate(t.opened_at)}
                 </Link>
               </td>

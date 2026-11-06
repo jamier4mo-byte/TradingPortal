@@ -4,6 +4,8 @@ import { useId, useMemo, useState } from "react";
 import { Chip } from "../../../components/ui/index.ts";
 import { api, type Tag } from "../../../lib/api.ts";
 
+const BLUR_GRACE_MS = 120; // lets a mousedown on a suggestion land before the list closes
+
 function norm(s: string) {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, "");
 }
@@ -60,7 +62,7 @@ export function TagInput({ value, onChange, label = "Tags", id }: { value: strin
               setOpen(true);
             }}
             onFocus={() => setOpen(true)}
-            onBlur={() => setTimeout(() => setOpen(false), 120)}
+            onBlur={() => setTimeout(() => setOpen(false), BLUR_GRACE_MS)}
             onKeyDown={(e) => {
               if (e.key === "ArrowDown") {
                 e.preventDefault();

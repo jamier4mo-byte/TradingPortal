@@ -1,6 +1,6 @@
 import { Check, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import * as Dialog from "@radix-ui/react-dialog";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import { ErrorState, Field, SkeletonText, TextInput, useToast } from "../../components/ui/index.ts";
@@ -51,6 +51,7 @@ function Stepper({ strategyId, trades, canEdit }: { strategyId: number; trades: 
   const tagNames = localTags[trade.id] ?? trade.tags.map((t) => t.name);
   const update = useUpdateTrade();
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
+  const AUTOSAVE_MS = 600; // long enough to batch keystrokes, short enough to survive a quick Esc
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pending = useRef<TradePatch>({});
   const firstFieldRef = useRef<HTMLInputElement>(null);
@@ -73,7 +74,7 @@ function Stepper({ strategyId, trades, canEdit }: { strategyId: number; trades: 
     setLocal((l) => ({ ...l, [trade.id]: { ...trade, ...rest } }));
     pending.current = { ...pending.current, ...changes };
     if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(flush, 600);
+    timer.current = setTimeout(flush, AUTOSAVE_MS);
   };
 
   const go = useCallback(
@@ -126,11 +127,6 @@ function Stepper({ strategyId, trades, canEdit }: { strategyId: number; trades: 
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        exit();
-        return;
-      }
       if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
         e.preventDefault();
         go(index + 1);
@@ -150,13 +146,27 @@ function Stepper({ strategyId, trades, canEdit }: { strategyId: number; trades: 
   const reasoning = trade.reasoning ?? {};
   const rulesFollowed = trade.rules_followed ?? {};
 
-  // The page wrapper carries a view-transition-name, which makes a stacking context; a portal escapes it.
-  return createPortal(
-    <div className="fixed inset-0 z-40 flex flex-col bg-bg" role="dialog" aria-modal="true" aria-label={`Annotate trade ${index + 1} of ${trades.length}`}>
-      <header className="safe-top flex min-h-14 items-center gap-3 border-b border-border px-(--gutter-phone) tablet:px-(--gutter-tablet)">
-        <h1 className="num text-title font-semibold">
-          Trade {index + 1}/{trades.length}
-        </h1>
+  // Radix gives the full-screen stepper its focus trap, aria-hidden siblings and a portal (the page wrapper's
+  // view-transition-name makes a stacking context, so a plain fixed div would sit under the sidebar).
+  return (
+    <Dialog.Root open modal>
+      <Dialog.Portal>
+        <Dialog.Content
+          aria-label={`Annotate trade ${index + 1} of ${trades.length}`}
+          aria-describedby={undefined}
+          onEscapeKeyDown={(e) => {
+            e.preventDefault();
+            exit();
+          }}
+          onPointerDownOutside={(e) => e.preventDefault()}
+          className="fixed inset-0 z-40 flex flex-col bg-bg outline-none"
+        >
+      <header className="safe-top flex min-h-14 items-center gap-3 border-b border-border px-(--gutter-phone) tablet:px-(--gutter-tablet) desktop:px-(--gutter-desktop)">
+        <Dialog.Title asChild>
+          <h1 className="num text-title font-semibold">
+            Trade {index + 1}/{trades.length}
+          </h1>
+        </Dialog.Title>
         <span className="hidden items-center gap-2 tablet:flex">
           <span className="font-mono text-body">{trade.instrument}</span>
           <SideChip side={trade.side} />
@@ -166,10 +176,10 @@ function Stepper({ strategyId, trades, canEdit }: { strategyId: number; trades: 
         </span>
         <span className="ml-auto flex items-center gap-3">
           <span className="text-label text-muted" aria-live="polite">
-            {saveState === "saving" ? "Saving…" : saveState === "saved" ? <span className="inline-flex items-center gap-1"><Check aria-hidden className="size-3.5 text-win" /> Autosaved</span> : null}
+            {saveState === "saving" ? "Saving…" : saveState === "saved" ? <span className="inline-flex items-center gap-1"><Check aria-hidden className="size-3.5" /> Autosaved</span> : null}
           </span>
           <span className="num text-label text-muted">{done}/{trades.length} done</span>
-          <kbd className="hidden rounded border border-border px-1.5 font-mono text-label text-muted laptop:inline">Esc</kbd>
+          <kbd className="hidden rounded-panel border border-border px-1.5 font-mono text-label text-muted laptop:inline">Esc</kbd>
           <button type="button" className="btn btn-ghost size-11 px-0" aria-label="Exit annotate mode" onClick={exit}>
             <X aria-hidden className="size-5" />
           </button>
@@ -198,7 +208,7 @@ function Stepper({ strategyId, trades, canEdit }: { strategyId: number; trades: 
               {trade.screenshots.filter((s) => s.slot === "extra").length < 3 && canEdit ? <ScreenshotSlot trade={trade} slot="extra" label="Extra" onChange={onShot} /> : null}
             </div>
             <p className="hidden text-label text-muted laptop:block">
-              <kbd className="rounded border border-border px-1 font-mono">⌘V</kbd> fills Entry, then Exit, then the reason. <kbd className="rounded border border-border px-1 font-mono">J</kbd>/<kbd className="rounded border border-border px-1 font-mono">K</kbd> next and previous. <kbd className="rounded border border-border px-1 font-mono">⌘↵</kbd> next trade.
+              <kbd className="rounded-panel border border-border px-1 font-mono">⌘V</kbd> fills Entry, then Exit, then the reason. <kbd className="rounded-panel border border-border px-1 font-mono">J</kbd>/<kbd className="rounded-panel border border-border px-1 font-mono">K</kbd> next and previous. <kbd className="rounded-panel border border-border px-1 font-mono">⌘↵</kbd> next trade.
             </p>
           </section>
 
@@ -239,7 +249,7 @@ function Stepper({ strategyId, trades, canEdit }: { strategyId: number; trades: 
                       disabled={!canEdit}
                       onChange={(e) => patch({ rules_followed: { ...rulesFollowed, [r.key]: e.target.checked } })}
                     />
-                    <span className={`text-body ${v === false ? "text-loss" : ""}`}>{r.text}</span>
+                    <span className="text-body">{r.text}</span>
                   </label>
                 );
               })}
@@ -270,7 +280,7 @@ function Stepper({ strategyId, trades, canEdit }: { strategyId: number; trades: 
         </div>
       </div>
 
-      <footer className="safe-bottom flex min-h-16 items-center gap-3 border-t border-border px-(--gutter-phone) tablet:px-(--gutter-tablet)">
+      <footer className="safe-bottom flex min-h-16 items-center gap-3 border-t border-border px-(--gutter-phone) tablet:px-(--gutter-tablet) desktop:px-(--gutter-desktop)">
         <button type="button" className="btn btn-secondary" onClick={() => go(index - 1)} disabled={index === 0}>
           <ChevronLeft aria-hidden className="size-4" /> Previous <kbd className="hidden font-mono text-label text-muted laptop:inline">K</kbd>
         </button>
@@ -281,7 +291,7 @@ function Stepper({ strategyId, trades, canEdit }: { strategyId: number; trades: 
             return (
               <li key={t.id}>
                 <button type="button" aria-label={`Trade ${i + 1}${complete ? ", done" : ""}`} aria-current={i === index ? "step" : undefined} onClick={() => go(i)} className="grid size-11 place-items-center">
-                  <span className={`block size-2.5 rounded-full ${i === index ? "bg-accent ring-2 ring-accent/40" : complete ? "bg-win" : "bg-surface-2 ring-1 ring-border-strong"}`} />
+                  <span className={`block size-2.5 rounded-full ${i === index ? "bg-accent ring-2 ring-accent/40" : complete ? "bg-accent" : "bg-surface-2 ring-1 ring-border-input"}`} />
                 </button>
               </li>
             );
@@ -293,11 +303,12 @@ function Stepper({ strategyId, trades, canEdit }: { strategyId: number; trades: 
           </button>
         ) : (
           <button type="button" className="btn btn-primary ml-auto tablet:ml-0" onClick={() => go(index + 1)}>
-            Next <ChevronRight aria-hidden className="size-4" /> <kbd className="hidden font-mono text-label text-on-accent/70 laptop:inline">J</kbd>
+            Next <ChevronRight aria-hidden className="size-4" /> <kbd className="hidden font-mono text-label text-on-accent laptop:inline">J</kbd>
           </button>
         )}
       </footer>
-    </div>,
-    document.body,
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }

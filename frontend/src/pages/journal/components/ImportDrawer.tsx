@@ -73,16 +73,15 @@ export function ImportDrawer({ open, onClose, strategy, destination: initial = "
     if (!file) return;
     setStep("running");
     setStage(0);
-    const tick = (n: number) => new Promise<void>((r) => setTimeout(() => (setStage(n), r()), level === "off" ? 0 : 350));
     const form = new FormData();
-    form.append("file", file, file.name);
+    form.append("file", await file.arrayBuffer().then((b) => new Blob([b], { type: "text/csv" })), file.name); // Reading file
     form.append("destination", destination);
     form.append("timezone", tz);
     try {
-      await tick(1);
+      setStage(1); // Matching trades: the request is in flight
       const r = await api.upload<ImportResult>(`/api/strategies/${strategy.id}/imports`, form);
-      await tick(2);
-      await tick(3);
+      setStage(2); // Calculating stats: the response is in
+      setStage(3);
       setResult(r);
       setStep("done");
       invalidate(strategy.id);
@@ -133,7 +132,7 @@ export function ImportDrawer({ open, onClose, strategy, destination: initial = "
             }}
             onDragLeave={() => setOver(false)}
             onDrop={onDrop}
-            className={`flex min-h-40 flex-col items-center justify-center gap-2 rounded-panel border border-dashed bg-surface-2 px-4 text-center text-body text-muted ${over ? "border-accent" : "border-border-strong hover:border-muted"}`}
+            className={`flex min-h-40 flex-col items-center justify-center gap-2 rounded-panel border border-dashed bg-surface-2 px-4 text-center text-body text-muted ${over ? "border-accent" : "border-input hover:border-muted"}`}
           >
             <FileSpreadsheet aria-hidden className="size-6" strokeWidth={1.5} />
             <span>
@@ -167,8 +166,8 @@ export function ImportDrawer({ open, onClose, strategy, destination: initial = "
             </p>
           ) : null}
           {preview.problems.length ? (
-            <details className="rounded-panel border border-impact-medium/40 px-3 py-2 text-body">
-              <summary className="cursor-pointer">
+            <details className="rounded-panel border border-border-strong px-3 py-2 text-body">
+              <summary className="flex min-h-11 cursor-pointer items-center">
                 <span className="num">{preview.problems.length}</span> {preview.problems.length === 1 ? "row" : "rows"} can't be read and will be skipped
               </summary>
               <ul className="mt-2 flex flex-col gap-1 font-mono text-label text-muted">
@@ -195,12 +194,12 @@ export function ImportDrawer({ open, onClose, strategy, destination: initial = "
             <table className="w-full border-separate border-spacing-0 text-label">
               <thead className="sticky top-0 bg-surface-1 text-muted">
                 <tr>
-                  <th className="px-2 py-1.5 text-left font-normal">Opened (UK)</th>
-                  <th className="px-2 py-1.5 text-left font-normal">Side</th>
-                  <th className="px-2 py-1.5 text-right font-normal">P&amp;L</th>
-                  <th className="px-2 py-1.5 text-right font-normal">R</th>
-                  <th className="px-2 py-1.5 text-left font-normal">Outcome</th>
-                  <th className="px-2 py-1.5 text-left font-normal">Imports?</th>
+                  <th scope="col" className="px-2 py-1.5 text-left font-normal">Opened (UK)</th>
+                  <th scope="col" className="px-2 py-1.5 text-left font-normal">Side</th>
+                  <th scope="col" className="px-2 py-1.5 text-right font-normal">P&amp;L</th>
+                  <th scope="col" className="px-2 py-1.5 text-right font-normal">R</th>
+                  <th scope="col" className="px-2 py-1.5 text-left font-normal">Outcome</th>
+                  <th scope="col" className="px-2 py-1.5 text-left font-normal">Imports?</th>
                 </tr>
               </thead>
               <tbody>
@@ -226,7 +225,7 @@ export function ImportDrawer({ open, onClose, strategy, destination: initial = "
             <button type="button" className="btn btn-secondary" onClick={reset}>
               Pick another file
             </button>
-            <button type="button" className="btn btn-primary flex-1" onClick={confirm} disabled={would === 0}>
+            <button type="button" className="btn btn-primary num flex-1" onClick={confirm} disabled={would === 0}>
               <Upload aria-hidden className="size-4" />
               Import {would} {would === 1 ? "trade" : "trades"}
             </button>
@@ -251,7 +250,7 @@ export function ImportDrawer({ open, onClose, strategy, destination: initial = "
             })}
           </ol>
           <div className="h-1 overflow-hidden rounded-pill bg-surface-2">
-            <motion.div className="h-full bg-accent" initial={{ width: 0 }} animate={{ width: `${((step === "done" ? 4 : stage) / 4) * 100}%` }} transition={{ duration: level === "off" ? 0 : dur.standard(), ease: easeEnter }} />
+            <motion.div className="h-full origin-left bg-accent" initial={{ scaleX: 0 }} animate={{ scaleX: (step === "done" ? 4 : stage) / 4 }} transition={{ duration: level === "full" ? dur.standard() : 0, ease: easeEnter }} />
           </div>
           <AnimatePresence>
             {step === "done" && result ? (

@@ -1,5 +1,6 @@
+import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { useMutation } from "@tanstack/react-query";
-import { ArrowLeft, ClipboardList, Lock, LockOpen, Pencil, Play, Plus, Trash2, Upload } from "lucide-react";
+import { ArrowLeft, ClipboardList, Lock, LockOpen, MoreHorizontal, Pencil, Play, Plus, Trash2, Upload } from "lucide-react";
 import { motion } from "motion/react";
 import { useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -8,7 +9,7 @@ import Card from "../../components/Card.tsx";
 import { Chip, ConfirmDialog, EmptyState, ErrorState, OwnerChip, PillToggle, ReadOnlyBanner, RingGauge, SkeletonCard, SkeletonText, StatTile, useToast } from "../../components/ui/index.ts";
 import { ChartEmpty } from "../../components/ui/Illustrations.tsx";
 import { api } from "../../lib/api.ts";
-import { fmtPct, fmtR, type JournalSession, STAGE_LABEL, type Strategy, type TradeKind, useInvalidateJournal, useProfile, useSessions, useStrategy, useTrades } from "../../lib/journal.ts";
+import { fmtPct, fmtR, type JournalSession, STAGE_LABEL, type Strategy, type TradeKind, useInstruments, useInvalidateJournal, useProfile, useSessions, useStrategy, useTrades } from "../../lib/journal.ts";
 import { dur, easeEnter, motionLevel } from "../../lib/motion.ts";
 import { BriefDrawer } from "./components/BriefDrawer.tsx";
 import { CoverageTracker } from "./components/Coverage.tsx";
@@ -126,7 +127,7 @@ function StrategyScreen({ strategy: s, tab, setTab }: { strategy: Strategy; tab:
             <h1 className="text-heading font-semibold">{s.name}</h1>
             <div className="mt-1.5 flex flex-wrap items-center gap-2">
               <OwnerChip name={s.owner.display_name} colourIndex={s.owner.colour_index} deactivated={s.owner.status === "deactivated"} />
-              <Chip dot dotClass={s.stage === "backtesting" ? "bg-win" : s.stage === "ready" ? "bg-accent" : "bg-muted"}>
+              <Chip dot dotClass={s.stage === "ideal" ? "bg-muted" : "bg-accent"}>
                 {STAGE_LABEL[s.stage]}
               </Chip>
               {s.instruments.map((i) => (
@@ -142,36 +143,59 @@ function StrategyScreen({ strategy: s, tab, setTab }: { strategy: Strategy; tab:
           </div>
           {s.can_edit ? (
             <div className="flex flex-wrap items-center gap-2">
-              <button type="button" className="btn btn-secondary" onClick={() => setBrief(true)}>
+              <button type="button" className="btn btn-secondary hidden tablet:inline-flex" onClick={() => setBrief(true)}>
                 <Play aria-hidden className="size-4" /> Start session
               </button>
               <button type="button" className="btn btn-secondary" onClick={() => setImporting(tab === "backtest" ? "backtest" : "ideal")}>
                 <Upload aria-hidden className="size-4" /> <span className="hidden tablet:inline">Import CSV</span><span className="tablet:hidden">Import</span>
               </button>
-              <button type="button" className="btn btn-primary" onClick={() => setLogging(tab === "backtest" ? "backtest" : "ideal")}>
-                <Plus aria-hidden className="size-4" /> <span className="hidden tablet:inline">Log trade</span><span className="tablet:hidden">Log</span>
+              <button type="button" className="btn btn-primary hidden tablet:inline-flex" onClick={() => setLogging(tab === "backtest" ? "backtest" : "ideal")}>
+                <Plus aria-hidden className="size-4" /> Log trade
               </button>
-              <button type="button" className="btn btn-ghost size-11 px-0" aria-label="Edit strategy" onClick={() => setEditing(true)}>
+              <button type="button" className="btn btn-ghost hidden size-11 px-0 tablet:grid" aria-label="Edit strategy" onClick={() => setEditing(true)}>
                 <Pencil aria-hidden className="size-4" />
               </button>
-              <button type="button" className="btn btn-ghost size-11 px-0" aria-label="Delete strategy" onClick={() => setDeleting(true)}>
+              <button type="button" className="btn btn-ghost hidden size-11 px-0 tablet:grid" aria-label="Delete strategy" onClick={() => setDeleting(true)}>
                 <Trash2 aria-hidden className="size-4" />
               </button>
+              {/* Phone: one primary action (Import); the rest live in a menu. The + button covers logging. */}
+              <DropdownMenu.Root>
+                <DropdownMenu.Trigger asChild>
+                  <button type="button" className="btn btn-secondary size-11 px-0 tablet:hidden" aria-label="More actions">
+                    <MoreHorizontal aria-hidden className="size-5" />
+                  </button>
+                </DropdownMenu.Trigger>
+                <DropdownMenu.Portal>
+                  <DropdownMenu.Content align="end" sideOffset={6} className="card z-30 min-w-56 p-1.5 data-[state=open]:animate-[page-enter_var(--dur-quick)_var(--ease-in-enter)]">
+                    {[
+                      { label: "Start session", icon: Play, run: () => setBrief(true) },
+                      { label: "Log trade", icon: Plus, run: () => setLogging(tab === "backtest" ? "backtest" : "ideal") },
+                      { label: "Edit strategy", icon: Pencil, run: () => setEditing(true) },
+                      { label: "Delete strategy", icon: Trash2, run: () => setDeleting(true) },
+                    ].map(({ label, icon: Icon, run }) => (
+                      <DropdownMenu.Item key={label} onSelect={run} className="flex min-h-11 cursor-pointer items-center gap-3 rounded-panel px-3 text-body text-muted outline-none data-[highlighted]:bg-surface-2 data-[highlighted]:text-text">
+                        <Icon aria-hidden className="size-4" strokeWidth={1.75} />
+                        {label}
+                      </DropdownMenu.Item>
+                    ))}
+                  </DropdownMenu.Content>
+                </DropdownMenu.Portal>
+              </DropdownMenu.Root>
             </div>
           ) : null}
         </div>
         {!s.can_edit ? <ReadOnlyBanner owner={s.owner.display_name} what="strategy" /> : null}
       </header>
 
+      <div className="flex items-center justify-between gap-3">
+        <PillToggle value={tab} onChange={setTab} options={TABS} label="Strategy tab" />
+      </div>
+
       {latestRecap ? <RecapCard session={latestRecap} onClose={() => setRecap(null)} /> : null}
 
       <Card title="Sessions" subtitle="Each import or logging run. Finish annotating adds the screenshots and reasons.">
         {sessions.isPending ? <SkeletonText lines={2} /> : sessions.isError ? <ErrorState text={sessions.error.message} onRetry={() => sessions.refetch()} /> : <SessionInbox sessions={sessions.data} strategyId={s.id} onRecap={setRecap} />}
       </Card>
-
-      <div className="flex items-center justify-between gap-3">
-        <PillToggle value={tab} onChange={setTab} options={TABS} label="Strategy tab" />
-      </div>
 
       <motion.div key={tab} initial={level === "full" ? { opacity: 0, y: 8 } : { opacity: 0 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: level === "off" ? 0 : dur.standard(), ease: easeEnter }} className="flex flex-col gap-4 laptop:gap-6">
         {tab === "ideal" ? <IdealTab strategy={s} onLog={() => setLogging("ideal")} onMissed={() => setLogging("missed")} /> : null}
@@ -289,7 +313,9 @@ function IdealTab({ strategy: s, onLog, onMissed }: { strategy: Strategy; onLog:
 function BacktestTab({ strategy: s, onLog, onImport }: { strategy: Strategy; onLog: () => void; onImport: () => void }) {
   const trades = useTrades(s.id, "backtest");
   const profile = useProfile(s.id);
-  const unit = s.instruments.some((i) => /^[A-Z]{6}$/.test(i) && !i.startsWith("XAU")) ? "pips" : "pts";
+  const instruments = useInstruments();
+  const units = new Set(s.instruments.map((sym) => instruments.data?.find((i) => i.symbol === sym)?.unit ?? "points"));
+  const unit = units.size === 1 && units.has("pips") ? "pips" : "pts";
   return (
     <>
       <Card title="Strategy profile" subtitle={s.coverage.unlocked ? "The reference rules from six months of winners" : "Opened early: based on fewer than six months of winners"}>

@@ -95,10 +95,10 @@ test("import flow: upload → preview → confirm, winners only, undo and restor
 
   // Undo from the toast, then undo the undo
   await page.getByRole("button", { name: "Undo", exact: true }).click();
-  await expect(page.getByText("Import undone")).toBeVisible();
+  await expect(page.getByText("Import undone", { exact: true })).toBeVisible();
   await expect(page.getByText("No ideal trades yet")).toBeVisible();
   await page.getByRole("button", { name: "Undo", exact: true }).click();
-  await expect(page.getByText("Import restored")).toBeVisible();
+  await expect(page.getByText("Import restored", { exact: true })).toBeVisible();
   await expect(page.getByText("6 trades · 0/12 screenshots")).toBeVisible();
 
   // Backtest is its own ledger and takes every row; importing the same file again is all duplicates
@@ -149,7 +149,7 @@ test("annotate mode completes 8 trades with the keyboard only", async ({ page, c
   const id = await newStrategy(context, "Annotate e2e");
   const { session } = await importCsv(context, id, "backtest");
   await page.goto(`/journal/sessions/${session.id}/annotate`);
-  await expect(page.getByRole("dialog", { name: "Annotate trade 1 of 10" })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Trade 1/10" })).toBeVisible();
   for (let i = 1; i <= 8; i++) {
     await expect(page.getByRole("heading", { level: 1, name: `Trade ${i}/10` })).toBeVisible();
     await pasteImage(page, `entry-${i}.png`);
@@ -221,7 +221,7 @@ test("trade detail shows the gallery and the trash restores a deleted trade", as
   await expect(page).toHaveURL(new RegExp(`/journal/strategies/${id}`));
   await page.goto("/journal/trash");
   await expect(page.getByRole("heading", { name: "Trades" })).toBeVisible();
-  await page.getByRole("button", { name: "Restore" }).first().click();
+  await page.getByRole("region", { name: "Trades" }).getByRole("button", { name: "Restore" }).first().click();
   await expect(page.getByText("Restored", { exact: true })).toBeVisible();
   const res = await api(context, "GET", `/api/trades/${trades[0].id}`);
   expect(res.status()).toBe(200);

@@ -45,7 +45,7 @@ export function CoverageTracker({ coverage }: { coverage: Coverage }) {
             ) : null}
           </p>
         </div>
-        <span className={`inline-flex min-h-11 items-center gap-2 rounded-panel border px-3 text-body ${coverage.unlocked ? "border-win/40 text-win" : "border-border text-muted"}`}>
+        <span className={`inline-flex min-h-11 items-center gap-2 rounded-panel border px-3 text-body ${coverage.unlocked ? "border-accent/60 text-accent" : "border-border text-muted"}`}>
           {coverage.unlocked ? <LockOpen aria-hidden className="size-4" /> : <Lock aria-hidden className="size-4" />}
           {coverage.unlocked ? "Backtest unlocked" : coverage.next_uncovered ? `Next: replay ${fmtMonth(coverage.next_uncovered)}` : "Log the first winner"}
         </span>
@@ -62,7 +62,7 @@ export function CoverageTracker({ coverage }: { coverage: Coverage }) {
                 m.covered ? "border-accent/60 bg-accent-soft" : "border-dashed border-border-strong"
               }`}
             >
-              <span className="text-label text-muted">{fmtMonth(m.month)}</span>
+              <span className="num text-label text-muted">{fmtMonth(m.month)}</span>
               <span className={`num text-body font-medium ${m.covered ? "" : "text-muted"}`}>
                 {m.covered ? `${m.trades} ${m.trades === 1 ? "trade" : "trades"}` : "gap"}
               </span>

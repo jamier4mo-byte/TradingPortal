@@ -2,13 +2,13 @@ import { Minus, Plus, TrendingDown, TrendingUp } from "lucide-react";
 
 import type { Outcome } from "../../../lib/journal.ts";
 
-/** Win / loss / breakeven with an icon and a sign: colour is never the only signal. */
+/** Win / loss / breakeven with an icon and a label: colour is never the only signal. */
 export function OutcomeChip({ outcome, compact = false }: { outcome: Outcome | null | undefined; compact?: boolean }) {
   if (!outcome) return <span className="text-label text-muted">—</span>;
   const map = {
-    win: { label: "Win", icon: TrendingUp, cls: "text-win border-win/40", sign: "+" },
-    loss: { label: "Loss", icon: TrendingDown, cls: "text-loss border-loss/40", sign: "−" },
-    breakeven: { label: "Breakeven", icon: Minus, cls: "text-breakeven border-breakeven/40", sign: "±" },
+    win: { label: "Win", icon: TrendingUp, cls: "text-win border-win/40" },
+    loss: { label: "Loss", icon: TrendingDown, cls: "text-loss border-loss/40" },
+    breakeven: { label: "Breakeven", icon: Minus, cls: "text-breakeven border-breakeven/40" },
   }[outcome];
   const Icon = map.icon;
   return (

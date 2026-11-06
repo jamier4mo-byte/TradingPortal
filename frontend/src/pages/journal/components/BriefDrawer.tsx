@@ -55,7 +55,7 @@ export function BriefDrawer({ open, onClose, strategy }: { open: boolean; onClos
             {b.recent_improve_notes.length ? (
               <ul className="mt-2 flex flex-col gap-2">
                 {b.recent_improve_notes.map((n) => (
-                  <li key={n.session_id} className="rounded-panel border-l-2 border-accent bg-surface-2 px-3 py-2 text-body">
+                  <li key={n.session_id} className="rounded-panel border border-border bg-surface-2 px-3 py-2 text-body">
                     {n.note}
                   </li>
                 ))}

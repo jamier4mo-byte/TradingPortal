@@ -44,7 +44,7 @@ export function RecapCard({ session, onClose, className = "" }: { session: Journ
           <div className="flex flex-col gap-4">
             <div className="grid grid-cols-2 gap-2 tablet:grid-cols-4">
               <StatTile label="Trades" value={s.trades} />
-              <StatTile label="Win rate" value={fmtPct(s.win_rate)} tone={s.win_rate === null ? "neutral" : s.win_rate >= 0.5 ? "win" : "loss"} />
+              <StatTile label="Win rate" value={fmtPct(s.win_rate)} />
               <StatTile label="Total R" value={fmtR(s.total_r)} tone={(s.total_r ?? 0) > 0 ? "win" : (s.total_r ?? 0) < 0 ? "loss" : "neutral"} />
               <StatTile label="Rules followed" value={fmtPct(s.rules_followed_rate)} hint={s.rules_followed_rate === null ? "Tick them in Annotate mode" : undefined} />
             </div>
@@ -54,7 +54,7 @@ export function RecapCard({ session, onClose, className = "" }: { session: Journ
             </label>
           </div>
           <div className="flex flex-col gap-1.5">
-            <span className="text-label text-muted">Best trade {best ? `· ${fmtR(best.r_multiple)}` : ""}</span>
+            <span className="num text-label text-muted">Best trade {best ? `· ${fmtR(best.r_multiple)}` : ""}</span>
             {shot ? (
               <img src={shot.thumb_url} alt={`Best trade of the session, ${fmtR(best?.r_multiple)}`} className="aspect-video w-full rounded-panel border border-border object-cover" />
             ) : (

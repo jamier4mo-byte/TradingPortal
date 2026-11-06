@@ -120,7 +120,7 @@ export function ScreenshotSlot({
         onDragLeave={() => setOver(false)}
         onDrop={onDrop}
         className={`relative flex ${sizeCls} w-full items-center justify-center overflow-hidden rounded-panel border bg-surface-2 text-muted transition-colors duration-(--dur-quick) ${
-          over ? "border-accent" : src ? "border-border" : "border-dashed border-border-strong hover:border-muted"
+          over ? "border-accent" : src ? "border-border" : "border-dashed border-input hover:border-muted"
         } disabled:cursor-not-allowed disabled:opacity-60`}
       >
         <AnimatePresence initial={false}>
@@ -147,10 +147,10 @@ export function ScreenshotSlot({
         {busy ? (
           <span className="absolute inset-x-0 bottom-0 h-1 overflow-hidden bg-surface-2">
             <motion.span
-              className="block h-full bg-accent"
-              initial={{ width: "15%" }}
-              animate={{ width: phase === "preparing" ? "45%" : "90%" }}
-              transition={{ duration: level === "off" ? 0 : dur.emphasis(), ease: easeEnter }}
+              className="block h-full origin-left bg-accent"
+              initial={{ scaleX: 0.15 }}
+              animate={{ scaleX: phase === "preparing" ? 0.45 : 0.9 }}
+              transition={{ duration: level === "full" ? dur.emphasis() : 0, ease: easeEnter }}
             />
           </span>
         ) : null}

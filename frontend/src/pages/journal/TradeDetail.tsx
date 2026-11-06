@@ -136,7 +136,7 @@ function Detail({ trade: t, templateFields, rules }: { trade: Trade; templateFie
               {rules.map((r) => {
                 const ok = current.rules_followed?.[r.key];
                 return (
-                  <li key={r.key} className={`flex items-start gap-2 text-body ${ok === false ? "text-loss" : ok ? "" : "text-muted"}`}>
+                  <li key={r.key} className={`flex items-start gap-2 text-body ${ok === undefined ? "text-muted" : ""}`}>
                     <span aria-hidden className="num w-4 shrink-0">{ok === false ? "✕" : ok ? "✓" : "–"}</span>
                     <span>
                       <span className="sr-only">{ok === false ? "Broken: " : ok ? "Followed: " : "Not checked: "}</span>
