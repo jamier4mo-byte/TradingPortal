@@ -194,3 +194,67 @@ prompt's branch. If a prompt stops part-way, the next run continues from the fir
 - [x] `make lint`, `make test`, `make smoke` green (467 pytest + 6 Node · 144 Playwright); Hub 187.8 KB
 - [x] `/check-devices` at six widths (two rounds); design-reviewer: two passes, majors fixed
 - [x] `docs/build/PHASE-4-REPORT.md`; merged to local `main`
+
+## Prompt 5 — Hub, team calendar, motion, offline, backups and launch (branch `build/05-hub-calendar-launch`)
+
+### 0. Preflight
+- [x] Clean `main`; branch `build/05-hub-calendar-launch`
+- [x] Baseline: `make lint` clean (Hub 187.8 KB) · `make test` 467 pytest + 6 Node · smoke deferred to the gate (144 at Prompt 4)
+- [x] Docs read in full; Context7 works this session; Docker is **not installed** on this Mac (noted for Gate 5)
+- [ ] Every route has the five states (checked in step 6's accessibility sweep)
+
+### 1. Team calendar (1.4)
+- [ ] Migration `0009`: `tasks`, `task_exceptions`, `task_completions`
+- [ ] Occurrence expansion server-side (rrule, DST-safe); this-occurrence vs series edits and moves; members change only their own
+- [ ] `/calendar`: week / day / month, + New task, tap a day, owner dots and filter chips, drag to move, optimistic done with undo, news markers, tokens only
+- [ ] Phone: day / 3-day agenda, long-press drag, swipe to complete plus a button
+- [ ] Hub `CalendarCard` (week on desktop, agenda on the phone)
+- [ ] Tests: recurrence across DST, this-occurrence vs series, permissions; Playwright at 375 and 1440 with axe
+
+### 2. The Hub (section 1)
+- [ ] `GET /api/hub`: welcome-back gap, process streak, personal bests, first-run checklist, week behind
+- [ ] Hero: greeting by UK time, Welcome back, ordinal date, live clock, session status line, time-of-day ambience with session tint and the weekend state
+- [ ] Today's news card (headline, my instruments, impact chips, forecast vs previous, empty state; phone: headline + top 3)
+- [ ] Launch islands with logos, mini-stats, hover lift and glow, press state, launch loaders (rewind / radar) as the real loading screen; phone tiles side by side
+- [ ] Team calendar card, live market panel (watchlist, search, credits; swipeable ticker row on the phone)
+- [ ] First-run checklist (F15), process streak, personal bests with one restrained celebration, Week behind / Week ahead from Sunday evening
+- [ ] Big screens get extra panels; everything below the fold lazy-loads; Hub initial JS ≤ 200 KB gzip
+
+### 3. Motion pass (F18)
+- [ ] Page transitions (View Transitions + fallback), shared-element transitions for strategy / trade / ticker / calendar event / news event, reversed on back
+- [ ] Staggered first-load entrance; pills slide, charts morph, numbers count up, toggles spring, ticks draw, copy icons morph
+- [ ] Toasts from the bottom corner, drawers from the right / sheet on the phone, Cmd+K fade-and-scale, backtest unlock moment
+- [ ] Portal intro after login (once a day per device, skipped under Reduced / Off)
+- [ ] Full / Reduced / Off honoured everywhere; only transform and opacity; paused off-screen and in hidden tabs
+- [ ] Performance trace of a chart morph and the Hub load (Chrome DevTools MCP, if available)
+
+### 4. PWA and offline
+- [ ] `sw.js`: app shell, last Hub API answers, prices and today's events cached
+- [ ] Offline: cached data with the OfflineBanner, stale figures dimmed with "last updated"
+- [ ] Launch screen matching the intro, dark status bar, safe areas; images sized per device; long trade lists load as you scroll
+- [ ] e2e: load the Hub, go offline, reload, cached Hub shows with offline marking
+
+### 5. Backups, storage and data safety (F2, F5)
+- [ ] `S3Storage` (boto3, Tigris) behind `Storage`, `STORAGE_BACKEND=local|s3`, moto tests; `make migrate-screenshots` (resumable, idempotent)
+- [ ] Litestream: pinned binary in the Docker image, `litestream.yml` from env vars, entrypoint restore → migrate → replicate, plain uvicorn without a replica
+- [ ] `make restore-test` + `docs/ops/RESTORE-TEST.md`
+- [ ] Trash purge after 30 days (daily scheduler job with the lease)
+- [ ] Admin "Export everything" (streamed zip: consistent DB snapshot, screenshots, manifest)
+- [ ] `fly.toml`: always on, volume, health check on `/api/health`, `[env]` for non-secret settings
+
+### 6. Security and quality review
+- [ ] Review: auth, sessions, CSRF, lockout, invites, resets; route × role table from OpenAPI; uploads and path traversal; zip export; key vault; SSRF; headers (CSP, HSTS, frame-ancestors, Referrer-Policy); rate limits; `pip-audit`, `npm audit --omit=dev`
+- [ ] Every high and medium fixed
+- [ ] Accessibility sweep: axe on every route, keyboard walkthrough, 200% zoom, chart summaries and tables, focus rings
+
+### 7. Could items (only after everything above passes)
+- [ ] Flashcard review (U14) · Konva annotator · presence and activity feed
+
+### 8. Deploy runbook
+- [ ] `docs/DEPLOY.md`
+
+### 9. Gate 5
+- [ ] `make lint`, `make test`, `make smoke` green; bundle budget; `docker build .` (not available here: say so)
+- [ ] `/check-devices` at 360/375/430/768/1440/1920 clean; design-reviewer: no blockers or majors; axe on every route
+- [ ] Restore test, offline e2e and calendar recurrence tests pass; no open high or medium security findings
+- [ ] `PHASE-5-REPORT.md`, `FINAL-REPORT.md`, `README.md`, `CLAUDE.md`; merged to local `main`
