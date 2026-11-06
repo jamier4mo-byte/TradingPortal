@@ -8,6 +8,7 @@ import { ukTime } from "../../lib/news.ts";
 export function CreditsMeter({ usage, className = "" }: { usage: Usage; className?: string }) {
   const pct = usage.limit ? Math.min(1, usage.used / usage.limit) : 0;
   const level = motionLevel();
+  const left = Math.max(0, usage.limit - usage.used);
   const tight = pct >= 0.85;
   return (
     <div className={className}>
@@ -24,15 +25,17 @@ export function CreditsMeter({ usage, className = "" }: { usage: Usage; classNam
         aria-valuemin={0}
         aria-valuemax={usage.limit}
         aria-valuenow={usage.used}
+        aria-valuetext={`${usage.used} of ${usage.limit} used, ${left} left`}
       >
         <motion.div
-          className={`h-full origin-left rounded-pill ${tight ? "bg-impact-medium" : "bg-accent"}`}
+          className="h-full origin-left rounded-pill bg-accent"
           initial={{ scaleX: 0 }}
           animate={{ scaleX: pct }}
           transition={{ duration: level === "off" ? 0 : dur.emphasis(), ease: easeEnter }}
         />
       </div>
       <p className="num mt-1.5 text-label text-muted">
+        {tight ? <span className="text-text">{left === 0 ? "None left today · " : `Nearly used up: ${left} left · `}</span> : `${left} left · `}
         {usage.provider === "fake" ? "Sample prices (no key in development) · " : ""}
         {usage.background_used ? `${usage.background_used} on background jobs · ` : ""}
         Resets {ukTime(usage.resets_at)} UK

@@ -9,7 +9,7 @@ import { api } from "../../lib/api.ts";
 import { relativeTime } from "../../lib/format.ts";
 import { CURRENCIES } from "../../lib/news.ts";
 import { alertConfig, currentSubscription, disablePush, enablePush, playChime, pushSupport } from "../../lib/push.ts";
-import { Switch, ToggleChip } from "./parts.tsx";
+import { Switch, ToggleChip } from "../../components/ui/Toggles.tsx";
 
 interface AlertPrefs {
   enabled: boolean;
@@ -310,8 +310,8 @@ function PrefsCard() {
             </select>
           </label>
 
-          <div>
-            <p className="mb-2 text-label text-muted">Impact</p>
+          <fieldset>
+            <legend className="mb-2 text-label text-muted">Impact</legend>
             <div className="flex flex-wrap gap-2">
               {IMPACTS.map((i) => (
                 <ToggleChip
@@ -320,6 +320,7 @@ function PrefsCard() {
                   onClick={() => {
                     const next = toggle(p.impacts, i.value);
                     if (next.length) save.mutate({ impacts: next });
+                    else toast({ title: "Keep at least one impact level", text: "Turn alerts off above to stop them entirely." });
                   }}
                 >
                   <span aria-hidden className={`size-2 rounded-full ${i.dot}`} />
@@ -327,9 +328,10 @@ function PrefsCard() {
                 </ToggleChip>
               ))}
             </div>
-          </div>
+          </fieldset>
 
-          <div>
+          <fieldset>
+            <legend className="sr-only">Currencies</legend>
             <Switch
               checked={p.currencies === null}
               onChange={(mineOnly) => save.mutate({ currencies: mineOnly ? null : p.effective_currencies })}
@@ -349,7 +351,7 @@ function PrefsCard() {
                 Change the instruments you follow in <Link to="/settings#news" className="underline underline-offset-4">Settings → News Room</Link>.
               </p>
             )}
-          </div>
+          </fieldset>
 
           <div>
             <Switch

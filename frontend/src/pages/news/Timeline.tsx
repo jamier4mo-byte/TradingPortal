@@ -1,15 +1,16 @@
 import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 
-import { SkeletonCard } from "../../components/ui/index.ts";
+import { RefreshFailed, SkeletonCard } from "../../components/ui/index.ts";
 import { ErrorState } from "../../components/ui/States.tsx";
 import { type Timeline as TimelineData, useTimeline } from "../../lib/news.ts";
 import { ukParts } from "../../lib/time.ts";
 import { useDevice } from "../../lib/useMediaQuery.ts";
 import { useNow } from "../../lib/useNow.ts";
-import { ImpactDot } from "../../components/news/NewsBits.tsx";
 
 const DAY = 24 * 60;
+const IMPACT_BG = { high: "bg-impact-high", medium: "bg-impact-medium", low: "bg-impact-low", holiday: "bg-stale", none: "bg-stale" } as const;
+const IMPACT_LETTER = { high: "H", medium: "M", low: "L", holiday: "–", none: "–" } as const;
 
 /** Minutes after UK midnight for an ISO time, clamped to the day of `date` (UK). */
 function ukMinute(iso: string, date: string): number {
@@ -28,9 +29,15 @@ const pct = (m: number) => `${(m / DAY) * 100}%`;
  * "now" centred. */
 export function TradingDayTimeline({ date, isToday }: { date: string; isToday: boolean }) {
   const q = useTimeline(date);
+  if (q.isPending && q.fetchStatus === "paused") return <p className="text-body text-muted">You&rsquo;re offline. The timeline appears when you&rsquo;re back online.</p>;
   if (q.isPending) return <SkeletonCard className="h-40" />;
-  if (q.isError) return <ErrorState title="The timeline didn't load" text={q.error.message} onRetry={() => q.refetch()} />;
-  return <TimelineBody data={q.data} isToday={isToday} />;
+  if (!q.data) return <ErrorState title="The timeline didn't load" text={q.error?.message} onRetry={() => q.refetch()} />;
+  return (
+    <>
+      {q.isError ? <RefreshFailed updatedAt={q.dataUpdatedAt} onRetry={() => q.refetch()} /> : null}
+      <TimelineBody data={q.data} isToday={isToday} />
+    </>
+  );
 }
 
 function TimelineBody({ data, isToday }: { data: TimelineData; isToday: boolean }) {
@@ -58,7 +65,13 @@ function TimelineBody({ data, isToday }: { data: TimelineData; isToday: boolean 
   return (
     <figure className="m-0">
       <figcaption className="sr-only">{summary}</figcaption>
-      <div ref={scroller} className="overflow-x-auto pb-2 [scrollbar-width:thin]" tabIndex={phone ? 0 : undefined} aria-label={phone ? "Trading-day timeline, scrolls sideways" : undefined}>
+      <div
+        ref={scroller}
+        className="overflow-x-auto pb-2 [scrollbar-width:thin]"
+        role={phone ? "region" : undefined}
+        tabIndex={phone ? 0 : undefined}
+        aria-label={phone ? "Trading-day timeline, scrolls sideways" : undefined}
+      >
         <div className={`relative ${phone ? "w-[1100px]" : "w-full"}`}>
           {/* hour ticks */}
           <div className="relative h-5 text-label text-muted" aria-hidden>
@@ -114,14 +127,24 @@ function TimelineBody({ data, isToday }: { data: TimelineData; isToday: boolean 
                   aria-label={`${e.uk_time} ${e.currency} ${e.name}, ${e.impact_label} impact`}
                   title={`${e.uk_time} ${e.currency} ${e.name}`}
                 >
-                  <ImpactDot impact={e.impact} className={e.impact === "high" ? "size-3 ring-2 ring-surface-2" : "size-2 opacity-80"} />
+                  <span
+                    aria-hidden
+                    className={`grid size-[18px] place-items-center rounded-full text-[11px] leading-none font-bold text-bg ring-2 ring-surface-2 ${IMPACT_BG[e.impact]}`}
+                  >
+                    {IMPACT_LETTER[e.impact]}
+                  </span>
                 </Link>
               );
             })}
             {/* now line */}
             {nowMin !== null ? (
-              <div aria-hidden className="absolute inset-y-0 w-px bg-text transition-[left] duration-(--dur-emphasis)" style={{ left: pct(nowMin) }}>
-                <span className="num absolute -top-5 left-1/2 -translate-x-1/2 rounded-pill bg-text px-1.5 text-label text-bg">Now</span>
+              <div aria-hidden className="pointer-events-none absolute inset-0">
+                <div
+                  className="absolute inset-y-0 left-0 w-full transition-transform duration-(--dur-emphasis) ease-(--ease-in-enter)"
+                  style={{ transform: `translateX(${(nowMin / DAY) * 100}%)` }}
+                >
+                  <div className="absolute inset-y-0 left-0 w-px bg-text" />
+                </div>
               </div>
             ) : null}
           </div>
@@ -136,7 +159,13 @@ function TimelineBody({ data, isToday }: { data: TimelineData; isToday: boolean 
           <span aria-hidden className="inline-block h-3 w-4 rounded-sm border border-accent bg-accent-soft" />
           Current session
         </span>
-        <Link to="/settings#news" className="underline decoration-border-strong underline-offset-4 hover:text-text">
+        <span className="inline-flex items-center gap-1.5">
+          <span aria-hidden className="grid size-4 place-items-center rounded-full bg-impact-high text-[10px] font-bold text-bg">H</span>
+          <span aria-hidden className="grid size-4 place-items-center rounded-full bg-impact-medium text-[10px] font-bold text-bg">M</span>
+          <span aria-hidden className="grid size-4 place-items-center rounded-full bg-impact-low text-[10px] font-bold text-bg">L</span>
+          High, Med, Low impact
+        </span>
+        <Link to="/settings#news" className="inline-flex min-h-11 items-center underline decoration-border-strong underline-offset-4 hover:text-text">
           Change window
         </Link>
       </p>

@@ -172,9 +172,10 @@ function Cell({ h, unit }: { h: HorizonReaction | undefined; unit: string }) {
   return (
     <span className="num">
       {Math.round(h.range).toLocaleString("en-GB")} <span className="text-muted">{unit}</span>{" "}
-      <span className="text-muted" aria-label={h.direction ?? undefined}>
+      <span className="text-muted" aria-hidden>
         {arrow}
       </span>
+      <span className="sr-only">{h.direction === "up" ? "up" : h.direction === "down" ? "down" : "flat"}</span>
     </span>
   );
 }

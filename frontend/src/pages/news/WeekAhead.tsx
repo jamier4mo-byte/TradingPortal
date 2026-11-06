@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import Card from "../../components/Card.tsx";
 import { CurrencyTag, ImpactChip } from "../../components/news/NewsBits.tsx";
 import { CalendarEmpty } from "../../components/ui/Illustrations.tsx";
-import { EmptyState, ErrorState, SkeletonCard } from "../../components/ui/index.ts";
+import { EmptyState, ErrorState, RefreshFailed, SkeletonCard } from "../../components/ui/index.ts";
 import { displaySymbol } from "../../lib/markets.ts";
 import { dayLabel, useWeekAhead } from "../../lib/news.ts";
 import { vtName } from "../../lib/vt.ts";
@@ -14,14 +14,14 @@ export function WeekAheadView() {
   const q = useWeekAhead();
   if (q.isPending) {
     return (
-      <div className="grid gap-4 tablet:grid-cols-2 laptop:grid-cols-5">
+      <div className="grid gap-4 tablet:grid-cols-2 laptop:grid-cols-3 desktop:grid-cols-5">
         {[0, 1, 2, 3, 4].map((i) => (
           <SkeletonCard key={i} className="h-48" />
         ))}
       </div>
     );
   }
-  if (q.isError) return <ErrorState title="The week ahead didn't load" text={q.error.message} onRetry={() => q.refetch()} />;
+  if (!q.data) return <ErrorState title="The week ahead didn't load" text={q.error?.message} onRetry={() => q.refetch()} />;
   const days = q.data.days;
   const total = days.reduce((n, d) => n + d.events.length, 0);
   if (total === 0) {
@@ -34,6 +34,7 @@ export function WeekAheadView() {
   const quietest = [...days].sort((a, b) => a.events.length - b.events.length)[0];
   return (
     <section aria-label="Week ahead" className="flex flex-col gap-3">
+      {q.isError ? <RefreshFailed updatedAt={q.dataUpdatedAt} onRetry={() => q.refetch()} /> : null}
       <p className="text-body text-muted">
         <span className="num">{total}</span> high-impact {total === 1 ? "event" : "events"} from {dayLabel(q.data.start)} to {dayLabel(q.data.end)}.{" "}
         {quietest ? <>Quietest day: {dayLabel(quietest.date)}, good for backtesting or reviews.</> : null}

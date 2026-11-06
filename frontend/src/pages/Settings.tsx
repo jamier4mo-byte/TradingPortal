@@ -12,7 +12,7 @@ import { relativeTime, shortDateTime } from "../lib/format.ts";
 import { useSaveMarketSettings, useUsage } from "../lib/markets.ts";
 import { useNewsPrefs, useSaveNewsPrefs } from "../lib/news.ts";
 import { CreditsMeter } from "../components/market/CreditsMeter.tsx";
-import { Switch, ToggleChip } from "./news/parts.tsx";
+import { Switch, ToggleChip } from "../components/ui/Toggles.tsx";
 import { Link } from "react-router-dom";
 
 const MOTION_OPTIONS = [

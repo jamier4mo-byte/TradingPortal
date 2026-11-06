@@ -1,8 +1,8 @@
 import { countdownText } from "../../lib/news.ts";
 
 /** The next high-impact event: a ring that depletes as time runs down. Accent until the last 15 minutes,
- * then orange, then red in the last 5, with a gentle opacity pulse (`.pulse`, stopped by Reduced/Off and
- * the device setting). The ring empties over the last `spanSeconds` (default 4 hours). */
+ * then orange, then red in the last 5, with a gentle opacity pulse (`.pulse`: opacity only; Off and the
+ * device's reduce-motion setting stop it). The ring empties over the last `spanSeconds` (default 4 hours). */
 export function CountdownRing({
   secondsLeft,
   spanSeconds = 4 * 3600,

@@ -7,7 +7,7 @@ import { InstrumentSearch } from "../../components/market/InstrumentSearch.tsx";
 import { TickerCard } from "../../components/market/TickerCard.tsx";
 import { WatchlistRow } from "../../components/market/WatchlistRow.tsx";
 import { ChartEmpty } from "../../components/ui/Illustrations.tsx";
-import { EmptyState, ErrorState, SkeletonCard, useToast } from "../../components/ui/index.ts";
+import { EmptyState, ErrorState, RefreshFailed, SkeletonCard, useToast } from "../../components/ui/index.ts";
 import { type Quote, usePinMutations, usePins, useQuotes, useSparkline } from "../../lib/markets.ts";
 import { useDevice } from "../../lib/useMediaQuery.ts";
 
@@ -52,13 +52,16 @@ export default function Markets() {
               pinned={pinned}
               className="mb-4"
             />
-            {pins.isPending || quotes.isPending ? (
+            {quotes.isError && quotes.data ? <RefreshFailed updatedAt={quotes.dataUpdatedAt} onRetry={() => quotes.refetch()} /> : null}
+            {(pins.isPending || quotes.isPending) && (pins.fetchStatus === "paused" || quotes.fetchStatus === "paused") ? (
+              <EmptyState illustration={<ChartEmpty />} title="You're offline" text="Prices load when you're back online." />
+            ) : pins.isPending || quotes.isPending ? (
               <div className="grid gap-4 tablet:grid-cols-2 desktop:grid-cols-3">
                 <SkeletonCard className="h-44" />
                 <SkeletonCard className="h-44" />
                 <SkeletonCard className="h-44" />
               </div>
-            ) : pins.isError || quotes.isError ? (
+            ) : !pins.data || !quotes.data ? (
               <ErrorState text={(pins.error ?? quotes.error)?.message} onRetry={() => void Promise.all([pins.refetch(), quotes.refetch()])} />
             ) : quotes.data.quotes.length === 0 ? (
               <EmptyState
@@ -78,7 +81,7 @@ export default function Markets() {
             ) : device === "phone" ? (
               <ul className="flex flex-col gap-2" aria-label="Pinned instruments">
                 {quotes.data.quotes.map((q) => (
-                  <QuoteRow key={q.symbol} quote={q} onUnpin={() => doUnpin(q)} busy={unpin.isPending} />
+                  <QuoteRow key={q.symbol} quote={q} onUnpin={() => doUnpin(q)} busy={unpin.isPending} paused={!!usage?.paused} />
                 ))}
               </ul>
             ) : (
@@ -134,7 +137,7 @@ function QuoteCard({ quote, paused }: { quote: Quote; paused: boolean }) {
   return <TickerCard quote={quote} points={spark.data?.points.map((p) => p.v) ?? []} paused={paused} />;
 }
 
-function QuoteRow({ quote, onUnpin, busy }: { quote: Quote; onUnpin: () => void; busy: boolean }) {
+function QuoteRow({ quote, onUnpin, busy, paused = false }: { quote: Quote; onUnpin: () => void; busy: boolean; paused?: boolean }) {
   const spark = useSparkline(quote.code ?? quote.symbol, quote.status === "ok" || quote.status === "stale");
-  return <WatchlistRow quote={quote} points={spark.data?.points.map((p) => p.v) ?? []} onUnpin={onUnpin} busy={busy} />;
+  return <WatchlistRow quote={quote} points={spark.data?.points.map((p) => p.v) ?? []} onUnpin={onUnpin} busy={busy} paused={paused} />;
 }

@@ -1,13 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Pin, PinOff } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import Card from "../../components/Card.tsx";
 import { PausedBanner } from "../../components/market/CreditsMeter.tsx";
-import { Odometer } from "../../components/market/Odometer.tsx";
-import { PriceSparkline } from "../../components/market/PriceSparkline.tsx";
-import { DelayedLabel, LiveDot } from "../../components/market/TickerCard.tsx";
+import { IntradayChart } from "../../components/market/IntradayChart.tsx";
+import { DelayedLabel, LiveDot, PriceFigure } from "../../components/market/TickerCard.tsx";
 import { CurrencyTag, ImpactChip } from "../../components/news/NewsBits.tsx";
 import { ChartEmpty } from "../../components/ui/Illustrations.tsx";
 import { EmptyState, ErrorState, SkeletonCard, SkeletonText, useToast } from "../../components/ui/index.ts";
@@ -27,13 +25,6 @@ export default function InstrumentView() {
   const { pin, unpin } = usePinMutations();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [flash, setFlash] = useState<{ key: number; dir: "up" | "down" } | null>(null);
-  const prev = useRef<number | null>(null);
-  useEffect(() => {
-    const p = q.data?.price ?? null;
-    if (prev.current !== null && p !== null && p !== prev.current) setFlash({ key: Date.now(), dir: p > prev.current ? "up" : "down" });
-    prev.current = p;
-  }, [q.data?.price]);
 
   const quote = q.data;
   const code = quote?.code ?? symbol;
@@ -57,7 +48,6 @@ export default function InstrumentView() {
         <ErrorState title="This instrument didn't load" text={q.error.message} onRetry={() => q.refetch()} />
       ) : (
         <section className="card relative overflow-hidden p-4 tablet:p-6" style={{ viewTransitionName: vtName("ticker", code) }} aria-labelledby="instrument-title">
-          {flash ? <span key={flash.key} aria-hidden className={`price-flash absolute inset-0 ${flash.dir === "up" ? "bg-win" : "bg-loss"}`} /> : null}
           <div className="relative flex flex-wrap items-start gap-3">
             <div className="min-w-0">
               <h1 id="instrument-title" className="font-mono text-heading font-semibold">
@@ -86,7 +76,7 @@ export default function InstrumentView() {
           {usable ? (
             <div className="relative mt-4 grid gap-6 laptop:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] laptop:items-end">
               <div>
-                <Odometer text={formatPrice(quote!.price, quote!.decimals)} className="text-hero font-semibold leading-none" />
+                <PriceFigure price={quote!.price} decimals={quote!.decimals} className="text-hero font-semibold" />
                 <p className="num mt-2 text-body">
                   <span aria-hidden>{(quote!.change ?? 0) > 0 ? "▲ " : (quote!.change ?? 0) < 0 ? "▼ " : ""}</span>
                   {signed(quote!.change, quote!.decimals)} ({signed(quote!.percent_change, 2, "%")}) today
@@ -97,7 +87,7 @@ export default function InstrumentView() {
                 {spark.isPending ? (
                   <SkeletonText lines={3} />
                 ) : (
-                  <PriceSparkline values={spark.data?.points.map((p) => p.v) ?? []} width={640} height={140} label={`${label} today, 15-minute closes`} className="h-auto w-full" />
+                  <IntradayChart points={spark.data?.points ?? []} decimals={quote!.decimals} label={`${label} intraday`} />
                 )}
               </div>
             </div>
@@ -162,7 +152,9 @@ function InstrumentNews({ code, className = "" }: { code: string; className?: st
   const list = currencies.length ? (events.data?.events ?? []) : [];
   return (
     <Card title="News that moves it" subtitle="High and medium impact, next 7 days" className={className}>
-      {map.isPending || (currencies.length > 0 && events.isPending) ? (
+      {map.isError || events.isError ? (
+        <ErrorState title="News didn't load" text={(map.error ?? events.error)?.message} onRetry={() => void Promise.all([map.refetch(), events.refetch()])} />
+      ) : map.isPending || (currencies.length > 0 && events.isPending) ? (
         <SkeletonText lines={4} />
       ) : currencies.length === 0 ? (
         <p className="text-body text-muted">No event currencies are mapped to this instrument.</p>

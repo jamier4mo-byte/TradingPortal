@@ -9,10 +9,11 @@ const REVEAL = 96; // px the row slides to show Remove
 
 /** One pinned instrument as a row. On touch screens, swipe left to reveal Remove; the unpin button is
  * always there too (gestures are shortcuts, never the only way). */
-export function WatchlistRow({ quote, points, onUnpin, busy = false }: { quote: Quote; points: number[]; onUnpin: () => void; busy?: boolean }) {
+export function WatchlistRow({ quote, points, onUnpin, busy = false, paused = false }: { quote: Quote; points: number[]; onUnpin: () => void; busy?: boolean; paused?: boolean }) {
   const id = quote.code ?? quote.symbol;
   const label = displaySymbol(quote.code, quote.symbol);
   const [dx, setDx] = useState(0);
+  const [dragging, setDragging] = useState(false);
   const start = useRef<{ x: number; y: number; base: number; horizontal: boolean | null } | null>(null);
   const usable = quote.status === "ok" || quote.status === "stale";
   const up = (quote.change ?? 0) > 0;
@@ -28,11 +29,15 @@ export function WatchlistRow({ quote, points, onUnpin, busy = false }: { quote: 
     const mx = e.clientX - s.x;
     const my = e.clientY - s.y;
     if (s.horizontal === null && Math.hypot(mx, my) > 8) s.horizontal = Math.abs(mx) > Math.abs(my);
-    if (s.horizontal) setDx(Math.max(-REVEAL, Math.min(0, s.base + mx)));
+    if (s.horizontal) {
+      setDragging(true);
+      setDx(Math.max(-REVEAL, Math.min(0, s.base + mx)));
+    }
   };
   const onUp = () => {
     if (!start.current) return;
     start.current = null;
+    setDragging(false);
     setDx((v) => (v < -REVEAL / 2 ? -REVEAL : 0));
   };
 
@@ -44,7 +49,9 @@ export function WatchlistRow({ quote, points, onUnpin, busy = false }: { quote: 
         </button>
       </div>
       <div
-        className="relative flex min-h-14 touch-pan-y items-center gap-3 bg-surface-2 pr-1 pl-3 transition-transform duration-(--dur-standard) ease-(--ease-in-enter)"
+        className={`relative flex min-h-14 touch-pan-y items-center gap-3 bg-surface-2 pr-1 pl-3 ${dragging ? "" : "transition-transform duration-(--dur-standard) ease-(--ease-in-enter)"} ${
+          quote.status === "stale" || paused ? "opacity-80" : ""
+        }`}
         style={{ transform: `translateX(${dx}px)` }}
         onPointerDown={onDown}
         onPointerMove={onMove}
@@ -54,7 +61,17 @@ export function WatchlistRow({ quote, points, onUnpin, busy = false }: { quote: 
         <Link to={`/markets/${encodeURIComponent(id)}`} className="flex min-h-11 min-w-0 flex-1 items-center gap-3">
           <span className="min-w-0 flex-1">
             <span className="block truncate font-mono text-body font-semibold">{label}</span>
-            <span className="block truncate text-label text-muted">{usable ? quote.name : quote.message ?? "No price"}</span>
+            <span className="num block truncate text-label text-muted">
+              {usable ? (
+                <>
+                  <span aria-hidden className={`mr-1.5 inline-block size-1.5 rounded-full align-middle ${quote.status === "ok" && !paused ? "bg-live" : "bg-stale"}`} />
+                  {quote.status === "ok" && !paused ? "" : "Paused · "}
+                  {quote.updated_at ? `Delayed · ${new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/London", hour: "2-digit", minute: "2-digit" }).format(new Date(quote.updated_at))}` : quote.name}
+                </>
+              ) : (
+                quote.message ?? "No price"
+              )}
+            </span>
           </span>
           <PriceSparkline values={points} width={72} height={28} label={`${label} today`} className="hidden tablet:block" />
           {usable ? (

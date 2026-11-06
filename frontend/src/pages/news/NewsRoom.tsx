@@ -4,11 +4,11 @@ import { Link, useSearchParams } from "react-router-dom";
 
 import Card from "../../components/Card.tsx";
 import { CalendarEmpty } from "../../components/ui/Illustrations.tsx";
-import { Drawer, EmptyState, ErrorState, PillToggle, SkeletonText } from "../../components/ui/index.ts";
+import { Drawer, EmptyState, ErrorState, PillToggle, RefreshFailed, SkeletonText } from "../../components/ui/index.ts";
 import { relativeTime } from "../../lib/format.ts";
 import { addDays, dayLabel, type Impact, mondayOf, ukISODate, useEvents, useNewsStatus } from "../../lib/news.ts";
 import { ukParts } from "../../lib/time.ts";
-import { useDevice } from "../../lib/useMediaQuery.ts";
+import { useDevice, useMediaQuery } from "../../lib/useMediaQuery.ts";
 import { useNow } from "../../lib/useNow.ts";
 import { NextUp } from "./NextUp.tsx";
 import { EventGroups, FilterControls, filterCount, type FilterState } from "./parts.tsx";
@@ -35,6 +35,7 @@ function readList(p: URLSearchParams, key: string): string[] {
 export default function NewsRoom({ initialView }: { initialView?: View }) {
   const now = useNow(60_000);
   const device = useDevice();
+  const wideRows = useMediaQuery("(min-width: 1440px)");
   const compact = device !== "desktop";
   const [params, setParams] = useSearchParams();
   const today = ukISODate(now);
@@ -112,7 +113,7 @@ export default function NewsRoom({ initialView }: { initialView?: View }) {
             subtitle="All times UK"
             className={compact ? "" : "laptop:col-span-8 desktop:col-span-9"}
           >
-            <EventList from={range.from} to={range.to} filters={filters} compact={compact} multiDay={view === "week"} onClear={() => setFilters({ currencies: [], impacts: [], mine: false })} />
+            <EventList from={range.from} to={range.to} filters={filters} compact={!wideRows} multiDay={view === "week"} onClear={() => setFilters({ currencies: [], impacts: [], mine: false })} />
           </Card>
         </div>
       )}
@@ -187,8 +188,10 @@ function EventList({
   onClear: () => void;
 }) {
   const q = useEvents({ from, to, ...filters });
+  if (q.isPending && q.fetchStatus === "paused")
+    return <EmptyState illustration={<CalendarEmpty />} title="You're offline" text="The calendar appears when you're back online." />;
   if (q.isPending) return <SkeletonText lines={8} />;
-  if (q.isError) return <ErrorState text={q.error.message} onRetry={() => q.refetch()} />;
+  if (!q.data) return <ErrorState text={q.error?.message} onRetry={() => q.refetch()} />;
   const events = q.data.events;
   if (events.length === 0) {
     const filtered = filterCount(filters) > 0;
@@ -208,8 +211,11 @@ function EventList({
     );
   }
   return (
-    <div className={q.isPlaceholderData ? "opacity-60 transition-opacity duration-(--dur-standard)" : ""}>
-      <EventGroups events={events} compact={compact} showDayHeadings={multiDay} />
+    <div className="flex flex-col gap-3">
+      {q.isError ? <RefreshFailed updatedAt={q.dataUpdatedAt} onRetry={() => q.refetch()} /> : null}
+      <div className={q.isPlaceholderData || q.isError ? "opacity-60 transition-opacity duration-(--dur-standard)" : ""}>
+        <EventGroups events={events} compact={compact} showDayHeadings={multiDay} />
+      </div>
     </div>
   );
 }

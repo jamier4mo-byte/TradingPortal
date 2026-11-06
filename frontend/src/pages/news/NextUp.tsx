@@ -6,7 +6,6 @@ import { CurrencyTag, Figures, ImpactChip } from "../../components/news/NewsBits
 import { Skeleton } from "../../components/ui/index.ts";
 import { dayLabel, type NewsEvent, useEventDetail, useNextEvent } from "../../lib/news.ts";
 import { useNow } from "../../lib/useNow.ts";
-import { vtName } from "../../lib/vt.ts";
 
 const KEEP_RELEASED_MS = 30 * 60_000; // keep showing a just-released event for 30 minutes
 
@@ -60,7 +59,7 @@ export function NextUp({ compact = false }: { compact?: boolean }) {
       </section>
     );
   }
-  if (next.isError) {
+  if (next.isError && !next.data) {
     return (
       <section aria-label="Next high-impact event" className="card p-4 tablet:p-5">
         <p className="text-body">The countdown didn&rsquo;t load.</p>
@@ -89,17 +88,26 @@ export function NextUp({ compact = false }: { compact?: boolean }) {
         </p>
         <Link to={`/news/events/${shown.id}`} className="mt-1 flex min-h-11 items-center gap-2 hover:underline hover:decoration-border-strong hover:underline-offset-4">
           <CurrencyTag currency={shown.currency} />
-          <span className="min-w-0 truncate text-title font-semibold" style={{ viewTransitionName: vtName("event", shown.id) }}>
+          <span className="min-w-0 truncate text-title font-semibold">
             {shown.name}
           </span>
           <ImpactChip impact={shown.impact} compact className="hidden tablet:inline-flex" />
         </Link>
-        {compact ? null : <Figures event={{ ...shown, released: released || shown.released }} flip className="mt-2 max-w-md" />}
-        {released && !shown.actual ? (
-          <p className="mt-1 text-label text-muted" aria-live="polite">
-            Actual pending: it appears here when the actuals feed next updates.
-          </p>
-        ) : null}
+        {compact ? (
+          shown.actual ? (
+            <p className="num text-body">
+              Actual <span className="flip-in inline-block font-semibold">{shown.actual}</span>
+              {shown.forecast ? <span className="text-muted"> · forecast {shown.forecast}</span> : null}
+            </p>
+          ) : shown.forecast ? (
+            <p className="num text-label text-muted">Forecast {shown.forecast} · previous {shown.previous ?? "—"}</p>
+          ) : null
+        ) : (
+          <Figures event={{ ...shown, released: released || shown.released }} flip={!!held} className="mt-2 max-w-md" />
+        )}
+        <p className="mt-1 text-label text-muted" aria-live="polite">
+          {released && !shown.actual ? "Actual pending: it appears here when the actuals feed next updates." : ""}
+        </p>
       </div>
     </section>
   );

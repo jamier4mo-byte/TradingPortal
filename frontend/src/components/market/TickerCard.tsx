@@ -17,6 +17,30 @@ export function LiveDot({ live, className = "" }: { live: boolean; className?: s
   );
 }
 
+/** The price with odometer digits. When it ticks, a green/red wash fades behind the number (the only
+ * decorative green/red: it shows the tick's direction) next to its own ▲/▼, announced as "ticked up/down". */
+export function PriceFigure({ price, decimals, className = "" }: { price: number | null; decimals: number; className?: string }) {
+  const [flash, setFlash] = useState<{ key: number; dir: "up" | "down" } | null>(null);
+  const prev = useRef<number | null>(price);
+  useEffect(() => {
+    const before = prev.current;
+    prev.current = price;
+    if (before !== null && price !== null && price !== before) setFlash({ key: Date.now(), dir: price > before ? "up" : "down" });
+  }, [price]);
+  return (
+    <span className="relative inline-flex items-center gap-1.5">
+      {flash ? <span key={`w${flash.key}`} aria-hidden className={`price-flash absolute -inset-x-1 inset-y-0 rounded-panel ${flash.dir === "up" ? "bg-win" : "bg-loss"}`} /> : null}
+      <Odometer text={formatPrice(price, decimals)} className={`relative ${className}`} />
+      {flash ? (
+        <span key={`t${flash.key}`} className="price-tick relative text-label text-text">
+          <span aria-hidden>{flash.dir === "up" ? "▲" : "▼"}</span>
+          <span className="sr-only">ticked {flash.dir}</span>
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
 export function DelayedLabel({ updatedAt, className = "" }: { updatedAt: string | null; className?: string }) {
   return <span className={`num text-label text-muted ${className}`}>{updatedAt ? `Delayed · updated ${ukTime(updatedAt)}` : "Delayed · not updated yet"}</span>;
 }
@@ -36,16 +60,6 @@ export function TickerCard({
 }) {
   const id = quote.code ?? quote.symbol;
   const label = displaySymbol(quote.code, quote.symbol);
-  const [flash, setFlash] = useState<{ key: number; dir: "up" | "down" } | null>(null);
-  const prev = useRef<number | null>(quote.price);
-  useEffect(() => {
-    const before = prev.current;
-    prev.current = quote.price;
-    if (before !== null && quote.price !== null && quote.price !== before) {
-      setFlash({ key: Date.now(), dir: quote.price > before ? "up" : "down" });
-    }
-  }, [quote.price]);
-
   const usable = quote.status === "ok" || quote.status === "stale";
   const live = !paused && quote.status === "ok";
   const up = (quote.change ?? 0) > 0;
@@ -56,11 +70,7 @@ export function TickerCard({
       to={`/markets/${encodeURIComponent(id)}`}
       className="card group relative block min-w-0 overflow-hidden p-4 transition-[transform,border-color] duration-(--dur-quick) hover:-translate-y-0.5 hover:border-border-strong"
       style={{ viewTransitionName: vtName("ticker", id) }}
-      aria-label={`${label} ${usable ? formatPrice(quote.price, quote.decimals) : quote.message ?? ""}`}
     >
-      {flash ? (
-        <span key={flash.key} aria-hidden className={`price-flash absolute inset-0 ${flash.dir === "up" ? "bg-win" : "bg-loss"}`} />
-      ) : null}
       <div className="relative flex items-start gap-2">
         <div className="min-w-0">
           <p className="truncate font-mono text-body font-semibold">{label}</p>
@@ -73,9 +83,10 @@ export function TickerCard({
         <>
           <div className="relative mt-3 flex flex-wrap items-end justify-between gap-x-3 gap-y-2">
             <div className="min-w-0">
-              <Odometer text={formatPrice(quote.price, quote.decimals)} className={`${compact ? "text-title" : "text-heading"} font-semibold leading-none`} />
+              <PriceFigure price={quote.price} decimals={quote.decimals} className={`${compact ? "text-title" : "text-heading"} font-semibold`} />
               <p className="num mt-1 text-label text-text">
                 <span aria-hidden>{up ? "▲ " : down ? "▼ " : ""}</span>
+                <span className="sr-only">Today </span>
                 {signed(quote.change, quote.decimals)} ({signed(quote.percent_change, 2, "%")})
               </p>
             </div>

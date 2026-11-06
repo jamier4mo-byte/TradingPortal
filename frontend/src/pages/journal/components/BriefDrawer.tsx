@@ -86,7 +86,7 @@ function BriefNewsSection({ news }: { news: BriefNews | null }) {
             {news.high_count} high-impact {news.high_count === 1 ? "event" : "events"}
             {news.status === "partial" ? " · part of the month has no news data" : ""}
           </p>
-          <ul className="mt-2 flex max-h-64 flex-col divide-y divide-border overflow-y-auto">
+          <ul className="mt-2 flex flex-col divide-y divide-border">
             {news.events.map((e) => (
               <li key={e.id} className="flex min-h-11 items-center gap-2 py-1.5 text-body">
                 <span className="num w-28 shrink-0 text-label text-muted">

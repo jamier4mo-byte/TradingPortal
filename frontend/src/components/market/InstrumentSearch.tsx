@@ -31,6 +31,7 @@ export function InstrumentSearch({
   const showList = open && term.trim().length >= 2;
 
   const pick = (r: SearchResult) => {
+    if (r.available === false) return;
     onPick(r);
     setText("");
     setTerm("");
@@ -78,6 +79,9 @@ export function InstrumentSearch({
           }
         }}
       />
+      <p className="sr-only" role="status" aria-live="polite">
+        {!showList ? "" : search.isPending || text !== term ? "Searching" : search.isError ? "Search didn't load" : `${results.length} ${results.length === 1 ? "match" : "matches"}`}
+      </p>
       {showList ? (
         <ul id={listId} role="listbox" aria-label="Matching instruments" className="absolute inset-x-0 top-full z-30 mt-1 max-h-80 overflow-y-auto rounded-panel border border-border-strong bg-surface-1 py-1">
           {search.isPending || (text !== term) ? (
@@ -102,7 +106,9 @@ export function InstrumentSearch({
                   role="option"
                   aria-selected={i === active}
                   aria-disabled={r.available === false}
-                  className={`flex min-h-11 cursor-pointer items-center gap-3 px-3 ${i === active ? "bg-surface-2" : ""}`}
+                  className={`flex min-h-11 items-center gap-3 px-3 ${r.available === false ? "cursor-not-allowed" : "cursor-pointer"} ${
+                    i === active ? "bg-accent-soft shadow-[inset_2px_0_0_var(--color-accent)]" : ""
+                  }`}
                   onMouseDown={(e) => e.preventDefault()}
                   onMouseEnter={() => setActive(i)}
                   onClick={() => pick(r)}

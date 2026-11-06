@@ -1,43 +1,10 @@
 import { Link } from "react-router-dom";
 
+import { Switch, ToggleChip } from "../../components/ui/Toggles.tsx";
+
 import { CurrencyTag, Figures, ImpactChip } from "../../components/news/NewsBits.tsx";
 import { CURRENCIES, dayLabel, type Impact, type NewsEvent } from "../../lib/news.ts";
 import { vtName } from "../../lib/vt.ts";
-
-/** Toggle chip used for currency and impact filters (aria-pressed; 44px tall). */
-export function ToggleChip({ pressed, onClick, children, label }: { pressed: boolean; onClick: () => void; children: React.ReactNode; label?: string }) {
-  return (
-    <button
-      type="button"
-      aria-pressed={pressed}
-      aria-label={label}
-      onClick={onClick}
-      className={`inline-flex min-h-11 items-center gap-1.5 rounded-pill border px-3 text-body transition-colors duration-(--dur-quick) ${
-        pressed ? "border-accent bg-accent-soft text-text" : "border-border-strong bg-surface-2 text-muted hover:text-text"
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
-
-export function Switch({ checked, onChange, label, description }: { checked: boolean; onChange: (v: boolean) => void; label: string; description?: string }) {
-  return (
-    <button type="button" role="switch" aria-checked={checked} onClick={() => onChange(!checked)} className="flex min-h-11 items-center gap-3 text-left">
-      <span aria-hidden className={`relative h-6 w-10 shrink-0 rounded-pill border transition-colors duration-(--dur-quick) ${checked ? "border-accent bg-accent" : "border-border-input bg-surface-2"}`}>
-        <span
-          className={`absolute top-0.5 left-0.5 size-[18px] rounded-full transition-transform duration-(--dur-standard) ease-(--ease-spring) ${
-            checked ? "translate-x-4 bg-on-accent" : "bg-muted"
-          }`}
-        />
-      </span>
-      <span className="min-w-0">
-        <span className="block text-body">{label}</span>
-        {description ? <span className="block text-label text-muted">{description}</span> : null}
-      </span>
-    </button>
-  );
-}
 
 const IMPACT_FILTERS: { value: Impact; label: string; dot: string }[] = [
   { value: "high", label: "High", dot: "bg-impact-high" },
@@ -164,4 +131,4 @@ export function EventGroups({ events, compact, showDayHeadings }: { events: News
   );
 }
 
-export { CURRENCIES };
+export { CURRENCIES, Switch, ToggleChip };
