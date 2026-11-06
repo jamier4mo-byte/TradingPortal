@@ -124,6 +124,13 @@ test.describe("analytics behaviour", () => {
     for (const name of ["Jamie", "Sam", "Alex"]) await expect(owners.getByText(name, { exact: true })).toBeVisible();
   });
 
+  test("more than three owners become small multiples", async ({ page }) => {
+    await page.goto("/dev/components");
+    const multiples = page.getByTestId("owner-multiples");
+    await multiples.scrollIntoViewIfNeeded();
+    await expect(multiples.getByRole("img")).toHaveCount(4);
+  });
+
   test("export: the zip and CSV download with the current filters", async ({ page, context }) => {
     await page.goto("/journal/strategies/3?tab=analytics&weekdays=0&export=1");
     const dialog = page.getByRole("dialog", { name: "Export" });

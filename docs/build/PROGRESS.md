@@ -124,16 +124,16 @@ prompt's branch. If a prompt stops part-way, the next run continues from the fir
 - [x] Hand-computed metric tests (all wins, all losses, breakeven-heavy, single trade); 5,000 trades < 300 ms (144 ms)
 
 ### 2–6. Views, chart system and layout
-- [ ] Shared lazy `Chart` wrapper (echarts/core), runtime theme from CSS tokens, motion, crosshair, text summary + data table, skeletons
-- [ ] Ideal Trades views
-- [ ] Backtest views (KPI strip, equity, drawdown, streaks, breakdowns, calendar, R distribution, rulebook, exit efficiency, Monte Carlo worker)
-- [ ] Compare view; split by owner (small multiples above 3 owners)
-- [ ] Layout per device; Source PillToggle; filters in the URL
+- [x] Shared lazy `Chart` wrapper (echarts/core), runtime theme from CSS tokens, motion, crosshair, text summary + data table, skeletons
+- [x] Ideal Trades views
+- [x] Backtest views (KPI strip, equity, drawdown, streaks, breakdowns, calendar, R distribution, rulebook, exit efficiency, Monte Carlo worker)
+- [x] Compare view; split by owner (small multiples above 3 owners)
+- [x] Layout per device; Source PillToggle; filters in the URL
 
 ### 7–9. Insights, cards, export
-- [ ] Auto-insights card (Analytics tab and session recap)
-- [ ] Strategy cards: real headline stats
-- [ ] Export for AI zip, Copy for AI, CSV export, print stylesheet; export tests
+- [x] Auto-insights card (Analytics tab and session recap)
+- [x] Strategy cards: real headline stats
+- [x] Export for AI zip, Copy for AI, CSV export, print stylesheet; export tests
 
 ### 10. Gate 3
 - [ ] Reconcile ✓ on the real CSV; KPI table in the report
