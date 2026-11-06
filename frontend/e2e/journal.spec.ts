@@ -145,6 +145,33 @@ test("bulk matcher pairs 24 dropped files by name and saves them all", async ({ 
   expect(body.progress.screenshots).toBe(24);
 });
 
+test("a reason typed fast survives slow saves that arrive out of order", async ({ page, context }) => {
+  await signIn(page, ADMIN);
+  const id = await newStrategy(context, "Autosave race e2e");
+  const { session, trades } = await importCsv(context, id, "backtest");
+  // The earliest saves are held back longest, so if several are in flight they reach the server in reverse.
+  let n = 0;
+  await page.route("**/api/trades/*", async (route) => {
+    if (route.request().method() !== "PATCH") return route.continue();
+    const delay = Math.max(0, 900 - 120 * n++);
+    await new Promise((r) => setTimeout(r, delay));
+    await route.continue();
+  });
+  await page.goto(`/journal/sessions/${session.id}/annotate`);
+  await page.getByLabel("HTF bias", { exact: true }).click();
+  await page.keyboard.type("Bullish sweep of Asia high");
+  await page.getByLabel("Draw on liquidity", { exact: true }).click();
+  await page.keyboard.type("PDH");
+  await page.keyboard.press("Escape");
+  await expect(page).toHaveURL(new RegExp(`/journal/strategies/${id}$`));
+  // Let every held-back save land (the longest hold is 900ms), then read what the server kept.
+  await page.waitForTimeout(1500);
+  const saved = (await (await api(context, "GET", `/api/trades/${trades[0].id}`)).json()) as { reasoning: Record<string, string> };
+  expect(saved.reasoning).toEqual(expect.objectContaining({ htf_bias: "Bullish sweep of Asia high", draw_on_liquidity: "PDH" }));
+  // One save per pause, not one per keystroke.
+  expect(n).toBeLessThan(5);
+});
+
 test("annotate mode completes 8 trades with the keyboard only", async ({ page, context }) => {
   test.setTimeout(90_000);
   await signIn(page, ADMIN);

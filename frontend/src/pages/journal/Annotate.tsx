@@ -54,27 +54,46 @@ function Stepper({ strategyId, trades, canEdit }: { strategyId: number; trades: 
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
   const AUTOSAVE_MS = 600; // long enough to batch keystrokes, short enough to survive a quick Esc
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const pending = useRef<TradePatch>({});
+  // The unsaved edit and the trade it belongs to. Refs, so saving never depends on which render runs it.
+  const pending = useRef<{ tradeId: number; body: TradePatch } | null>(null);
+  // Saves go out one at a time, in order: a slow early save can never land after (and undo) a later one.
+  const queue = useRef<Promise<unknown>>(Promise.resolve());
+  const updateRef = useRef(update);
+  updateRef.current = update;
+  const toastRef = useRef(toast);
+  toastRef.current = toast;
   const firstFieldRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fields = strategy.data?.reasoning_template ?? [];
   const rules = strategy.data?.rules ?? [];
 
+  /** Run a save after every save already queued. */
+  const enqueue = useCallback(<T,>(job: () => Promise<T>): Promise<T> => {
+    const next = queue.current.then(job, job);
+    queue.current = next.catch(() => undefined);
+    return next;
+  }, []);
+
   const flush = useCallback(() => {
     if (timer.current) clearTimeout(timer.current);
     timer.current = null;
-    const body = pending.current;
-    pending.current = {};
-    if (!Object.keys(body).length) return;
+    const item = pending.current;
+    pending.current = null;
+    if (!item || !Object.keys(item.body).length) return queue.current;
     setSaveState("saving");
-    update.mutate({ id: trade.id, body }, { onSuccess: () => setSaveState("saved"), onError: (err) => toast({ title: "Couldn't save", text: err.message, tone: "loss" }) });
-  }, [trade.id, update, toast]);
+    return enqueue(() => updateRef.current.mutateAsync({ id: item.tradeId, body: item.body })).then(
+      () => setSaveState("saved"),
+      (err: unknown) => toastRef.current({ title: "Couldn't save", text: err instanceof Error ? err.message : undefined, tone: "loss" }),
+    );
+  }, [enqueue]);
 
   const patch = (changes: TradePatch) => {
     const { tags, ...rest } = changes;
     if (tags) setLocalTags((l) => ({ ...l, [trade.id]: tags }));
     setLocal((l) => ({ ...l, [trade.id]: { ...trade, ...rest } }));
-    pending.current = { ...pending.current, ...changes };
+    // A different trade's leftovers are saved first (go() normally already did this).
+    if (pending.current && pending.current.tradeId !== trade.id) void flush();
+    pending.current = { tradeId: trade.id, body: { ...pending.current?.body, ...changes } };
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(flush, AUTOSAVE_MS);
   };
@@ -147,7 +166,8 @@ function Stepper({ strategyId, trades, canEdit }: { strategyId: number; trades: 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [exit, go, index, canEdit, local, trade]);
 
-  useEffect(() => () => flush(), [flush]);
+  // Save whatever is left when the stepper closes (flush is stable, so this runs on unmount only).
+  useEffect(() => () => void flush(), [flush]);
 
   const done = useMemo(() => trades.filter((t) => isCompleted(local[t.id] ?? t)).length, [trades, local]);
   const completed = isCompleted(trade);
@@ -155,20 +175,20 @@ function Stepper({ strategyId, trades, canEdit }: { strategyId: number; trades: 
   const [advanceAfter, setAdvanceAfter] = useState(false);
   const markCompleted = useCallback(
     (value: boolean, thenNext = false) => {
-      // Completed is Jamie's own call: flush the autosave first so the mark lands on the saved trade.
-      flush();
-      update.mutate(
-        { id: trade.id, body: { annotated: value } },
-        {
-          onSuccess: (t) => {
-            onShot(t);
-            if (thenNext) go(index + 1);
-          },
-          onError: (err) => toast({ title: "Couldn't save", text: err.message, tone: "loss" }),
+      // Completed is Jamie's own call: it queues behind the last autosave, so the mark lands on the saved trade
+      // and its response (which carries the reasoning) is never older than what was typed.
+      void flush();
+      const id = trade.id;
+      enqueue(() => updateRef.current.mutateAsync({ id, body: { annotated: value } })).then(
+        (t) => {
+          onShot(t);
+          if (thenNext) go(index + 1);
         },
+        (err: unknown) => toast({ title: "Couldn't save", text: err instanceof Error ? err.message : undefined, tone: "loss" }),
       );
     },
-    [flush, update, trade.id, go, index, toast],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [flush, enqueue, trade.id, go, index, toast],
   );
   const toggleCompleted = (thenNext = false) => {
     if (completed) {
