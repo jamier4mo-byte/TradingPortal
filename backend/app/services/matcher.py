@@ -1,7 +1,7 @@
-"""Bulk screenshot matcher (U3): pair dropped files with trades × (Entry, Exit).
+"""Bulk screenshot matcher (U3): pair dropped files with trades × (HTF, Entry, Outcome).
 
 Three passes, in order of trust:
-  1. filename: T03_entry.png, t3-exit, 3e / 3x, "trade 3 entry", 03-entry, trade3_exit
+  1. filename: T03_htf.png, T03_entry.png, t3-outcome, 3h / 3e / 3o, "trade 3 entry", trade3_exit
   2. capture time: EXIF, the macOS "Screenshot 2026-11-05 at 23.25.13" name, or last-modified;
      matched to the nearest trade open/close in the strategy's timezone, within a tolerance
   3. sequence: whatever is left is laid into the empty slots in trade order (low confidence)
@@ -16,21 +16,24 @@ from zoneinfo import ZoneInfo
 TIME_TOLERANCE = timedelta(minutes=90)
 TIGHT_TOLERANCE = timedelta(minutes=20)
 
-ENTRY_WORDS = ("entry", "ent", "in", "open", "e", "before", "setup")
-EXIT_WORDS = ("exit", "ex", "out", "close", "x", "after", "result", "tp", "sl")
+HTF_WORDS = ("htf", "h", "higher", "context", "bias", "daily", "4h", "1h")
+ENTRY_WORDS = ("entry", "ent", "in", "open", "e", "before", "setup", "ltf")
+OUTCOME_WORDS = ("outcome", "o", "exit", "ex", "out", "close", "x", "after", "result", "tp", "sl")
+SLOT_WORDS = HTF_WORDS + ENTRY_WORDS + OUTCOME_WORDS
+LABELLED = ("htf", "entry", "outcome")
 
 MAC_SHOT = re.compile(r"screen\s*shot\s+(\d{4})-(\d{2})-(\d{2})\s+at\s+(\d{1,2})\.(\d{2})\.(\d{2})", re.I)
 FX_SHOT = re.compile(r"(\d{4})-(\d{2})-(\d{2})[ _T](\d{2})[.\-:](\d{2})(?:[.\-:](\d{2}))?")
-# "T03_entry", "t3-exit", "trade 3 entry", "3e", "03x", "trade3_exit", "T3 (entry)"
+# "T03_entry", "t3-exit", "trade 3 htf", "3e", "03x", "trade3_outcome", "T3 (entry)"
 NAME_PATTERN = re.compile(
     r"(?:^|[^a-z0-9])(?:t(?:rade)?\s*[_\-#]?\s*)?(\d{1,3})\s*[_\-\s.()]*\s*("
-    + "|".join(ENTRY_WORDS + EXIT_WORDS)
+    + "|".join(SLOT_WORDS)
     + r")(?![a-z])",
     re.I,
 )
 NAME_PATTERN_REVERSED = re.compile(
     r"(?:^|[^a-z0-9])("
-    + "|".join(ENTRY_WORDS + EXIT_WORDS)
+    + "|".join(SLOT_WORDS)
     + r")\s*[_\-\s.()]*\s*(?:t(?:rade)?\s*[_\-#]?\s*)?(\d{1,3})(?![0-9])",
     re.I,
 )
@@ -42,8 +45,7 @@ class TradeRef:
     index: int  # 1-based position in the session
     opened_at: datetime  # aware
     closed_at: datetime | None
-    has_entry: bool = False
-    has_exit: bool = False
+    filled: tuple[str, ...] = ()  # labelled slots that already hold a screenshot
 
 
 @dataclass
@@ -57,7 +59,7 @@ class FileRef:
 class Match:
     file: str
     trade_id: int | None
-    slot: str | None  # entry | exit
+    slot: str | None  # htf | entry | outcome
     confidence: str  # high | medium | low | none
     reason: str
 
@@ -76,7 +78,10 @@ class MatchResult:
 
 
 def slot_from_word(word: str) -> str:
-    return "entry" if word.lower() in ENTRY_WORDS else "exit"
+    w = word.lower()
+    if w in HTF_WORDS:
+        return "htf"
+    return "entry" if w in ENTRY_WORDS else "outcome"
 
 
 def parse_name(name: str) -> tuple[int, str] | None:
@@ -111,9 +116,7 @@ def match_files(
 ) -> MatchResult:
     zone = ZoneInfo(timezone)
     by_index = {t.index: t for t in trades}
-    taken: set[tuple[int, str]] = {(t.id, "entry") for t in trades if t.has_entry} | {
-        (t.id, "exit") for t in trades if t.has_exit
-    }
+    taken: set[tuple[int, str]] = {(t.id, slot) for t in trades for slot in t.filled}
     result = MatchResult()
     pending: list[tuple[FileRef, datetime | None, str]] = []
 
@@ -140,7 +143,8 @@ def match_files(
             when = f.captured_at
         pending.append((f, when, source))
 
-    # Pass 2: capture time against open/close times
+    # Pass 2: capture time against open/close times. HTF context is captured around the entry too,
+    # so the entry slot is tried first and HTF takes the second file near the open.
     still: list[tuple[FileRef, datetime | None, str]] = []
     for f, when, source in pending:
         if when is None:
@@ -148,7 +152,7 @@ def match_files(
             continue
         best: tuple[timedelta, TradeRef, str] | None = None
         for t in trades:
-            for slot, moment in (("entry", t.opened_at), ("exit", t.closed_at)):
+            for slot, moment in (("entry", t.opened_at), ("htf", t.opened_at), ("outcome", t.closed_at)):
                 if moment is None or (t.id, slot) in taken:
                     continue
                 delta = abs(when - moment)
@@ -170,12 +174,12 @@ def match_files(
         else:
             still.append((f, when, source))
 
-    # Pass 3: sequence. Files sorted by time (then name) fill empty slots in trade order.
+    # Pass 3: sequence. Files sorted by time (then name) fill empty slots in trade order: HTF, Entry, Outcome.
     still.sort(key=lambda item: (item[1] is None, item[1] or datetime.max.replace(tzinfo=zone), item[0].name))
     empty = [
         (t.id, slot)
         for t in sorted(trades, key=lambda t: t.index)
-        for slot in ("entry", "exit")
+        for slot in LABELLED
         if (t.id, slot) not in taken
     ]
     for f, _when, _source in still:

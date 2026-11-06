@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from ..core.deps import require_owner_or_admin
 from ..core.security import utcnow
-from ..models import MAX_EXTRA_SCREENSHOTS, Screenshot, Trade, User
+from ..models import LABELLED_SLOTS, MAX_EXTRA_SCREENSHOTS, SLOTS, Screenshot, Trade, User
 from . import audit
 from .storage import get_storage
 
@@ -89,8 +89,8 @@ def add_screenshot(
     replace: bool = True,
 ) -> Screenshot:
     require_owner_or_admin(trade, actor)
-    if slot not in ("entry", "exit", "extra"):
-        raise ScreenshotError("slot must be entry, exit or extra.")
+    if slot not in SLOTS:
+        raise ScreenshotError("slot must be htf, entry, outcome or extra.")
     if len(data) > MAX_BYTES:
         raise ScreenshotError("Images are limited to 12 MB. The browser should have made a WebP first.", 413)
     if thumb is not None and len(thumb) > MAX_THUMB_BYTES:
@@ -107,7 +107,7 @@ def add_screenshot(
         thumb = make_thumbnail(img)
 
     live = [s for s in trade.screenshots if s.deleted_at is None]
-    if slot in ("entry", "exit"):
+    if slot in LABELLED_SLOTS:
         for existing in (s for s in live if s.slot == slot):
             if not replace:
                 raise ScreenshotError(f"The {slot} slot is already filled.", 409)
@@ -147,9 +147,9 @@ def move_screenshot(db: Session, actor: User, shot: Screenshot, *, trade: Trade,
     """Drag to fix in the matcher grid: change slot and/or trade. Swaps with whatever held the slot."""
     require_owner_or_admin(shot, actor)
     require_owner_or_admin(trade, actor)
-    if slot not in ("entry", "exit", "extra"):
-        raise ScreenshotError("slot must be entry, exit or extra.")
-    if slot in ("entry", "exit"):
+    if slot not in SLOTS:
+        raise ScreenshotError("slot must be htf, entry, outcome or extra.")
+    if slot in LABELLED_SLOTS:
         for other in (
             s for s in trade.screenshots if s.deleted_at is None and s.slot == slot and s.id != shot.id
         ):

@@ -29,9 +29,10 @@ from .tag import Tag
 SessionKind = Literal["ideal", "backtest", "manual"]
 TradeKind = Literal["ideal", "backtest", "missed"]
 Outcome = Literal["win", "loss", "breakeven"]
-Slot = Literal["entry", "exit", "extra"]
+Slot = Literal["htf", "entry", "outcome", "extra"]
 
-SLOTS = ("entry", "exit", "extra")
+SLOTS = ("htf", "entry", "outcome", "extra")
+LABELLED_SLOTS = ("htf", "entry", "outcome")  # the three images Jamie fills per trade
 MAX_EXTRA_SCREENSHOTS = 3
 
 DEFAULT_REASONING_TEMPLATE: list[dict] = [
@@ -169,6 +170,9 @@ class Trade(OwnedRecordMixin, Base):
     news_events: Mapped[list | None] = mapped_column(JSON, nullable=True)
 
     raw_row: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    annotated_at: Mapped[datetime | None] = mapped_column(
+        UTCDateTime, nullable=True
+    )  # marked complete by hand
 
     strategy: Mapped[Strategy] = relationship(back_populates="trades")
     session: Mapped[JournalSession | None] = relationship(back_populates="trades")
@@ -181,7 +185,7 @@ class Screenshot(OwnedRecordMixin, Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     trade_id: Mapped[int] = mapped_column(ForeignKey("trades.id"), nullable=False, index=True)
-    slot: Mapped[str] = mapped_column(String(8), nullable=False)  # entry | exit | extra
+    slot: Mapped[str] = mapped_column(String(8), nullable=False)  # htf | entry | outcome | extra
     position: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     full_key: Mapped[str] = mapped_column(String(255), nullable=False)
     thumb_key: Mapped[str] = mapped_column(String(255), nullable=False)

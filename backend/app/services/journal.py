@@ -14,6 +14,7 @@ from ..core.security import utcnow
 from ..models import (
     DEFAULT_REASONING_TEMPLATE,
     DEFAULT_RULES,
+    LABELLED_SLOTS,
     JournalSession,
     Screenshot,
     Strategy,
@@ -28,6 +29,7 @@ from . import journal_rules as rules
 from .tags import resolve_tag
 
 TRASH_DAYS = 30
+SLOT_ORDER = {"htf": 0, "entry": 1, "outcome": 2, "extra": 3}
 
 
 class JournalError(Exception):
@@ -272,8 +274,18 @@ ANNOTATION_FIELDS = (
 )
 
 
-def update_trade(db: Session, actor: User, trade: Trade, *, tags: list[str] | None = None, **fields) -> Trade:
+def update_trade(
+    db: Session,
+    actor: User,
+    trade: Trade,
+    *,
+    tags: list[str] | None = None,
+    annotated: bool | None = None,
+    **fields,
+) -> Trade:
     require_owner_or_admin(trade, actor)
+    if annotated is not None:
+        trade.annotated_at = utcnow() if annotated else None
     for key, value in fields.items():
         if key not in ANNOTATION_FIELDS or value is None:
             continue
@@ -566,21 +578,25 @@ def live_sessions(db: Session, strategy: Strategy) -> list[JournalSession]:
 
 
 def session_progress(db: Session, session: JournalSession) -> dict:
-    """'10 trades · 14/20 screenshots · 6/10 reasons' for the inbox (U1)."""
+    """'10 trades · 14/30 screenshots · 6/10 reasons · 4/10 completed' for the inbox (U1)."""
     trades = session_trades(db, session)
     shots = 0
     reasons = 0
+    completed = 0
     for t in trades:
-        slots = {s.slot for s in t.screenshots if s.deleted_at is None and s.slot in ("entry", "exit")}
+        slots = {s.slot for s in t.screenshots if s.deleted_at is None and s.slot in LABELLED_SLOTS}
         shots += len(slots)
         if any(str(v).strip() for v in (t.reasoning or {}).values()) or t.notes.strip():
             reasons += 1
+        if t.annotated_at:
+            completed += 1
     return {
         "trades": len(trades),
         "screenshots": shots,
-        "screenshots_target": len(trades) * 2,
+        "screenshots_target": len(trades) * len(LABELLED_SLOTS),
         "reasons": reasons,
         "reasons_target": len(trades),
+        "completed": completed,
     }
 
 
@@ -752,8 +768,9 @@ def screenshot_counts(trades: list[Trade]) -> dict[int, dict]:
     for t in trades:
         live = [s for s in t.screenshots if s.deleted_at is None]
         out[t.id] = {
+            "htf": any(s.slot == "htf" for s in live),
             "entry": any(s.slot == "entry" for s in live),
-            "exit": any(s.slot == "exit" for s in live),
+            "outcome": any(s.slot == "outcome" for s in live),
             "extras": sum(1 for s in live if s.slot == "extra"),
         }
     return out
@@ -762,7 +779,7 @@ def screenshot_counts(trades: list[Trade]) -> dict[int, dict]:
 def live_screenshots(trade: Trade) -> list[Screenshot]:
     return sorted(
         (s for s in trade.screenshots if s.deleted_at is None),
-        key=lambda s: (s.slot != "entry", s.slot != "exit", s.position, s.id),
+        key=lambda s: (SLOT_ORDER.get(s.slot, 9), s.position, s.id),
     )
 
 
