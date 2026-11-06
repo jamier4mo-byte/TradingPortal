@@ -101,7 +101,8 @@ test.describe("analytics behaviour", () => {
     await source.getByRole("radio", { name: "Compare" }).click();
     await expect(page).toHaveURL(/src=compare/);
     await expect(page.getByText("Winners capture")).toBeVisible();
-    await expect(page.getByTestId("compare-table")).toBeVisible();
+    // A table on wider screens; one card per row on the phone.
+    await expect(page.getByTestId(isPhone(page) ? "compare-cards" : "compare-table")).toBeVisible();
   });
 
   test("no trades match: a clear empty state with a way back", async ({ page }) => {

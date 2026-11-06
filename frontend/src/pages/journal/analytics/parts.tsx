@@ -101,7 +101,8 @@ export function ReconcileLine({ items }: { items: Reconcile[] }) {
         <span className="num min-w-0 flex-1">
           {allOk ? (
             <>
-              Reconciled with FX Replay <span aria-label="matches">✓</span>
+              Reconciled with FX Replay <span aria-hidden>✓</span>
+              <span className="sr-only">(matches)</span>
               <span className="text-muted"> · {app.trades} trades · {fmtPnl(app.pnl)} across {items.length} {items.length === 1 ? "import" : "imports"}</span>
             </>
           ) : (
@@ -158,7 +159,7 @@ export function TradeMiniList({ trades, total, limit = 40 }: { trades: TradeLine
                   {t.side === "buy" ? "Long" : "Short"} {t.instrument} · {t.entry_model ?? "—"} · {t.session_label || "—"}
                 </span>
               </span>
-              <span className={`num text-body font-medium ${TONE_TEXT[toneOf(t.r)]}`}>{fmtR(t.r)}</span>
+              <span className={`num text-body font-medium ${TONE_TEXT[t.outcome ?? "neutral"]}`}>{fmtR(t.r)}</span>
             </Link>
           </li>
         ))}

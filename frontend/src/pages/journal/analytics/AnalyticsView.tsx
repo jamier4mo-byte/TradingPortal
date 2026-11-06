@@ -3,12 +3,11 @@ import { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
 import Card from "../../../components/Card.tsx";
-import { ChartSkeleton } from "../../../components/charts/Chart.tsx";
 import { ChartEmpty } from "../../../components/ui/Illustrations.tsx";
-import { Drawer, EmptyState, ErrorState, PillToggle, SkeletonCard } from "../../../components/ui/index.ts";
+import { Drawer, EmptyState, ErrorState, PillToggle } from "../../../components/ui/index.ts";
 import { activeFilterCount, type AnalyticsResult, metaById, SOURCES, type Source, useAnalytics, useAnalyticsState, WEEKDAYS } from "../../../lib/analytics.ts";
 import type { Strategy } from "../../../lib/journal.ts";
-import { useMediaQuery } from "../../../lib/useMediaQuery.ts";
+import { useMediaQuery, useOnline } from "../../../lib/useMediaQuery.ts";
 import { BacktestViews, OwnersCard } from "./BacktestViews.tsx";
 import { CompareView } from "./CompareView.tsx";
 import { ExportDrawer, MorphIcon, useCopyForAi } from "./ExportDrawer.tsx";
@@ -44,7 +43,10 @@ export default function AnalyticsView({ strategy }: { strategy?: Strategy }) {
     );
   const { copy, state: copyState } = useCopyForAi(st.query);
   const data = result.data;
-  const dim = result.isPlaceholderData;
+  const online = useOnline();
+  // Offline, a filter change can't load: keep the last results at full strength and say so, rather than dim forever.
+  const dim = result.isPlaceholderData && online;
+  const offlineNote = !online ? "Offline: showing the last results loaded. Filters and exports work again when you're back." : null;
   const nFilters = activeFilterCount(st.filters);
   const filtersText = useMemo(() => describe(st.filters, st.source), [st.filters, st.source]);
   const showOwners = !strategy || (data?.options.owners.length ?? 0) > 1;
@@ -73,7 +75,7 @@ export default function AnalyticsView({ strategy }: { strategy?: Strategy }) {
             {nFilters ? <span className="num grid min-w-5 place-items-center rounded-pill bg-accent px-1.5 text-label text-on-accent">{nFilters}</span> : null}
           </button>
         ) : null}
-        <button type="button" className="btn btn-ghost hidden laptop:inline-flex" onClick={() => void copy()} disabled={copyState === "busy" || !data?.counts.filtered}>
+        <button type="button" className="btn btn-ghost hidden laptop:inline-flex" onClick={() => void copy()} disabled={copyState === "busy" || !data?.counts.filtered || !online} title={online ? undefined : "Needs a connection"}>
           <MorphIcon done={copyState === "done"} Icon={Copy} /> {copyState === "done" ? "Copied" : "Copy for AI"}
         </button>
         <button type="button" className="btn btn-primary" onClick={() => setExportOpen(true)}>
@@ -100,12 +102,17 @@ export default function AnalyticsView({ strategy }: { strategy?: Strategy }) {
     <div className="flex flex-col gap-4 laptop:gap-6" data-testid="analytics">
       {toolbar}
       <p className="num -mt-1 text-label text-muted print:text-body" aria-live="polite">
-        {data ? `${data.counts.filtered} of ${data.counts.in_scope} trades · ${filtersText}` : "Loading…"}
+        {data ? `${data.counts.filtered} of ${data.counts.in_scope} trades · ${filtersText}` : online ? "Loading…" : ""}
         {data?.notes.unresolved_tags.length ? ` · unknown tags: ${data.notes.unresolved_tags.join(", ")}` : ""}
       </p>
-      {laptop && panelOpen ? (
-        <section id="filters-panel" aria-label="Filters" className="card p-4 print:hidden">
-          {panel}
+      {offlineNote ? (
+        <p role="status" className="-mt-2 rounded-panel border border-border-strong bg-surface-2 px-3 py-2 text-body">
+          {offlineNote}
+        </p>
+      ) : null}
+      {laptop ? (
+        <section id="filters-panel" aria-label="Filters" hidden={!panelOpen} className="card p-4 print:hidden">
+          {panelOpen ? panel : null}
         </section>
       ) : null}
       <div className={wide ? `grid items-start gap-6 ${large ? "grid-cols-[288px_minmax(0,1fr)_340px]" : "grid-cols-[272px_minmax(0,1fr)]"}` : ""}>
@@ -143,14 +150,14 @@ export default function AnalyticsView({ strategy }: { strategy?: Strategy }) {
           description="Every chart, number and the export follow these."
           footer={
             <button type="button" className="btn btn-primary w-full" onClick={() => setSheetOpen(false)}>
-              Show {data ? data.counts.filtered : "…"} trades
+              Show <span className="num">{data ? data.counts.filtered : "…"}</span> trades
             </button>
           }
         >
           {panel}
         </Drawer>
       ) : null}
-      <ExportDrawer open={exportOpen} onOpenChange={setExportOpen} query={st.query} filtersText={filtersText} tradeCount={data?.counts.filtered ?? 0} />
+      <ExportDrawer open={exportOpen} onOpenChange={setExportOpen} query={st.query} filtersText={filtersText} tradeCount={data?.counts.filtered ?? 0} online={online} />
     </div>
   );
 }
@@ -194,18 +201,22 @@ function NothingYet({ source, strategy }: { source: Source; strategy?: Strategy 
 
 function AnalyticsSkeleton() {
   return (
-    <div className="flex flex-col gap-4 laptop:gap-6" aria-busy>
-      <div className="grid grid-cols-2 gap-2 tablet:grid-cols-3 laptop:grid-cols-5">
+    <div className="flex flex-col gap-4 laptop:gap-6" role="status" aria-label="Loading analytics" aria-busy>
+      <div className="grid grid-cols-2 gap-2 tablet:grid-cols-3 laptop:grid-cols-5" aria-hidden>
         {Array.from({ length: 5 }, (_, i) => (
-          <div key={i} className={`skeleton h-20 ${i === 4 ? "hidden tablet:block" : ""}`} role="status" aria-label="Loading" />
+          <div key={i} className={`skeleton h-20 ${i === 4 ? "hidden tablet:block" : ""}`} />
         ))}
       </div>
-      <div className="card p-4 tablet:p-5">
-        <ChartSkeleton height={280} />
+      <div className="card p-4 tablet:p-5" aria-hidden>
+        <div className="skeleton h-[280px] w-full" />
       </div>
-      <div className="grid gap-4 laptop:grid-cols-2 laptop:gap-6">
-        <SkeletonCard />
-        <SkeletonCard />
+      <div className="grid gap-4 laptop:grid-cols-2 laptop:gap-6" aria-hidden>
+        <div className="card p-4 tablet:p-5">
+          <div className="skeleton h-40 w-full" />
+        </div>
+        <div className="card p-4 tablet:p-5">
+          <div className="skeleton h-40 w-full" />
+        </div>
       </div>
     </div>
   );

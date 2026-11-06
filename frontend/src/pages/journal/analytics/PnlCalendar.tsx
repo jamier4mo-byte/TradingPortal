@@ -18,6 +18,15 @@ function compactUsd(v: number | null | undefined): string {
   return `${sign}$${a >= 1000 ? `${(a / 1000).toFixed(1)}k` : Math.round(a)}`;
 }
 
+/** Phone cells are ~40px wide: sign plus a short number, no unit (the header says $ or R). */
+function shortValue(v: number | null | undefined, unit: "usd" | "r"): string {
+  if (v === null || v === undefined) return "—";
+  const sign = v > 0 ? "+" : v < 0 ? "−" : "";
+  const a = Math.abs(v);
+  if (unit === "r") return `${sign}${a >= 10 ? Math.round(a) : a.toFixed(1)}`;
+  return `${sign}${a >= 1000 ? `${(a / 1000).toFixed(a >= 10000 ? 0 : 1)}k` : Math.round(a)}`;
+}
+
 const tint = (v: number | null | undefined) => (v === null || v === undefined ? "" : v > 0 ? "border-win/40 bg-win/10" : v < 0 ? "border-loss/40 bg-loss/10" : "border-border bg-surface-2");
 const ink = (v: number | null | undefined) => (v === null || v === undefined ? "" : v > 0 ? "text-win" : v < 0 ? "text-loss" : "text-breakeven");
 
@@ -93,7 +102,8 @@ export function PnlCalendar({ days, unit }: { days: CalendarDay[]; unit: "usd" |
                         <span className="text-muted">{Number(date.slice(8))}</span>
                         {d ? (
                           <span className="flex flex-col leading-tight">
-                            <span className={`truncate font-medium ${ink(v)}`}>{unit === "usd" ? compactUsd(v) : fmtR(v)}</span>
+                            <span className={`hidden truncate font-medium tablet:block ${ink(v)}`}>{unit === "usd" ? compactUsd(v) : fmtR(v)}</span>
+                            <span aria-hidden className={`font-medium tablet:hidden ${ink(v)}`}>{shortValue(v, unit)}</span>
                             <span className="hidden text-muted tablet:inline">{d.n}×</span>
                             <span className="sr-only">
                               {fmt(v)} from {d.n} {d.n === 1 ? "trade" : "trades"}

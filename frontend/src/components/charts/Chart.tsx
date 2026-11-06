@@ -2,6 +2,7 @@ import { Table2 } from "lucide-react";
 import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 
 import { motionLevel } from "../../lib/motion.ts";
+import { PREPARE_PRINT, setPrintMode } from "../../lib/print.ts";
 import { useMediaQuery } from "../../lib/useMediaQuery.ts";
 import { baseOption, type ChartTokens, readTokens } from "./theme.ts";
 
@@ -74,24 +75,39 @@ export function Chart({
       { rootMargin: "120px" },
     );
     io.observe(el);
-    return () => io.disconnect();
+    const wake = () => setVisible(true); // Save as PDF: every chart draws, not only the ones scrolled to
+    window.addEventListener(PREPARE_PRINT, wake);
+    return () => {
+      io.disconnect();
+      window.removeEventListener(PREPARE_PRINT, wake);
+    };
   }, []);
 
   useEffect(() => {
     if (!visible) return;
     let cancelled = false;
     let ro: ResizeObserver | null = null;
+    let outside: ((e: PointerEvent) => void) | null = null;
     void loadECharts().then((echarts) => {
       if (cancelled || !host.current) return;
       const instance = echarts.init(host.current, undefined, { renderer: "canvas", devicePixelRatio: window.devicePixelRatio || 1 });
       chart.current = instance;
       ro = new ResizeObserver(() => instance.resize());
       ro.observe(host.current);
+      // Touch: a pinned tooltip closes on a tap on empty chart space or anywhere outside the chart.
+      instance.getZr().on("click", (e: { target?: unknown }) => {
+        if (!e.target) instance.dispatchAction({ type: "hideTip" });
+      });
+      outside = (e: PointerEvent) => {
+        if (host.current && !host.current.contains(e.target as Node)) instance.dispatchAction({ type: "hideTip" });
+      };
+      document.addEventListener("pointerdown", outside);
       setReady(true);
     });
     return () => {
       cancelled = true;
       ro?.disconnect();
+      if (outside) document.removeEventListener("pointerdown", outside);
       chart.current?.dispose();
       chart.current = null;
       setReady(false);
@@ -117,13 +133,16 @@ export function Chart({
       instance.setOption({ ...baseOption(t, "off", false), ...option(t, { phone }) } as Parameters<Instance["setOption"]>[0], { replaceMerge: ["series", "xAxis", "yAxis", "visualMap"] });
     };
     const before = () => {
-      document.documentElement.dataset.print = "1";
+      setPrintMode(true);
+      resizeChart();
       redraw();
     };
     const after = () => {
-      delete document.documentElement.dataset.print;
+      setPrintMode(false);
+      resizeChart();
       redraw();
     };
+    const resizeChart = () => chart.current?.resize();
     window.addEventListener("beforeprint", before);
     window.addEventListener("afterprint", after);
     return () => {

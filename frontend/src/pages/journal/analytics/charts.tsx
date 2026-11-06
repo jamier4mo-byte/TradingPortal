@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 
 import { Chart, type OptionBuilder } from "../../../components/charts/Chart.tsx";
-import { categoryAxis, type ChartTokens, esc, tipRow, tipTitle, valueAxis } from "../../../components/charts/theme.ts";
+import { categoryAxis, type ChartTokens, tipRow, tipTitle, valueAxis } from "../../../components/charts/theme.ts";
 import type { Bin, EquityPoint, Group, HeatCell, OwnerSplit, RuleCost, Streak } from "../../../lib/analytics.ts";
 import { WEEKDAYS } from "../../../lib/analytics.ts";
 import { fmtPnl, fmtR, fmtUkDate } from "../../../lib/journal.ts";
@@ -146,7 +146,7 @@ export function BreakdownChart({ groups, metric, label, dim }: { groups: Group[]
             const signed = metric === "total_r" || metric === "avg_r";
             return { value: g[metric], itemStyle: { color: signed ? signTone(t, v) : t.series1, borderRadius: barRadius(v) } };
           }),
-          label: { show: shown.length <= 8, position: "top", color: t.muted, fontFamily: t.font, fontSize: 11, formatter: (p: { value: number | null }) => fmt(p.value) },
+          label: { show: shown.length <= 8, position: "top", color: t.muted, fontFamily: t.font, fontSize: t.labelSize, formatter: (p: { value: number | null }) => fmt(p.value) },
         },
       ],
     }),
@@ -201,7 +201,7 @@ export function CountBars({ items, label, unitLabel = "trades", dim, height = 20
       tooltip: { trigger: "item", formatter: (p: { dataIndex: number }) => { const it = items[p.dataIndex]; return it ? tipTitle(it.label) + tipRow(t.series1, unitLabel, String(it.n)) : ""; } },
       xAxis: categoryAxis(t, items.map((i) => i.label), { axisLabel: { color: t.muted, interval: 0, hideOverlap: true, rotate: items.length > 8 ? 45 : 0 } }),
       yAxis: valueAxis(t, { minInterval: 1 }),
-      series: [{ id: "counts", type: "bar", barMaxWidth: 24, itemStyle: { color: t.series1, borderRadius: [4, 4, 0, 0] }, data: items.map((i) => i.n), label: { show: items.length <= 10, position: "top", color: t.muted, fontFamily: t.font, fontSize: 11 } }],
+      series: [{ id: "counts", type: "bar", barMaxWidth: 24, itemStyle: { color: t.series1, borderRadius: [4, 4, 0, 0] }, data: items.map((i) => i.n), label: { show: items.length <= 10, position: "top", color: t.muted, fontFamily: t.font, fontSize: t.labelSize } }],
     }),
     [items, unitLabel],
   );
@@ -229,33 +229,35 @@ export function EntryHeatmap({ cells, dim }: { cells: HeatCell[]; dim?: boolean 
   const hours = Array.from(new Set(cells.map((c) => c.hour))).sort((a, b) => a - b);
   const span = hours.length ? Array.from({ length: hours[hours.length - 1] - hours[0] + 1 }, (_, i) => hours[0] + i) : [];
   const max = Math.max(1, ...cells.map((c) => c.n));
-  const ranked = [...cells].sort((a, b) => b.n - a.n);
+  const shownCells = cells.filter((c) => span.includes(c.hour));
+  const ranked = [...shownCells].sort((a, b) => b.n - a.n);
   const option = useMemo<OptionBuilder>(
     () => (t) => ({
       tooltip: { trigger: "item", formatter: (p: { data: [number, number, number] }) => { const [h, d, n] = p.data; const c = cells.find((x) => x.hour === span[h] && x.weekday === WEEKDAYS.indexOf(days[d])); return tipTitle(`${days[d]} ${String(span[h]).padStart(2, "0")}:00 UK`) + tipRow(t.series1, "trades", String(n)) + (c?.avg_r !== undefined && c?.avg_r !== null ? tipRow(t.muted, "average", fmtR(c.avg_r)) : ""); } },
       grid: { left: 8, right: 8, top: 8, bottom: 40, containLabel: true },
       xAxis: categoryAxis(t, span.map((h) => `${String(h).padStart(2, "0")}:00`), { splitArea: { show: false } }),
       yAxis: categoryAxis(t, days as unknown as string[], { inverse: true, axisLine: { show: false } }),
-      visualMap: { min: 0, max, calculable: false, orient: "horizontal", left: "center", bottom: 0, itemWidth: 10, itemHeight: 120, text: ["More", "Fewer"], textStyle: { color: t.muted, fontFamily: t.font, fontSize: 11 }, inRange: { color: [alpha(t.series1, 0.08), t.series1] } },
+      visualMap: { min: 0, max, calculable: false, orient: "horizontal", left: "center", bottom: 0, itemWidth: 10, itemHeight: 120, text: ["More", "Fewer"], textStyle: { color: t.muted, fontFamily: t.font, fontSize: t.labelSize }, inRange: { color: [alpha(t.series1, 0.08), t.series1] } },
       series: [
         {
           id: "heat",
           type: "heatmap",
-          data: cells.filter((c) => span.includes(c.hour)).map((c) => [span.indexOf(c.hour), days.indexOf(WEEKDAYS[c.weekday]), c.n]),
+          data: shownCells.map((c) => [span.indexOf(c.hour), days.indexOf(WEEKDAYS[c.weekday]), c.n]),
           itemStyle: { borderColor: t.surface1, borderWidth: 2, borderRadius: 3 },
           emphasis: { itemStyle: { borderColor: t.text, borderWidth: 1 } },
-          animationDelay: (idx: number) => ranked.indexOf(cells[idx]) * 18,
+          // Cells fade in by intensity, busiest first, 30ms apart (capped so big grids don't drag).
+          animationDelay: (idx: number) => Math.min(ranked.indexOf(shownCells[idx]), 16) * 30,
         },
       ],
     }),
-    [cells, days, span, max, ranked],
+    [cells, shownCells, days, span, max, ranked],
   );
   const top = ranked[0];
   return (
     <Chart
       label="Entry-time heatmap"
       option={option}
-      summary={top ? `Busiest: ${WEEKDAYS[top.weekday]} ${String(top.hour).padStart(2, "0")}:00 UK with ${top.n} trades. Darker = more trades.` : "No entries yet."}
+      summary={top ? `Busiest: ${WEEKDAYS[top.weekday]} ${String(top.hour).padStart(2, "0")}:00 UK with ${top.n} trades. Brighter blue = more trades.` : "No entries yet."}
       table={{ columns: ["Day", "Hour (UK)", "Trades", "Avg R"], rows: cells.map((c) => [WEEKDAYS[c.weekday], `${String(c.hour).padStart(2, "0")}:00`, c.n, fmtR(c.avg_r)]) }}
       height={Math.max(180, days.length * 34 + 60)}
       dim={dim}
@@ -273,7 +275,7 @@ export function RuleCostChart({ rules, dim }: { rules: RuleCost[]; dim?: boolean
       grid: { left: 8, right: 64, top: 8, bottom: 8, containLabel: true },
       xAxis: valueAxis(t, { axisLabel: { show: false } }),
       yAxis: categoryAxis(t, shown.map((r, i) => `${i + 1}. ${r.text.length > 28 ? `${r.text.slice(0, 27)}…` : r.text}`), { inverse: true, axisLine: { show: false } }),
-      series: [{ id: "cost", type: "bar", barMaxWidth: 16, data: shown.map((r) => ({ value: r.cost_r, itemStyle: { color: (r.cost_r ?? 0) > 0 ? t.loss : t.breakeven, borderRadius: [0, 4, 4, 0] } })), label: { show: true, position: "right", color: t.muted, fontFamily: t.font, fontSize: 11, formatter: (p: { value: number }) => (p.value > 0 ? `−${p.value.toFixed(2)}R` : fmtR(-p.value)) } }],
+      series: [{ id: "cost", type: "bar", barMaxWidth: 16, data: shown.map((r) => ({ value: r.cost_r, itemStyle: { color: (r.cost_r ?? 0) > 0 ? t.loss : t.breakeven, borderRadius: [0, 4, 4, 0] } })), label: { show: true, position: "right", color: t.muted, fontFamily: t.font, fontSize: t.labelSize, formatter: (p: { value: number }) => (p.value > 0 ? `−${p.value.toFixed(2)}R` : fmtR(-p.value)) } }],
     }),
     [shown],
   );
@@ -359,7 +361,7 @@ export function OwnerLines({ owners, dim }: { owners: OwnerSplit[]; dim?: boolea
   const longest = Math.max(0, ...owners.map((o) => o.equity.length));
   const option = useMemo<OptionBuilder>(
     () => (t) => ({
-      tooltip: { trigger: "axis", axisPointer: crosshair(t), formatter: (ps: { dataIndex: number }[]) => { const i = ps[0]?.dataIndex ?? 0; return tipTitle(`Trade ${i + 1}`) + owners.map((o) => tipRow(t.owners[o.owner.colour_index % 8], esc(o.owner.display_name), o.equity[i] === undefined ? "—" : fmtR(o.equity[i]))).join(""); } },
+      tooltip: { trigger: "axis", axisPointer: crosshair(t), formatter: (ps: { dataIndex: number }[]) => { const i = ps[0]?.dataIndex ?? 0; return tipTitle(`Trade ${i + 1}`) + owners.map((o) => tipRow(t.owners[o.owner.colour_index % 8], o.owner.display_name, o.equity[i] === undefined ? "—" : fmtR(o.equity[i]))).join(""); } },
       legend: { show: false },
       xAxis: categoryAxis(t, Array.from({ length: longest }, (_, i) => String(i + 1)), { boundaryGap: false }),
       yAxis: valueAxis(t, { axisLabel: { color: t.muted, formatter: (v: number) => `${v}R` } }),
@@ -392,7 +394,7 @@ export function OwnerLines({ owners, dim }: { owners: OwnerSplit[]; dim?: boolea
 export function OwnerSparkChart({ owner }: { owner: OwnerSplit }) {
   const option = useMemo<OptionBuilder>(
     () => (t) => ({
-      tooltip: { trigger: "axis", formatter: (ps: { dataIndex: number }[]) => { const i = ps[0]?.dataIndex ?? 0; return tipTitle(`Trade ${i + 1}`) + tipRow(t.owners[owner.owner.colour_index % 8], esc(owner.owner.display_name), fmtR(owner.equity[i])); } },
+      tooltip: { trigger: "axis", formatter: (ps: { dataIndex: number }[]) => { const i = ps[0]?.dataIndex ?? 0; return tipTitle(`Trade ${i + 1}`) + tipRow(t.owners[owner.owner.colour_index % 8], owner.owner.display_name, fmtR(owner.equity[i])); } },
       xAxis: categoryAxis(t, owner.equity.map((_, i) => String(i + 1)), { boundaryGap: false, axisLabel: { show: false } }),
       yAxis: valueAxis(t, { splitNumber: 2, axisLabel: { color: t.muted, formatter: (v: number) => `${v}R` } }),
       grid: { left: 4, right: 8, top: 8, bottom: 4, containLabel: true },
@@ -400,5 +402,13 @@ export function OwnerSparkChart({ owner }: { owner: OwnerSplit }) {
     }),
     [owner],
   );
-  return <Chart label={`${owner.owner.display_name}: cumulative R`} option={option} summary={`${owner.equity.length} trades, ${fmtR(owner.equity[owner.equity.length - 1] ?? 0)}.`} height={120} />;
+  return (
+    <Chart
+      label={`${owner.owner.display_name}: cumulative R`}
+      option={option}
+      summary={`${owner.equity.length} trades, ${fmtR(owner.equity[owner.equity.length - 1] ?? 0)}.`}
+      table={{ columns: ["Trade", "Cumulative R"], rows: owner.equity.map((v, i) => [i + 1, fmtR(v)]) }}
+      height={120}
+    />
+  );
 }

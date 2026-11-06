@@ -3,7 +3,7 @@ import { motion } from "motion/react";
 import { useState } from "react";
 
 import Card from "../../../components/Card.tsx";
-import { Chip, StatTile, useToast } from "../../../components/ui/index.ts";
+import { Chip, SkeletonText, StatTile, useToast } from "../../../components/ui/index.ts";
 import { useSessionInsights } from "../../../lib/analytics.ts";
 import { api } from "../../../lib/api.ts";
 import { fmtPct, fmtR, fmtRange, type JournalSession, type Trade, useInvalidateJournal, useSessionTrades } from "../../../lib/journal.ts";
@@ -72,7 +72,16 @@ export function RecapCard({ session, onClose, className = "" }: { session: Journ
 /** U11 on the recap: this session against the strategy's baseline, then the strategy's top differences. */
 function SessionInsights({ sessionId }: { sessionId: number }) {
   const q = useSessionInsights(sessionId);
-  if (!q.data) return null;
+  if (q.isPending) return <SkeletonText lines={2} />;
+  if (q.isError)
+    return (
+      <p className="flex flex-wrap items-center gap-2 text-body text-muted">
+        Couldn&rsquo;t load the comparison.
+        <button type="button" className="btn btn-ghost" onClick={() => q.refetch()}>
+          Try again
+        </button>
+      </p>
+    );
   const items = [...(q.data.session_vs_baseline ? [q.data.session_vs_baseline] : []), ...q.data.top].slice(0, 3);
   return (
     <div className="flex flex-col gap-1.5" data-testid="recap-insights">

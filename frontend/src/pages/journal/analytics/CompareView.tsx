@@ -33,7 +33,13 @@ export function CompareView({ block, dim }: { block: CompareBlock; dim: boolean 
 
       <Card title="What holds up" subtitle="Where ideal winners came from, and how the backtest did there. Holds = average R above 0 on 3+ trades." controls={<PillToggle size="sm" value={by} onChange={setBy} options={BY} label="Compare by" />}>
         {rows.length ? (
-          <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Comparison table (scrolls sideways)">
+          <>
+          <ul className="flex flex-col gap-2 tablet:hidden" data-testid="compare-cards">
+            {rows.map((r) => (
+              <CompareCard key={r.key} r={r} />
+            ))}
+          </ul>
+          <div className="hidden overflow-x-auto tablet:block" tabIndex={0} role="region" aria-label="Comparison table">
             <table className="num w-full min-w-[520px] border-collapse text-left text-body" data-testid="compare-table">
               <caption className="sr-only">Ideal share and backtest results by {BY.find((b) => b.value === by)?.label.toLowerCase()}</caption>
               <thead className="text-label text-muted">
@@ -62,11 +68,49 @@ export function CompareView({ block, dim }: { block: CompareBlock; dim: boolean 
               </tbody>
             </table>
           </div>
+          </>
         ) : (
           <p className="text-body text-muted">No trades to compare in this filter.</p>
         )}
       </Card>
     </div>
+  );
+}
+
+function Verdict({ holds }: { holds: CompareRow["holds"] }) {
+  if (holds === "holds")
+    return (
+      <span className="inline-flex items-center gap-1">
+        <ArrowUpRight aria-hidden className="size-4 text-win" /> Holds
+      </span>
+    );
+  if (holds === "fails")
+    return (
+      <span className="inline-flex items-center gap-1">
+        <ArrowDownRight aria-hidden className="size-4 text-loss" /> Fails
+      </span>
+    );
+  return (
+    <span className="inline-flex items-center gap-1 text-muted">
+      <Minus aria-hidden className="size-4" /> Too few
+    </span>
+  );
+}
+
+/** Phone: one card per row instead of a table that scrolls sideways. */
+function CompareCard({ r }: { r: CompareRow }) {
+  const avg = r.backtest_avg_r;
+  return (
+    <li className="num flex flex-col gap-1 rounded-panel border border-border bg-surface-2 px-3 py-2.5">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-body font-medium">{r.key}</span>
+        <Verdict holds={r.holds} />
+      </div>
+      <p className="text-label text-muted">
+        Ideal: {r.ideal_n} winners ({pct(r.ideal_share)}) · Backtest:{" "}
+        <span className={avg === null ? "" : avg > 0 ? "text-win" : avg < 0 ? "text-loss" : ""}>{fmtR(avg)}</span> avg, {pct(r.backtest_win_rate)} win, n={r.backtest_n}
+      </p>
+    </li>
   );
 }
 
@@ -98,19 +142,7 @@ function CompareLine({ r, maxShare, maxAbsR }: { r: CompareRow; maxShare: number
       </td>
       <td className="py-2 pr-3">{pct(r.backtest_win_rate)}</td>
       <td className="py-2">
-        {r.holds === "holds" ? (
-          <span className="inline-flex items-center gap-1">
-            <ArrowUpRight aria-hidden className="size-4 text-win" /> Holds
-          </span>
-        ) : r.holds === "fails" ? (
-          <span className="inline-flex items-center gap-1">
-            <ArrowDownRight aria-hidden className="size-4 text-loss" /> Fails
-          </span>
-        ) : (
-          <span className="inline-flex items-center gap-1 text-muted">
-            <Minus aria-hidden className="size-4" /> Too few
-          </span>
-        )}
+        <Verdict holds={r.holds} />
       </td>
     </tr>
   );

@@ -25,9 +25,9 @@ export default function JournalIndex() {
       <header className="flex flex-wrap items-center gap-3">
         <img src="/brand/replayjournal-logo.png" alt="Replay Journal" className="hidden h-9 w-auto tablet:block" />
         <h1 className="text-heading font-semibold tablet:sr-only">Strategies</h1>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
           <ViewScopeToggle size="sm" />
-          <Link to="/journal/analytics" className="btn btn-ghost">
+          <Link to="/journal/analytics" className="btn btn-ghost min-w-11 px-0 tablet:px-3">
             <ChartLine aria-hidden className="size-4" />
             <span className="hidden tablet:inline">Analytics</span>
             <span className="sr-only tablet:hidden">Analytics</span>

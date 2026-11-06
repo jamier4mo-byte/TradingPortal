@@ -1,44 +1,50 @@
 import { animate } from "motion/react";
-import { useEffect, useRef } from "react";
+import { useLayoutEffect, useRef } from "react";
 
-import { motionLevel } from "../../lib/motion.ts";
+import { dur, easeEnter, motionLevel } from "../../lib/motion.ts";
 
 /** A headline number that counts up on first view and rolls to the new value on a filter change.
- * Off under Reduced/Off motion. The text node is the formatted value at every frame, so it reads right. */
+ * Off under Reduced/Off motion. The span has no React children: this component owns its text, so the
+ * text is always the formatted value; screen readers read the final number from a hidden twin. */
 export function CountUp({ value, format, className = "" }: { value: number | null | undefined; format: (v: number | null) => string; className?: string }) {
   const ref = useRef<HTMLSpanElement>(null);
   const last = useRef<number | null>(null);
   const formatRef = useRef(format);
   formatRef.current = format;
+  const label = format(value ?? null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
     const fmt = formatRef.current;
-    if (value === null || value === undefined || !Number.isFinite(value) || motionLevel() !== "full") {
+    const from = last.current;
+    last.current = value ?? null;
+    if (value === null || value === undefined || !Number.isFinite(value) || motionLevel() !== "full" || from === value) {
       el.textContent = fmt(value ?? null);
-      last.current = value ?? null;
       return;
     }
-    const from = last.current ?? 0;
-    last.current = value;
-    if (from === value) {
-      el.textContent = fmt(value);
-      return;
-    }
-    const controls = animate(from, value, {
-      duration: 0.6,
-      ease: [0.16, 1, 0.3, 1],
+    const controls = animate(from ?? 0, value, {
+      duration: dur.emphasis(),
+      ease: [...easeEnter],
       onUpdate: (v) => {
         el.textContent = fmt(v);
+      },
+      onComplete: () => {
+        el.textContent = fmt(value);
       },
     });
     return () => controls.stop();
   }, [value]);
 
+  // Same value, new format (e.g. a unit switch): just rewrite the text.
+  useLayoutEffect(() => {
+    if (ref.current && last.current === (value ?? null)) ref.current.textContent = label;
+  }, [label, value]);
+
   return (
-    <span ref={ref} className={className}>
-      {format(value ?? null)}
+    <span className={className}>
+      <span ref={ref} aria-hidden />
+      <span className="sr-only">{label}</span>
     </span>
   );
 }

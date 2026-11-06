@@ -27,6 +27,7 @@ import { Logo, Tile } from "./Brand.tsx";
 import { CommandPalette } from "./CommandPalette.tsx";
 import { PageTransition } from "./PageTransition.tsx";
 import { OfflineBanner, ownerBg } from "./ui/index.ts";
+import { setPrintMode } from "../lib/print.ts";
 
 const TOOLS = [
   { to: "/", label: "Hub", icon: Home, end: true, dot: "live" },
@@ -71,6 +72,17 @@ export default function AppShell({ children }: { children: ReactNode }) {
     }
   });
 
+  // Save as PDF: the light print tokens for the whole page (charts read them when they redraw).
+  useEffect(() => {
+    const on = () => setPrintMode(true);
+    const off = () => setPrintMode(false);
+    window.addEventListener("beforeprint", on);
+    window.addEventListener("afterprint", off);
+    return () => {
+      window.removeEventListener("beforeprint", on);
+      window.removeEventListener("afterprint", off);
+    };
+  }, []);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
