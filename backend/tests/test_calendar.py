@@ -447,3 +447,28 @@ def test_task_out_shape(admin_client):
     assert t["category"] == "backtesting" and t["category_label"] == "Backtesting"
     assert t["description"] == "Replay NAS100" and t["tz"] == "Europe/London"
     assert t["recurring"] is True and t["all_day"] is False
+
+
+def test_sub_daily_repeat_rules_are_refused(admin_client):
+    """A FREQ=MINUTELY rule would expand to thousands of rows per window (denial of service)."""
+    body = {"title": "Spam", "start_at": "2026-11-09T09:00:00Z", "end_at": "2026-11-09T10:00:00Z"}
+    for rule in ("FREQ=MINUTELY", "FREQ=HOURLY", "FREQ=SECONDLY;COUNT=5"):
+        res = admin_client.post("/api/calendar/tasks", json={**body, "rrule": rule})
+        assert res.status_code == 422, (rule, res.text)
+    assert admin_client.post("/api/calendar/tasks", json={**body, "rrule": "FREQ=DAILY"}).status_code == 201
+
+
+def test_expansion_caps_occurrences_per_task(admin_client):
+    """Even a daily rule over the longest window stays bounded by MAX_OCCURRENCES_PER_TASK."""
+    from app.services import calendar as cal
+
+    body = {
+        "title": "Daily",
+        "start_at": "2026-01-01T09:00:00Z",
+        "end_at": "2026-01-01T10:00:00Z",
+        "rrule": "FREQ=DAILY",
+    }
+    assert admin_client.post("/api/calendar/tasks", json=body).status_code == 201
+    res = admin_client.get("/api/calendar/occurrences?from=2026-01-01&to=2026-03-03")
+    assert res.status_code == 200
+    assert 0 < len(res.json()["occurrences"]) <= cal.MAX_OCCURRENCES_PER_TASK

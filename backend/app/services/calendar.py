@@ -70,7 +70,15 @@ def parse_rrule(rule: str, dtstart: datetime) -> du.rrule:
         ) from exc
     if not isinstance(parsed, du.rrule):
         raise CalendarError("Use a single RRULE (no RDATE or EXDATE).", 422)
+    # Sub-daily rules would expand to thousands of rows inside the 62-day window (a denial of service);
+    # the calendar is about days and sessions, so daily is the finest repeat.
+    if parsed._freq > du.DAILY:  # noqa: SLF001 — dateutil keeps the frequency private
+        raise CalendarError("Repeat at most once a day (FREQ=DAILY, WEEKLY, MONTHLY or YEARLY).", 422)
     return parsed
+
+
+# The most occurrences one task may contribute to a single expansion window (62 days, daily at most).
+MAX_OCCURRENCES_PER_TASK = 200
 
 
 def check_category(value: str | None) -> str:
@@ -154,7 +162,12 @@ def _occurrence_dates(task: Task, zone: ZoneInfo, lo: datetime, hi: datetime) ->
     if not task.rrule:
         return [local_start] if lo <= local_start <= hi else []
     rule = parse_rrule(task.rrule, local_start)
-    return list(rule.between(lo, hi, inc=True))
+    out: list[datetime] = []
+    for hit in rule.xafter(lo - timedelta(seconds=1), count=MAX_OCCURRENCES_PER_TASK, inc=False):
+        if hit > hi:
+            break
+        out.append(hit)
+    return out
 
 
 def _series_occurrence_start(task: Task, zone: ZoneInfo, occurrence_date: str) -> datetime | None:
