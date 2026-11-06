@@ -36,6 +36,9 @@ Values marked **proposed** weren't given in the Foundations doc; they're startin
 | `--color-impact-high / -medium / -low` | `#FF5A66` / `#FF9F43` / `#F5D547` (proposed) | News impact red/orange/yellow. **Reserved**, always with a High/Med/Low label |
 | `--color-live` / `--color-stale` | `#2FD27F` / `#8F99AD` (proposed) | Live dot; paused/stale |
 | `--color-owner-0` … `-7` | `#2EC4B6` teal · `#8FA3FF` periwinkle · `#FF7AC6` pink · `#D4B483` sand · `#C9A7F5` lilac · `#6FD3F2` sky · `#C2D94A` chartreuse · `#D98CB3` mauve (proposed) | Calendar owners and "logged by" chips **only** (`OwnerChip`, `ownerBg(index)`). Each user has a fixed `colour_index` 0–7. All ≥ 7:1 on `surface-1`; none is a reserved or brand hue |
+| `--chart-grid` / `--chart-axis` | `rgba(255,255,255,.05)` / `.16` | Chart gridlines (hairline, solid) and axis lines. Charts read every colour at runtime (`components/charts/theme.ts`) |
+| `--chart-series-1` / `-2` | `#2F7BFF` / `#5CC8FF` | First and second chart series (at most 2–3 per chart). Pass CVD separation and contrast; lighter than the dataviz lightness band, so always paired with a legend or direct label |
+| `--color-print-*` | paper `#FFFFFF`, ink `#111827`, muted `#4B5563`, rule `#D1D5DB`, win `#0F7A43`, loss `#C2273A`, breakeven `#4B5563`, accent-soft, owner-0…7 darkened (proposed) | **Save as PDF only.** Swapped in under `@media print` and `:root[data-print]` so printouts read on paper (≥ 4.5:1 on white). Never used on screen |
 
 Reserved colours mean one thing and are used for nothing else. Colour is never the only signal: wins and losses carry +/− or an icon.
 

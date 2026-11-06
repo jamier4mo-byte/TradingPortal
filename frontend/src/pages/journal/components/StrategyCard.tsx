@@ -40,19 +40,13 @@ export function StrategyCard({ strategy }: { strategy: Strategy }) {
       </div>
 
       {stats && stats.trades > 0 ? (
-        <dl className="mt-4 grid grid-cols-3 gap-2 rounded-panel border border-border bg-surface-2 p-2 text-center">
-          <div>
-            <dt className="text-label text-muted">Win rate</dt>
-            <dd className="num text-body font-medium">{fmtPct(stats.win_rate)}</dd>
-          </div>
-          <div>
-            <dt className="text-label text-muted">Total R</dt>
-            <dd className={`num text-body font-medium ${(stats.total_r ?? 0) > 0 ? "text-win" : (stats.total_r ?? 0) < 0 ? "text-loss" : ""}`}>{fmtR(stats.total_r)}</dd>
-          </div>
-          <div>
-            <dt className="text-label text-muted">Avg R</dt>
-            <dd className="num text-body font-medium">{fmtR(stats.avg_r)}</dd>
-          </div>
+        <dl className="mt-4 grid grid-cols-3 gap-x-2 gap-y-2.5 rounded-panel border border-border bg-surface-2 p-2 text-center" aria-label="Backtest headline stats">
+          <Stat label="Win rate" value={fmtPct(stats.win_rate)} />
+          <Stat label="Avg R" value={fmtR(stats.avg_r)} tone={stats.avg_r} />
+          <Stat label="Total R" value={fmtR(stats.total_r)} tone={stats.total_r} />
+          <Stat label="Profit factor" value={stats.profit_factor === null || stats.profit_factor === undefined ? "—" : stats.profit_factor.toFixed(2)} />
+          <Stat label="Max DD" value={fmtR(stats.max_dd_r ?? null)} tone={stats.max_dd_r} />
+          <Stat label="Trades" value={String(stats.trades)} />
         </dl>
       ) : null}
 
@@ -61,5 +55,16 @@ export function StrategyCard({ strategy }: { strategy: Strategy }) {
         <span className="num text-label text-muted">Updated {relativeTime(s.updated_at)}</span>
       </div>
     </Link>
+  );
+}
+
+/** Signed values carry the reserved colour and their +/− sign; colour is never the only signal. */
+function Stat({ label, value, tone }: { label: string; value: string; tone?: number | null }) {
+  const cls = tone === null || tone === undefined || tone === 0 ? "" : tone > 0 ? "text-win" : "text-loss";
+  return (
+    <div className="min-w-0">
+      <dt className="truncate text-label text-muted">{label}</dt>
+      <dd className={`num text-body font-medium ${cls}`}>{value}</dd>
+    </div>
   );
 }

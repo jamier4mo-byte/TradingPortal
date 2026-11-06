@@ -1,7 +1,7 @@
 # Trading Portal: one command for each thing you do day to day.
 #   make setup    first-time install: Python venv (backend/.venv) and front-end packages
 #   make dev      API with auto-reload on :8765 + Vite dev server on :5173 (open :5173)
-#   make test     backend tests
+#   make test     backend tests + front-end unit tests (node --test)
 #   make lint     ruff + oxlint + TypeScript check + Hub bundle budget (200KB gzip)
 #   make icons    regenerate favicons, apple-touch-icon and site.webmanifest from the T tile
 #   make build    compile the front end into frontend/dist
@@ -42,6 +42,7 @@ dev-frontend:
 
 test:
 	cd backend && .venv/bin/pytest
+	cd frontend && node --test src/lib/*.test.ts
 
 lint: build
 	cd backend && .venv/bin/ruff check . && .venv/bin/ruff format --check .

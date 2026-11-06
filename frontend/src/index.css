@@ -95,6 +95,25 @@
   --chart-axis: rgba(255, 255, 255, 0.16);
   --chart-series-1: #2f7bff;
   --chart-series-2: #5cc8ff;
+
+  /* ---- print (Save as PDF): a light page so a printout reads on paper ---- */
+  --color-print-paper: #ffffff;
+  --color-print-ink: #111827;
+  --color-print-muted: #4b5563;
+  --color-print-rule: #d1d5db;
+  --color-print-win: #0f7a43;
+  --color-print-loss: #c2273a;
+  --color-print-breakeven: #4b5563;
+  --color-print-accent-soft: rgba(47, 123, 255, 0.1);
+  /* owner hues darkened for paper (≥ 4.5:1 on white) */
+  --color-print-owner-0: #0f766e;
+  --color-print-owner-1: #4054c4;
+  --color-print-owner-2: #b8337f;
+  --color-print-owner-3: #8a6a2f;
+  --color-print-owner-4: #7445b8;
+  --color-print-owner-5: #0e7490;
+  --color-print-owner-6: #5f7a0c;
+  --color-print-owner-7: #9c3f6e;
 }
 
 :root {
@@ -249,4 +268,66 @@ body {
 
 /* Brand hairline: a 2px rule under the logo on the auth screens only (a brand moment). Pair with .brand-gradient. */
 .brand-hairline { height: 2px; border-radius: 1px; }
+}
+
+/* Save as PDF (print): light tokens, no shell chrome, cards kept whole. The same overrides apply under
+   @media print (CSS alone) and under data-print on <html> (set on beforeprint by AppShell), which is what
+   ECharts' canvases read when they redraw for the page. */
+@media print {
+  :root {
+    --color-bg: var(--color-print-paper);
+    --color-surface-1: var(--color-print-paper);
+    --color-surface-2: var(--color-print-paper);
+    --color-text: var(--color-print-ink);
+    --color-muted: var(--color-print-muted);
+    --color-subtle: var(--color-print-muted);
+    --color-border: var(--color-print-rule);
+    --color-border-strong: var(--color-print-rule);
+    --color-win: var(--color-print-win);
+    --color-loss: var(--color-print-loss);
+    --color-breakeven: var(--color-print-breakeven);
+    --color-accent-soft: var(--color-print-accent-soft);
+    --color-owner-0: var(--color-print-owner-0);
+    --color-owner-1: var(--color-print-owner-1);
+    --color-owner-2: var(--color-print-owner-2);
+    --color-owner-3: var(--color-print-owner-3);
+    --color-owner-4: var(--color-print-owner-4);
+    --color-owner-5: var(--color-print-owner-5);
+    --color-owner-6: var(--color-print-owner-6);
+    --color-owner-7: var(--color-print-owner-7);
+    --chart-grid: var(--color-print-rule);
+    --chart-axis: var(--color-print-muted);
+  }
+}
+:root[data-print] {
+  --color-bg: var(--color-print-paper);
+  --color-surface-1: var(--color-print-paper);
+  --color-surface-2: var(--color-print-paper);
+  --color-text: var(--color-print-ink);
+  --color-muted: var(--color-print-muted);
+  --color-subtle: var(--color-print-muted);
+  --color-border: var(--color-print-rule);
+  --color-border-strong: var(--color-print-rule);
+  --color-win: var(--color-print-win);
+  --color-loss: var(--color-print-loss);
+  --color-breakeven: var(--color-print-breakeven);
+  --color-accent-soft: var(--color-print-accent-soft);
+  --color-owner-0: var(--color-print-owner-0);
+  --color-owner-1: var(--color-print-owner-1);
+  --color-owner-2: var(--color-print-owner-2);
+  --color-owner-3: var(--color-print-owner-3);
+  --color-owner-4: var(--color-print-owner-4);
+  --color-owner-5: var(--color-print-owner-5);
+  --color-owner-6: var(--color-print-owner-6);
+  --color-owner-7: var(--color-print-owner-7);
+  --chart-grid: var(--color-print-rule);
+  --chart-axis: var(--color-print-muted);
+}
+@media print {
+  @page { margin: 12mm; }
+  :root { color-scheme: light; }
+  html, body { background: var(--color-print-paper) !important; color: var(--color-print-ink); }
+  main { max-width: none !important; padding: 0 !important; }
+  .card { break-inside: avoid; border-color: var(--color-print-rule); }
+  .print\:hidden { display: none !important; }
 }

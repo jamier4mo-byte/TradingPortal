@@ -35,7 +35,7 @@ export function PillToggle<T extends string>({
             role="radio"
             aria-checked={active}
             onClick={() => onChange(opt.value)}
-            className={`relative min-h-11 rounded-pill text-body transition-colors duration-(--dur-quick) ${
+            className={`relative min-h-11 min-w-11 rounded-pill text-body transition-colors duration-(--dur-quick) ${
               size === "sm" ? "px-2.5 text-label" : "px-3"
             } ${active ? "text-on-accent" : "text-muted hover:text-text"}`}
           >

@@ -22,6 +22,20 @@ const walk = (key) => {
 };
 walk(Object.keys(manifest).find((k) => manifest[k] === entry));
 
+// ECharts must never load with the Hub: it lives behind Chart.tsx's dynamic import (F18).
+const echartsKey = Object.keys(manifest).find((k) => k.endsWith("components/charts/echarts.ts"));
+const echartsFile = echartsKey ? manifest[echartsKey].file : null;
+if (echartsFile && seen.has(echartsFile)) {
+  console.error(`ECharts (${echartsFile}) is in the Hub's initial JS. Import charts only through components/charts/Chart.tsx.`);
+  process.exit(1);
+}
+for (const file of seen) {
+  if (readFileSync(join(DIST, file), "utf8").includes("echarts/lib")) {
+    console.error(`${file} carries ECharts code into the Hub's initial JS.`);
+    process.exit(1);
+  }
+}
+
 let total = 0;
 const rows = [];
 for (const file of seen) {
@@ -33,6 +47,7 @@ rows.sort((a, b) => b[2] - a[2]);
 for (const [file, raw, gz] of rows) console.log(`${(gz / 1024).toFixed(1).padStart(7)} KB gz  ${(raw / 1024).toFixed(1).padStart(7)} KB  ${file}`);
 const kb = total / 1024;
 console.log(`\nHub initial JS: ${kb.toFixed(1)} KB gzip (budget ${BUDGET_KB} KB)`);
+console.log(echartsFile ? `ECharts: lazy chunk ${echartsFile}, not in the Hub ✓` : "ECharts: not bundled yet");
 if (kb > BUDGET_KB) {
   console.error(`Over budget by ${(kb - BUDGET_KB).toFixed(1)} KB. Lazy-load the heavy import or split the chunk.`);
   process.exit(1);

@@ -22,6 +22,7 @@ const TradeDetail = lazy(() => import("./pages/journal/TradeDetail.tsx"));
 const Annotate = lazy(() => import("./pages/journal/Annotate.tsx"));
 const Matcher = lazy(() => import("./pages/journal/Matcher.tsx"));
 const JournalTrash = lazy(() => import("./pages/journal/Trash.tsx"));
+const JournalAnalytics = lazy(() => import("./pages/journal/AnalyticsPage.tsx"));
 
 function Loading() {
   return (
@@ -50,6 +51,7 @@ export default function App() {
                     <Route path="/" element={<Hub />} />
                     <Route path="/journal" element={<JournalIndex />} />
                     <Route path="/journal/trash" element={<JournalTrash />} />
+                    <Route path="/journal/analytics" element={<JournalAnalytics />} />
                     <Route path="/journal/strategies/:id" element={<StrategyPage />} />
                     <Route path="/journal/strategies/:id/trades/:tradeId" element={<TradeDetail />} />
                     <Route path="/journal/sessions/:sid/annotate" element={<Annotate />} />

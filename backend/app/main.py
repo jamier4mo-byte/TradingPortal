@@ -1,8 +1,11 @@
 """Trading Portal API. Serves the built front end from frontend/dist when it exists."""
 
 import logging
+import math
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
@@ -25,6 +28,21 @@ def create_app() -> FastAPI:
     )
     app.add_middleware(CsrfMiddleware)
     app.include_router(api)
+
+    @app.exception_handler(RequestValidationError)
+    async def validation_error(_: Request, exc: RequestValidationError) -> JSONResponse:
+        """422 as usual, but never echo a non-finite input back (JSON can't carry Infinity or NaN)."""
+
+        def clean(value):
+            if isinstance(value, float) and not math.isfinite(value):
+                return str(value)
+            if isinstance(value, dict):
+                return {k: clean(v) for k, v in value.items()}
+            if isinstance(value, list | tuple):
+                return [clean(v) for v in value]
+            return value
+
+        return JSONResponse({"detail": clean(jsonable_encoder(exc.errors()))}, 422)
 
     @app.get("/api/health")
     def health() -> dict:

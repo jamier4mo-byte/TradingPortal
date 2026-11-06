@@ -26,6 +26,9 @@ from . import audit
 from . import fxreplay as fx
 from . import instruments as inst_svc
 from . import journal_rules as rules
+from .analytics.metrics import compute
+from .analytics.reconcile import csv_totals
+from .analytics.rows import Row, prepare
 from .tags import resolve_tag
 
 TRASH_DAYS = 30
@@ -494,6 +497,9 @@ def confirm_import(
         "problems": result.problems,
         "unresolved_tags": sorted(unresolved_tags),
         "timezone": zone,
+        # Reconcile line (F16): FX Replay's own figures for the file, and what this import kept of them.
+        "csv_totals": csv_totals(result.rows) if result.rows else None,
+        "kept_totals": {"trades": len(imported), "rpnl_sum": round(sum(t.pnl or 0.0 for t in imported), 2)},
     }
     session.import_report = report
     strategy.profile_fingerprint = None
@@ -627,23 +633,27 @@ def trash(db: Session, actor: User) -> dict:
 # ---- stats, profile, summary ---------------------------------------------------------------
 
 
-def headline_stats(trades: list[Trade]) -> dict:
+def headline_stats(trades: list[Trade], threshold: float = rules.DEFAULT_BREAKEVEN_THRESHOLD) -> dict:
+    """Strategy card and session numbers, from the same metric engine as the Analytics tab."""
     scored = [t for t in trades if t.kind != "missed"]
-    rs = [t.r_multiple for t in scored if t.r_multiple is not None]
-    wins = sum(1 for t in scored if t.outcome == "win")
-    decided = sum(1 for t in scored if t.outcome in ("win", "loss"))
-    pnls = [t.pnl for t in scored if t.pnl is not None]
-    followed = []
-    for t in scored:
-        if t.rules_followed:
-            followed.append(all(bool(v) for v in t.rules_followed.values()))
+    rows = prepare(
+        [
+            Row(id=t.id, kind=t.kind, opened_at=t.opened_at, closed_at=t.closed_at, r=t.r_multiple, pnl=t.pnl,
+                outcome=t.outcome, rules=dict(t.rules_followed or {}), market_date=t.market_date)
+            for t in scored
+        ],
+        threshold,
+    )  # fmt: skip
+    k = compute(rows)
     return {
         "trades": len(scored),
-        "win_rate": (wins / decided) if decided else None,
-        "total_r": round(sum(rs), 2) if rs else None,
-        "avg_r": round(statistics.fmean(rs), 2) if rs else None,
-        "total_pnl": round(sum(pnls), 2) if pnls else None,
-        "rules_followed_rate": (sum(followed) / len(followed)) if followed else None,
+        "win_rate": k["win_rate"],
+        "total_r": round(k["total_r"], 2) if k["total_r"] is not None else None,
+        "avg_r": round(k["avg_r"], 2) if k["avg_r"] is not None else None,
+        "total_pnl": round(k["net_pnl"], 2) if k["net_pnl"] is not None else None,
+        "rules_followed_rate": k["rules_kept_rate"],
+        "profit_factor": k["profit_factor"],
+        "max_dd_r": k["max_dd_r"],
     }
 
 
@@ -720,7 +730,9 @@ def compute_profile(trades: list[Trade]) -> dict:
     }
 
 
-def strategy_card(db: Session, strategy: Strategy) -> dict:
+def strategy_card(
+    db: Session, strategy: Strategy, threshold: float = rules.DEFAULT_BREAKEVEN_THRESHOLD
+) -> dict:
     trades = live_trades(db, strategy)
     ideal = [t for t in trades if t.kind == "ideal"]
     backtest = [t for t in trades if t.kind == "backtest"]
@@ -734,7 +746,7 @@ def strategy_card(db: Session, strategy: Strategy) -> dict:
         "range_end": max(dates) if dates else None,
         "coverage": cov,
         "stage": rules.stage(cov, len(backtest)),
-        "backtest_stats": headline_stats(backtest) if backtest else None,
+        "backtest_stats": headline_stats(backtest, threshold) if backtest else None,
         "sparkline": r_sparkline(backtest or ideal),
         "last_trade_at": max((t.created_at for t in trades), default=None),
     }

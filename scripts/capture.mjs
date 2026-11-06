@@ -22,6 +22,11 @@ const ROUTES = {
   annotate: "/journal/sessions/1/annotate",
   match: "/journal/sessions/1/match",
   "journal-trash": "/journal/trash",
+  analytics: "/journal/strategies/3?tab=analytics",
+  "analytics-ideal": "/journal/strategies/3?tab=analytics&src=ideal",
+  compare: "/journal/strategies/3?tab=analytics&src=compare",
+  export: "/journal/strategies/3?tab=analytics&export=1",
+  "analytics-all": "/journal/analytics?split=1",
   news: "/news",
   calendar: "/calendar",
   login: "/login",
@@ -61,6 +66,15 @@ for (const { w, h } of SIZES) {
     const path = ROUTES[name] ?? name;
     await page.goto(`${BASE}${path}`, { waitUntil: "networkidle" });
     await page.evaluate(() => document.fonts.ready);
+    // Charts start when they scroll into view: walk down the page so every one has drawn, then go back up.
+    await page.evaluate(async () => {
+      for (let y = 0; y < document.documentElement.scrollHeight; y += window.innerHeight * 0.8) {
+        window.scrollTo(0, y);
+        await new Promise((r) => setTimeout(r, 120));
+      }
+      window.scrollTo(0, 0);
+    });
+    await page.waitForTimeout(400);
     const file = join(OUT, `${name}-${w}.png`);
     await page.screenshot({ path: file, fullPage: true });
     console.log(file);

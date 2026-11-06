@@ -77,6 +77,8 @@ class StatsOut(BaseModel):
     avg_r: float | None
     total_pnl: float | None
     rules_followed_rate: float | None
+    profit_factor: float | None = None
+    max_dd_r: float | None = None
 
 
 class StrategyIn(BaseModel):
@@ -197,6 +199,8 @@ class TradeOut(BaseModel):
 
 
 class TradeIn(BaseModel):
+    model_config = ConfigDict(allow_inf_nan=False)  # an Infinity R would poison everyone's analytics
+
     kind: Kind = "ideal"
     instrument: str = Field(min_length=2, max_length=32)
     side: Side
@@ -220,6 +224,8 @@ class TradeIn(BaseModel):
 
 
 class TradeUpdateIn(BaseModel):
+    model_config = ConfigDict(allow_inf_nan=False)
+
     instrument: str | None = Field(default=None, min_length=2, max_length=32)
     side: Side | None = None
     opened_at: datetime | None = None

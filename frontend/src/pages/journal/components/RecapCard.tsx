@@ -1,9 +1,10 @@
-import { X } from "lucide-react";
+import { Lightbulb, X } from "lucide-react";
 import { motion } from "motion/react";
 import { useState } from "react";
 
 import Card from "../../../components/Card.tsx";
-import { StatTile, useToast } from "../../../components/ui/index.ts";
+import { Chip, SkeletonText, StatTile, useToast } from "../../../components/ui/index.ts";
+import { useSessionInsights } from "../../../lib/analytics.ts";
 import { api } from "../../../lib/api.ts";
 import { fmtPct, fmtR, fmtRange, type JournalSession, type Trade, useInvalidateJournal, useSessionTrades } from "../../../lib/journal.ts";
 import { dur, easeEnter, motionLevel } from "../../../lib/motion.ts";
@@ -48,6 +49,7 @@ export function RecapCard({ session, onClose, className = "" }: { session: Journ
               <StatTile label="Total R" value={fmtR(s.total_r)} tone={(s.total_r ?? 0) > 0 ? "win" : (s.total_r ?? 0) < 0 ? "loss" : "neutral"} />
               <StatTile label="Rules followed" value={fmtPct(s.rules_followed_rate)} hint={s.rules_followed_rate === null ? "Tick them in Annotate mode" : undefined} />
             </div>
+            <SessionInsights sessionId={session.id} />
             <label className="flex flex-col gap-1.5">
               <span className="text-body font-medium">One thing to improve</span>
               <textarea className="input min-h-16 py-2" value={note} onChange={(e) => setNote(e.target.value)} onBlur={saveNote} maxLength={2000} placeholder="Next session, I will…" disabled={!session.can_edit} />
@@ -64,5 +66,41 @@ export function RecapCard({ session, onClose, className = "" }: { session: Journ
         </div>
       </Card>
     </motion.div>
+  );
+}
+
+/** U11 on the recap: this session against the strategy's baseline, then the strategy's top differences. */
+function SessionInsights({ sessionId }: { sessionId: number }) {
+  const q = useSessionInsights(sessionId);
+  if (q.isPending) return <SkeletonText lines={2} />;
+  if (q.isError)
+    return (
+      <p className="flex flex-wrap items-center gap-2 text-body text-muted">
+        Couldn&rsquo;t load the comparison.
+        <button type="button" className="btn btn-ghost" onClick={() => q.refetch()}>
+          Try again
+        </button>
+      </p>
+    );
+  const items = [...(q.data.session_vs_baseline ? [q.data.session_vs_baseline] : []), ...q.data.top].slice(0, 3);
+  return (
+    <div className="flex flex-col gap-1.5" data-testid="recap-insights">
+      <span className="text-body font-medium">How it compares</span>
+      {items.length ? (
+        <ul className="flex flex-col gap-1.5">
+          {items.map((i) => (
+            <li key={`${i.dimension}-${i.key}`} className="flex items-start gap-2 text-body">
+              <Lightbulb aria-hidden className="mt-0.5 size-4 shrink-0 text-subtle" strokeWidth={1.75} />
+              <span className="num min-w-0 flex-1">{i.text.replace(" · early signal", "")}</span>
+              {i.early ? <Chip className="shrink-0">Early signal</Chip> : null}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-body text-muted">
+          Nothing stands out yet: insights need at least {q.data.min_slice} trades in a slice and the session has {q.data.session_trades}.
+        </p>
+      )}
+    </div>
   );
 }

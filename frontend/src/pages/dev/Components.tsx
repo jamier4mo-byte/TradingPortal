@@ -1,6 +1,8 @@
 import { useState } from "react";
 
 import Card from "../../components/Card.tsx";
+import type { OwnerSplit } from "../../lib/analytics.ts";
+import { OwnersCard } from "../journal/analytics/BacktestViews.tsx";
 import { ChartEmpty, KeyEmpty, ListEmpty, PeopleEmpty } from "../../components/ui/Illustrations.tsx";
 import {
   Chip,
@@ -128,6 +130,9 @@ export default function Components() {
           <RingGauge value={14} max={15} label="Countdown" display="14m" tone="impact-high" size={72} />
         </div>
       </Card>
+      <div className="col-span-full">
+        <OwnersCard owners={SAMPLE_OWNERS} />
+      </div>
       <Card title="Illustrations" subtitle="Inline SVG, 1.5px strokes" className="col-span-full">
         <div className="grid grid-cols-2 gap-4 text-muted tablet:grid-cols-4">
           <ChartEmpty />
@@ -139,3 +144,14 @@ export default function Components() {
     </div>
   );
 }
+
+/** Four owners: more than three, so the owner split switches to small multiples (F12). */
+const SAMPLE_OWNERS: OwnerSplit[] = ["Jamie", "Sam", "Alex", "Priya"].map((name, i) => {
+  let total = 0;
+  const equity = Array.from({ length: 24 }, (_, k) => (total = Math.round((total + (((k * (i + 3)) % 5) - 1.6) * 0.8) * 100) / 100));
+  return {
+    owner: { id: i + 1, display_name: name, colour_index: i, status: "active" },
+    kpis: { trades: 24, win_rate: 0.4 + i * 0.05, total_r: equity[equity.length - 1], avg_r: null, profit_factor: null, max_dd_r: null, net_pnl: null },
+    equity,
+  };
+});

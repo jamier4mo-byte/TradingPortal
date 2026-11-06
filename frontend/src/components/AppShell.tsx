@@ -27,6 +27,7 @@ import { Logo, Tile } from "./Brand.tsx";
 import { CommandPalette } from "./CommandPalette.tsx";
 import { PageTransition } from "./PageTransition.tsx";
 import { OfflineBanner, ownerBg } from "./ui/index.ts";
+import { setPrintMode } from "../lib/print.ts";
 
 const TOOLS = [
   { to: "/", label: "Hub", icon: Home, end: true, dot: "live" },
@@ -71,6 +72,17 @@ export default function AppShell({ children }: { children: ReactNode }) {
     }
   });
 
+  // Save as PDF: the light print tokens for the whole page (charts read them when they redraw).
+  useEffect(() => {
+    const on = () => setPrintMode(true);
+    const off = () => setPrintMode(false);
+    window.addEventListener("beforeprint", on);
+    window.addEventListener("afterprint", off);
+    return () => {
+      window.removeEventListener("beforeprint", on);
+      window.removeEventListener("afterprint", off);
+    };
+  }, []);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
@@ -111,7 +123,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
       {/* Sidebar (laptop+) / rail (tablet) */}
       <aside
         aria-label="Tools"
-        className={`fixed inset-y-0 left-0 z-20 hidden w-[72px] flex-col border-r border-border bg-bg px-3 py-4 tablet:flex ${sidebarWidth} transition-[width] duration-(--dur-standard) ease-(--ease-in-enter)`}
+        className={`print:hidden fixed inset-y-0 left-0 z-20 hidden w-[72px] flex-col border-r border-border bg-bg px-3 py-4 tablet:flex ${sidebarWidth} transition-[width] duration-(--dur-standard) ease-(--ease-in-enter)`}
       >
         <NavLink to="/" className="mb-6 flex min-h-11 items-center px-1" aria-label="Trading Portal home">
           <Tile className={`size-10 ${collapsed ? "" : "laptop:hidden"}`} />
@@ -158,9 +170,9 @@ export default function AppShell({ children }: { children: ReactNode }) {
         </button>
       </aside>
 
-      <div className={`tablet:pl-[72px] ${contentPad} transition-[padding] duration-(--dur-standard) ease-(--ease-in-enter)`}>
+      <div className={`tablet:pl-[72px] ${contentPad} print:pl-0 transition-[padding] duration-(--dur-standard) ease-(--ease-in-enter)`}>
         {/* Top bar */}
-        <header className="safe-top sticky top-0 z-10 flex min-h-14 items-center gap-2 border-b border-border bg-bg/95 px-(--gutter-phone) tablet:px-(--gutter-tablet) desktop:px-(--gutter-desktop)">
+        <header className="safe-top sticky top-0 z-10 print:hidden flex min-h-14 items-center gap-2 border-b border-border bg-bg/95 px-(--gutter-phone) tablet:px-(--gutter-tablet) desktop:px-(--gutter-desktop)">
           <NavLink to="/" className="flex min-h-11 min-w-11 items-center tablet:hidden" aria-label="Trading Portal home">
             <Tile />
           </NavLink>
@@ -247,7 +259,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
       {/* Phone tab bar */}
       <nav
         aria-label="Tools"
-        className="safe-bottom fixed inset-x-0 bottom-0 z-20 grid grid-cols-5 border-t border-border bg-bg/95 tablet:hidden"
+        className="safe-bottom fixed inset-x-0 bottom-0 z-20 grid grid-cols-5 print:hidden border-t border-border bg-bg/95 tablet:hidden"
       >
         {TOOLS.map(({ to, label, short, icon: Icon, end }) => (
           <NavLink

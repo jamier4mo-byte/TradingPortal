@@ -1,15 +1,14 @@
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { useMutation } from "@tanstack/react-query";
-import { ArrowLeft, ClipboardList, Lock, LockOpen, MoreHorizontal, Pencil, Play, Plus, Trash2, Upload } from "lucide-react";
+import { ArrowLeft, Lock, LockOpen, MoreHorizontal, Pencil, Play, Plus, Trash2, Upload } from "lucide-react";
 import { motion } from "motion/react";
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import Card from "../../components/Card.tsx";
-import { Chip, ConfirmDialog, EmptyState, ErrorState, OwnerChip, PillToggle, ReadOnlyBanner, RingGauge, SkeletonCard, SkeletonText, StatTile, useToast } from "../../components/ui/index.ts";
-import { ChartEmpty } from "../../components/ui/Illustrations.tsx";
+import { Chip, ConfirmDialog, ErrorState, OwnerChip, PillToggle, ReadOnlyBanner, RingGauge, SkeletonCard, SkeletonText, useToast } from "../../components/ui/index.ts";
 import { api } from "../../lib/api.ts";
-import { fmtPct, fmtR, type JournalSession, STAGE_LABEL, type Strategy, type TradeKind, useInstruments, useInvalidateJournal, useProfile, useSessions, useStrategy, useTrades } from "../../lib/journal.ts";
+import { type JournalSession, STAGE_LABEL, type Strategy, type TradeKind, useInstruments, useInvalidateJournal, useProfile, useSessions, useStrategy, useTrades } from "../../lib/journal.ts";
 import { dur, easeEnter, motionLevel } from "../../lib/motion.ts";
 import { BriefDrawer } from "./components/BriefDrawer.tsx";
 import { CoverageTracker } from "./components/Coverage.tsx";
@@ -20,6 +19,8 @@ import { SessionInbox } from "./components/SessionInbox.tsx";
 import { StrategyForm } from "./components/StrategyForm.tsx";
 import { StrategyProfile } from "./components/StrategyProfile.tsx";
 import { TradeList } from "./components/TradeList.tsx";
+
+const AnalyticsView = lazy(() => import("./analytics/AnalyticsView.tsx"));
 
 type Tab = "ideal" | "backtest" | "analytics";
 const TABS = [
@@ -223,7 +224,11 @@ function StrategyScreen({ strategy: s, tab, setTab }: { strategy: Strategy; tab:
             </Card>
           )
         ) : null}
-        {tab === "analytics" ? <AnalyticsPlaceholder strategy={s} /> : null}
+        {tab === "analytics" ? (
+          <Suspense fallback={<SkeletonCard />}>
+            <AnalyticsView strategy={s} />
+          </Suspense>
+        ) : null}
       </motion.div>
 
       <StrategyForm open={editing} onClose={() => setEditing(false)} strategy={s} />
@@ -368,26 +373,5 @@ function BacktestTab({ strategy: s, onLog, onImport }: { strategy: Strategy; onL
         )}
       </Card>
     </>
-  );
-}
-
-function AnalyticsPlaceholder({ strategy: s }: { strategy: Strategy }) {
-  const st = s.backtest_stats;
-  return (
-    <Card title="Analytics" subtitle="Full analytics arrive in Prompt 3. The headline numbers are live now.">
-      {st ? (
-        <div className="grid grid-cols-2 gap-2 tablet:grid-cols-4">
-          <StatTile label="Backtest trades" value={st.trades} />
-          <StatTile label="Win rate" value={fmtPct(st.win_rate)} />
-          <StatTile label="Total R" value={fmtR(st.total_r)} tone={(st.total_r ?? 0) > 0 ? "win" : (st.total_r ?? 0) < 0 ? "loss" : "neutral"} />
-          <StatTile label="Average R" value={fmtR(st.avg_r)} />
-        </div>
-      ) : (
-        <EmptyState illustration={<ChartEmpty />} title="Nothing to chart yet" text="Backtest trades feed the equity curve, distributions and heatmaps." />
-      )}
-      <p className="mt-4 flex items-center gap-2 text-label text-muted">
-        <ClipboardList aria-hidden className="size-4" /> Ideal · Backtest · Compare views, filters and the export come next.
-      </p>
-    </Card>
   );
 }
