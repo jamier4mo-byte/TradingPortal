@@ -7,13 +7,16 @@
  *                with X-TP-Cached-At so the page can say "Last updated HH:MM".
  * Never cached: anything non-GET, /api/auth/* (except /api/auth/me), /api/admin/*, /api/me/*, screenshots
  * (/api/screenshots/*: private images, served straight from the network), and every other API route.
- * On POST /api/auth/logout (or a {type:"signed-out"} message) the API cache is cleared.
+ * The API cache is cleared on every sign-in or sign-out POST, on a {type:"signed-out"} message, and whenever an
+ * allow-listed route answers 401/403. A navigation is stored as the shell only when it is HTML outside /api/.
  *
  * Push payload from the server: { title, body, url, tag, event_id, chime }. */
 
 const VERSION = "v1";
 const SHELL_CACHE = `tp-shell-${VERSION}`;
 const API_CACHE = `tp-api-${VERSION}`;
+// POSTs that change who is signed in: login, logout, passkey login, accepting an invite, resetting a password.
+const AUTH_CHANGE = /^\/api\/auth\/(login|logout|passkeys?\/[a-z-]*login[a-z-]*|invite\/|reset\/)/;
 const API_TIMEOUT_MS = 4000;
 const API_MAX_ENTRIES = 40;
 const CACHED_AT = "X-TP-Cached-At";
@@ -105,7 +108,9 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
 
-  if (req.method === "POST" && url.pathname === "/api/auth/logout") {
+  // Any change of who is signed in empties the API cache, so one person's Hub is never served to the next:
+  // sign-out, and every sign-in (password, passkey or invite) on this device.
+  if (req.method === "POST" && AUTH_CHANGE.test(url.pathname)) {
     event.waitUntil(caches.delete(API_CACHE));
     return; // the request itself goes to the network untouched
   }
@@ -154,9 +159,13 @@ async function shellStaleWhileRevalidate(req) {
 
 /** Navigations: network first so a deploy shows at once; the cached index.html when there's no network. */
 async function navigation(req) {
+  const url = new URL(req.url);
   try {
     const res = await fetch(req);
-    if (res.ok) {
+    // Only the SPA shell is ever stored as /index.html: an HTML answer for a non-API path. A navigation to
+    // /api/... (a JSON 404, an export download) must never become the app shell.
+    const isHtml = (res.headers.get("Content-Type") || "").includes("text/html");
+    if (res.ok && isHtml && !url.pathname.startsWith("/api/")) {
       const cache = await caches.open(SHELL_CACHE);
       await cache.put("/index.html", res.clone());
     }
@@ -176,6 +185,8 @@ async function apiNetworkFirst(event, req) {
   const networkReq = new Request(req, { signal: controller.signal });
   const network = fetch(networkReq).then(async (res) => {
     if (res.ok) await storeApi(cache, req, res.clone());
+    // The session ended or changed: nothing cached for the old session may be served again.
+    else if (res.status === 401 || res.status === 403) await caches.delete(API_CACHE);
     return res;
   });
   try {
