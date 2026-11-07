@@ -9,7 +9,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import { CalendarEmpty } from "../../components/ui/Illustrations.tsx";
-import { ConfirmDialog, EmptyState, ErrorState, OwnerDot, PillToggle, RefreshFailed, Skeleton, ToggleChip, useToast } from "../../components/ui/index.ts";
+import { ConfirmDialog, type DrawerOrigin, EmptyState, ErrorState, originOf, OwnerDot, PillToggle, RefreshFailed, Skeleton, Stagger, ToggleChip, useToast } from "../../components/ui/index.ts";
 import { ApiError, type PublicUser } from "../../lib/api.ts";
 import { useAuth } from "../../lib/auth.tsx";
 import {
@@ -65,6 +65,8 @@ function wallOf(d: Date): string {
 interface DrawerState {
   open: boolean;
   occurrence: Occurrence | null;
+  /** Where the tapped row sits, so the drawer grows out of it. */
+  origin?: DrawerOrigin;
   prefill: Prefill | null;
 }
 
@@ -137,7 +139,7 @@ export default function CalendarPage() {
   }, [q.data, drawer.open, drawer.occurrence]);
 
   const openNew = (prefill: Prefill) => setDrawer({ open: true, occurrence: null, prefill });
-  const openOcc = (occ: Occurrence) => setDrawer({ open: true, occurrence: occ, prefill: null });
+  const openOcc = (occ: Occurrence, origin?: DrawerOrigin) => setDrawer({ open: true, occurrence: occ, prefill: null, origin });
 
   const toggleDone = (occ: Occurrence, done: boolean) => {
     const vars = { task_id: occ.task_id, occurrence_date: occ.occurrence_date };
@@ -238,7 +240,7 @@ export default function CalendarPage() {
   };
   const onEventClick = (info: EventClickArg) => {
     const occ = info.event.extendedProps.occ as Occurrence | undefined;
-    if (occ) openOcc(occ);
+    if (occ) openOcc(occ, originOf(info.el));
   };
   const onEventDrop = (info: EventDropArg) => {
     const occ = info.event.extendedProps.occ as Occurrence | undefined;
@@ -297,7 +299,7 @@ export default function CalendarPage() {
   const me: PublicUser | null = user ? { id: user.id, display_name: user.display_name, label: user.label, status: user.status, colour_index: user.colour_index } : null;
 
   return (
-    <div className="flex flex-col gap-4 laptop:gap-6">
+    <Stagger screenKey="calendar" className="flex flex-col gap-4 laptop:gap-6">
       <header className="flex flex-wrap items-center gap-3">
         <div className="min-w-0">
           <h1 className="text-heading font-semibold">Calendar</h1>
@@ -429,6 +431,7 @@ export default function CalendarPage() {
         onOpenChange={(open) => setDrawer((d) => ({ ...d, open }))}
         occurrence={drawer.occurrence}
         prefill={drawer.prefill}
+        origin={drawer.origin}
         seriesRule={seriesQ.data?.rrule ?? null}
         me={me}
         online={online}
@@ -456,6 +459,6 @@ export default function CalendarPage() {
           <PillToggle<Mode> value={dropScope} onChange={setDropScope} options={SCOPES} label="Apply the move to" size="sm" />
         </div>
       </ConfirmDialog>
-    </div>
+    </Stagger>
   );
 }

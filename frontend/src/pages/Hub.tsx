@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import Card from "../components/Card.tsx";
 import { LaunchOverlay } from "../components/launch/LaunchOverlay.tsx";
 import { useLaunch } from "../components/launch/useLaunch.ts";
-import { SkeletonText } from "../components/ui/index.ts";
+import { SkeletonText, Stagger } from "../components/ui/index.ts";
 import { useAuth } from "../lib/auth.tsx";
 import { INSTALL_DONE_KEY, isStandalone, queryState, remembered, useHub } from "../lib/hub.ts";
 import { useSummary } from "../lib/journal.ts";
@@ -62,7 +62,8 @@ export default function Hub() {
 
   return (
     <>
-      <div className="grid grid-cols-4 gap-4 tablet:grid-cols-8 laptop:grid-cols-12 laptop:gap-6">
+      {/* First load of the Hub this session: the sections fade and rise in 40 ms apart; revisits render at once. */}
+      <Stagger screenKey="hub" className="grid grid-cols-4 gap-4 tablet:grid-cols-8 laptop:grid-cols-12 laptop:gap-6">
         <Hero firstName={firstName} welcomeBack={hub.data?.welcome_back ?? false} className="col-span-full desktop:col-span-8" />
 
         <TodaysNews className="col-span-full desktop:col-span-8" />
@@ -130,7 +131,7 @@ export default function Hub() {
             <WeekPair />
           </LazyMount>
         ) : null}
-      </div>
+      </Stagger>
 
       <LaunchOverlay tool={tool} />
     </>

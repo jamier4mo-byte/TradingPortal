@@ -2,6 +2,9 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page } from "@playwright/test";
 
 export async function expectNoAxeViolations(page: Page) {
+  // A first-load stagger (components/ui/Stagger.tsx) fades cards in over about half a second; axe would read
+  // half-faded text as a contrast failure, so let any entrance finish first.
+  await expect(page.locator('[data-stagger="entering"]')).toHaveCount(0);
   // @axe-core/playwright resolves its own playwright-core copy; the Page shapes match at runtime.
   type AxePage = ConstructorParameters<typeof AxeBuilder>[0]["page"];
   const results = await new AxeBuilder({ page: page as unknown as AxePage }).withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze();

@@ -3,7 +3,7 @@ import { type PointerEvent, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { CalendarEmpty } from "../../components/ui/Illustrations.tsx";
-import { EmptyState, OwnerDot } from "../../components/ui/index.ts";
+import { type DrawerOrigin, EmptyState, originOf, OwnerDot } from "../../components/ui/index.ts";
 import { CATEGORIES, datesBetween, groupByDay, type Occurrence, ukClockOf, ukDateOf } from "../../lib/calendar.ts";
 import { dayLabel, type NewsEvent } from "../../lib/news.ts";
 
@@ -22,7 +22,7 @@ export function AgendaRow({
   online,
 }: {
   occ: Occurrence;
-  onOpen: (o: Occurrence) => void;
+  onOpen: (o: Occurrence, origin?: DrawerOrigin) => void;
   onToggleDone: (o: Occurrence, done: boolean) => void;
   online: boolean;
 }) {
@@ -71,7 +71,7 @@ export function AgendaRow({
         onPointerUp={onUp}
         onPointerCancel={onUp}
       >
-        <button type="button" className="flex min-h-11 min-w-0 flex-1 items-center gap-3 text-left" onClick={() => onOpen(occ)} aria-label={label}>
+        <button type="button" className="flex min-h-11 min-w-0 flex-1 items-center gap-3 text-left" onClick={(e) => onOpen(occ, originOf(e.currentTarget))} aria-label={label}>
           <OwnerDot colourIndex={occ.owner.colour_index} className="size-2.5 shrink-0" />
           <span className="num w-[5.5rem] shrink-0 text-label text-muted">{time}</span>
           <span className="min-w-0 flex-1">
@@ -149,7 +149,7 @@ export function Agenda({
   occurrences: Occurrence[];
   news: NewsEvent[];
   today: string;
-  onOpen: (o: Occurrence) => void;
+  onOpen: (o: Occurrence, origin?: DrawerOrigin) => void;
   onToggleDone: (o: Occurrence, done: boolean) => void;
   onNew: (date: string) => void;
   online: boolean;

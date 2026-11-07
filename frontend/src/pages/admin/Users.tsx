@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Copy, Download, KeyRound, UserPlus } from "lucide-react";
+import { Copy, Download, KeyRound, UserPlus } from "lucide-react";
 import { useState } from "react";
 
 import Card from "../../components/Card.tsx";
 import { PeopleEmpty } from "../../components/ui/Illustrations.tsx";
 import { ConfirmDialog, Drawer, EmptyState, ErrorState, OwnerChip, PillToggle, SkeletonText, useToast } from "../../components/ui/index.ts";
+import { MorphIcon } from "../../components/ui/MorphIcon.tsx";
 import { api, type Invite, type ResetLink, type Role, type User } from "../../lib/api.ts";
 import { useAuth } from "../../lib/auth.tsx";
 import { relativeTime, shortDateTime } from "../../lib/format.ts";
@@ -196,7 +197,7 @@ function InviteDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (o:
               setCopied(await copy(invite.url));
             }}
           >
-            {copied ? <Check aria-hidden className="size-4" /> : <Copy aria-hidden className="size-4" />}
+            <MorphIcon done={copied} Icon={Copy} />
             {copied ? "Copied" : "Copy link"}
           </button>
           <button type="button" className="btn btn-ghost" onClick={() => setInvite(null)}>

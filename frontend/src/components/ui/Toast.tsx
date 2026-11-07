@@ -2,6 +2,8 @@ import * as RadixToast from "@radix-ui/react-toast";
 import { X } from "lucide-react";
 import { createContext, type ReactNode, useCallback, useContext, useMemo, useState } from "react";
 
+import { motionLevel } from "../../lib/motion.ts";
+
 interface ToastItem {
   id: number;
   title: string;
@@ -22,9 +24,11 @@ export function useToast(): ToastApi {
   return ctx;
 }
 
-/** Quiet toasts from the bottom corner, with undo where it makes sense. */
+/** Quiet toasts from the bottom corner (above the tab bar on the phone), with undo where it makes sense.
+ * Full: slide up 16px over --dur-standard, fade out over --dur-quick. Reduced: fades. Off: no animation classes. */
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<ToastItem[]>([]);
+  const animated = motionLevel() !== "off";
   const toast = useCallback((t: Omit<ToastItem, "id">) => {
     setItems((list) => [...list.slice(-2), { ...t, id: Date.now() + Math.random() }]);
   }, []);
@@ -33,14 +37,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   return (
     <ToastContext.Provider value={api}>
-      <RadixToast.Provider swipeDirection="down" >
+      <RadixToast.Provider swipeDirection="down">
         {children}
         {items.map((item) => (
           <RadixToast.Root
             key={item.id}
             duration={item.undo ? 8000 : 5000}
             onOpenChange={(open) => !open && dismiss(item.id)}
-            className="card flex items-start gap-3 p-3 shadow-none data-[state=open]:animate-[page-enter_var(--dur-standard)_var(--ease-in-enter)] data-[state=closed]:animate-[page-leave_var(--dur-quick)_var(--ease-out-leave)]"
+            className={`card flex items-start gap-3 p-3 shadow-none ${animated ? "data-[state=open]:anim-toast-in data-[state=closed]:anim-toast-out" : ""}`}
           >
             <span
               aria-hidden

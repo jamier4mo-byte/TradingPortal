@@ -4,6 +4,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import { ErrorState, Field, SkeletonText, TextInput, useToast } from "../../components/ui/index.ts";
+import { Checkbox } from "../../components/ui/Checkbox.tsx";
 import { imageFiles, prepareImage } from "../../lib/images.ts";
 import { fmtR, fmtUkDateTime, isCompleted, LABELLED_SLOTS, missingForCompletion, type Slot, SLOT_LABEL, slotShot, type Trade, type TradePatch, uploadScreenshot, useSession, useSessionTrades, useStrategy, useUpdateTrade } from "../../lib/journal.ts";
 import { OutcomeChip, SideChip } from "./components/OutcomeChip.tsx";
@@ -314,13 +315,7 @@ function Stepper({ strategyId, trades, canEdit }: { strategyId: number; trades: 
                 const v = rulesFollowed[r.key];
                 return (
                   <label key={r.key} className="flex min-h-11 cursor-pointer items-center gap-3 rounded-panel px-2 hover:bg-surface-2">
-                    <input
-                      type="checkbox"
-                      className="size-5 accent-accent"
-                      checked={v === true}
-                      disabled={!canEdit}
-                      onChange={(e) => patch({ rules_followed: { ...rulesFollowed, [r.key]: e.target.checked } })}
-                    />
+                    <Checkbox checked={v === true} disabled={!canEdit} onChange={(checked) => patch({ rules_followed: { ...rulesFollowed, [r.key]: checked } })} />
                     <span className="text-body">{r.text}</span>
                   </label>
                 );

@@ -7,6 +7,8 @@ import { Chip, ConfirmDialog, ErrorState, OwnerChip, ReadOnlyBanner, SkeletonCar
 import { api } from "../../lib/api.ts";
 import { fmtDuration, fmtPnl, fmtPrice, fmtR, fmtUkDateTime, isCompleted, LABELLED_SLOTS, missingForCompletion, SLOT_LABEL, type Trade, useInvalidateJournal, useStrategy, useTrade, useUpdateTrade } from "../../lib/journal.ts";
 import { useState } from "react";
+
+import { vtName } from "../../lib/vt.ts";
 import { CompleteDialog } from "./components/CompleteDialog.tsx";
 import { Gallery } from "./components/Gallery.tsx";
 import { OutcomeChip, SideChip } from "./components/OutcomeChip.tsx";
@@ -63,7 +65,9 @@ function Detail({ trade: t, templateFields, rules }: { trade: Trade; templateFie
           <ArrowLeft aria-hidden className="size-4" /> Back to the strategy
         </Link>
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="font-mono text-heading font-semibold">{current.instrument}</h1>
+          <h1 className="font-mono text-heading font-semibold" style={{ viewTransitionName: vtName("trade", current.id) }}>
+            {current.instrument}
+          </h1>
           <SideChip side={current.side} />
           {current.kind === "backtest" ? <OutcomeChip outcome={current.outcome} /> : <Chip>{current.kind === "missed" ? "Missed setup" : "Ideal trade"}</Chip>}
           {isCompleted(current) ? (

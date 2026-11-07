@@ -10,8 +10,11 @@ export async function signIn(page: Page, user: { email: string; password: string
   await page.getByLabel("Email").fill(user.email);
   await page.getByLabel("Password", { exact: true }).fill(user.password);
   await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page.getByRole("heading", { level: 1 }).first()).toBeVisible();
   await page.waitForURL((u) => !u.pathname.startsWith("/login"));
+  // The shell is mounted (and its keyboard shortcuts attached) once the account menu is on screen; the URL
+  // changes a render earlier, which is too soon for a Cmd+K or a click.
+  await expect(page.getByRole("button", { name: "Account menu" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 }).first()).toBeVisible();
 }
 
 /** Calls the API with the browser context's cookies and the CSRF double-submit header. */

@@ -1,7 +1,7 @@
 import { Check, Repeat, Trash2, Undo2 } from "lucide-react";
 import { type FormEvent, useEffect, useState } from "react";
 
-import { ConfirmDialog, Drawer, Field, OwnerChip, PillToggle, ReadOnlyBanner, Switch, TextInput, useToast } from "../../components/ui/index.ts";
+import { ConfirmDialog, Drawer, type DrawerOrigin, Field, OwnerChip, PillToggle, ReadOnlyBanner, Switch, TextInput, useToast } from "../../components/ui/index.ts";
 import { ApiError, type PublicUser } from "../../lib/api.ts";
 import {
   CATEGORIES,
@@ -127,11 +127,13 @@ export function TaskDrawer({
   seriesRule,
   me,
   online,
+  origin,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   occurrence: Occurrence | null;
   prefill: Prefill | null;
+  origin?: DrawerOrigin;
   /** The series' RRULE for the occurrence being edited (from GET /tasks/{id}); null while loading. */
   seriesRule: string | null;
   me: PublicUser | null;
@@ -226,6 +228,7 @@ export function TaskDrawer({
       onOpenChange={onOpenChange}
       title={title}
       description={description}
+      origin={origin}
       footer={
         canEdit ? (
           <div className="flex flex-wrap items-center gap-2">

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { useAuth } from "../lib/auth.tsx";
+import { motionLevel } from "../lib/motion.ts";
 
 interface Command {
   label: string;
@@ -55,14 +56,18 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
     onOpenChange(false);
     navigate(to);
   };
+  // Fade-and-scale open (.96 → 1) and fade close (Micro-interactions → Command palette). Off: nothing.
+  const animated = motionLevel() !== "off";
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-40 bg-bg/70" />
+        <Dialog.Overlay className={`fixed inset-0 z-40 bg-bg/70 ${animated ? "data-[state=open]:anim-fade-in data-[state=closed]:anim-fade-out" : ""}`} />
         <Dialog.Content
           aria-describedby={undefined}
-          className="card fixed left-1/2 top-[12dvh] z-50 w-[calc(100%-32px)] max-w-lg -translate-x-1/2 overflow-hidden p-0 data-[state=open]:animate-[page-enter_var(--dur-standard)_var(--ease-in-enter)]"
+          className={`card fixed left-1/2 top-[12dvh] z-50 w-[calc(100%-32px)] max-w-lg -translate-x-1/2 overflow-hidden p-0 ${
+            animated ? "data-[state=open]:anim-palette-in data-[state=closed]:anim-palette-out" : ""
+          }`}
           onKeyDown={(e) => {
             if (e.key === "ArrowDown") {
               e.preventDefault();

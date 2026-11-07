@@ -6,9 +6,20 @@ import { dur, easeEnter, motionLevel } from "../../lib/motion.ts";
 /** A headline number that counts up on first view and rolls to the new value on a filter change.
  * Off under Reduced/Off motion. The span has no React children: this component owns its text, so the
  * text is always the formatted value; screen readers read the final number from a hidden twin. */
-export function CountUp({ value, format, className = "" }: { value: number | null | undefined; format: (v: number | null) => string; className?: string }) {
+export function CountUp({
+  value,
+  format,
+  className = "",
+  initial = true,
+}: {
+  value: number | null | undefined;
+  format: (v: number | null) => string;
+  className?: string;
+  /** false: write the first value without counting (a screen revisited this session); later changes still roll. */
+  initial?: boolean;
+}) {
   const ref = useRef<HTMLSpanElement>(null);
-  const last = useRef<number | null>(null);
+  const last = useRef<number | null>(initial ? null : (value ?? null));
   const animating = useRef(false);
   const formatRef = useRef(format);
   formatRef.current = format;

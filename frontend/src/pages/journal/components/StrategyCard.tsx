@@ -1,12 +1,16 @@
 import { Link } from "react-router-dom";
 
 import { Chip, OwnerChip } from "../../../components/ui/index.ts";
+import { CountUp } from "../../../components/ui/CountUp.tsx";
 import { relativeTime } from "../../../lib/format.ts";
 import { fmtPct, fmtR, fmtRange, STAGE_LABEL, type Strategy } from "../../../lib/journal.ts";
+import { vtName } from "../../../lib/vt.ts";
 import { CoverageBar } from "./Coverage.tsx";
 import { Sparkline } from "./Sparkline.tsx";
 
-export function StrategyCard({ strategy }: { strategy: Strategy }) {
+/** `countUp`: the headline number counts up (first load of the grid this session); otherwise it just shows.
+ * The title carries the shared-element name that the strategy page's heading picks up (one card per id). */
+export function StrategyCard({ strategy, countUp = false }: { strategy: Strategy; countUp?: boolean }) {
   const s = strategy;
   const stats = s.backtest_stats;
   return (
@@ -17,7 +21,9 @@ export function StrategyCard({ strategy }: { strategy: Strategy }) {
     >
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
-          <h2 className="line-clamp-2 text-title font-semibold">{s.name}</h2>
+          <h2 className="line-clamp-2 text-title font-semibold" style={{ viewTransitionName: vtName("strategy", s.id) }}>
+            {s.name}
+          </h2>
           <p className="mt-0.5 truncate text-label text-muted">
             {[...s.instruments, ...s.timeframes].join(" · ") || "No instruments yet"}
           </p>
@@ -29,7 +35,9 @@ export function StrategyCard({ strategy }: { strategy: Strategy }) {
 
       <div className="mt-4 flex items-end justify-between gap-3">
         <div>
-          <p className="num text-heading font-semibold leading-none">{s.ideal_count}</p>
+          <p className="num text-heading font-semibold leading-none">
+            <CountUp value={s.ideal_count} format={(v) => String(Math.round(v ?? 0))} initial={countUp} />
+          </p>
           <p className="num mt-1 text-label text-muted">ideal {s.ideal_count === 1 ? "trade" : "trades"} · {fmtRange(s.range_start, s.range_end)}</p>
         </div>
         <Sparkline values={s.sparkline} width={120} height={36} />

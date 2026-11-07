@@ -86,6 +86,7 @@
   --dur-emphasis: 500ms;        /* charts drawing in, unlocks (400–600ms) */
   --dur-flash: 600ms;           /* price tick flash fading out (Live data in motion) */
   --dur-launch: 600ms;          /* launch loader minimum on a tool's first open each day (F14; proposed) */
+  --dur-intro: 1000ms;          /* portal intro after sign-in: logo draws in as a price line, once per UK day (proposed) */
   --ease-in-enter: cubic-bezier(0.16, 1, 0.3, 1);   /* ease-out: things entering */
   --ease-out-leave: cubic-bezier(0.7, 0, 0.84, 0);  /* ease-in: things leaving */
   --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);  /* toggles, dragged items */
@@ -173,7 +174,8 @@ body {
     animation-duration: 1ms !important;
     transition-duration: 1ms !important;
   }
-  :root:not([data-motion="full"]) ::view-transition-new(page) {
+  /* View-transition pseudos hang off the root itself, so no descendant combinator here. */
+  :root:not([data-motion="full"])::view-transition-new(page) {
     animation-name: page-enter-fade;
   }
 }
@@ -229,25 +231,113 @@ body {
 /* Reduced: digits don't roll; the number simply changes (the price flash fades as usual). */
 :root[data-motion="reduced"] .odo-strip { transition: none; }
 
-/* Route change: content fades with a slight rise while the shell stays still. */
+/* Route change: content fades with a slight rise while the shell stays still. Going back (PageTransition
+   sets <html data-nav="back"> for the length of the transition) reverses the rise, so the old page sinks
+   and the new one settles down from above: you feel which way you moved. Shared elements (view-transition-
+   name set by vtName() on both ends) morph by default and need no rule of their own. */
 ::view-transition-old(page) {
   animation: var(--dur-standard) var(--ease-out-leave) both page-leave;
 }
 ::view-transition-new(page) {
   animation: var(--dur-standard) var(--ease-in-enter) both page-enter;
 }
+:root[data-nav="back"]::view-transition-old(page) { animation-name: page-leave-back; }
+:root[data-nav="back"]::view-transition-new(page) { animation-name: page-enter-back; }
 @keyframes page-enter { from { opacity: 0; transform: translateY(10px); } }
 @keyframes page-leave { to { opacity: 0; } }
-:root[data-motion="reduced"] ::view-transition-new(page) { animation-name: page-enter-fade; }
+@keyframes page-enter-back { from { opacity: 0; transform: translateY(-10px); } }
+@keyframes page-leave-back { to { opacity: 0; transform: translateY(6px); } }
+:root[data-motion="reduced"]::view-transition-new(page) { animation-name: page-enter-fade; }
+:root[data-motion="reduced"]::view-transition-old(page) { animation-name: page-leave; }
 /* The same for any element animating with page-enter (menus, drawers, toasts): a plain fade in Reduced. */
 :root[data-motion="reduced"] [class*="animate-[page-enter_"] { animation-name: page-enter-fade !important; }
 @keyframes page-enter-fade { from { opacity: 0; } }
+
+/* Overlays (Radix keeps the element mounted while a data-[state=closed] animation runs, so these give
+   drawers, dialogs, the palette and toasts a real leave as well as an enter). Transform and opacity only.
+   --dur-standard in, --dur-quick out; ease-out entering, ease-in leaving. Reduced: every one is a fade. */
+@keyframes drawer-in {
+  /* Default: slide in from the right (24px). A drawer opened from a list row sets --origin-dx/--origin-dy to
+     the row's offset from the panel's centre, so it grows out of the thing you tapped (calendar tasks). */
+  from { opacity: 0; transform: translate(var(--origin-dx, 24px), var(--origin-dy, 0px)) scale(var(--origin-scale, 1)); }
+}
+@keyframes sheet-in {
+  from { opacity: 0; transform: translate(0px, var(--origin-dy, 24px)) scale(var(--origin-scale, 1)); }
+}
+@keyframes panel-out { to { opacity: 0; transform: translate(var(--leave-dx, 12px), var(--leave-dy, 0px)); } }
+@keyframes dialog-in { from { opacity: 0; transform: translate(-50%, -50%) scale(0.96); } to { transform: translate(-50%, -50%) scale(1); } }
+@keyframes dialog-out { from { transform: translate(-50%, -50%); } to { opacity: 0; transform: translate(-50%, -50%); } }
+@keyframes palette-in { from { opacity: 0; transform: translateX(-50%) scale(0.96); } to { transform: translateX(-50%) scale(1); } }
+@keyframes palette-out { from { transform: translateX(-50%); } to { opacity: 0; transform: translateX(-50%); } }
+@keyframes toast-in { from { opacity: 0; transform: translateY(16px); } }
+@keyframes toast-out { to { opacity: 0; } }
+@keyframes fade-out { to { opacity: 0; } }
+/* @utility, not @layer components, so Radix state variants (data-[state=open]:anim-…) are generated. */
+@utility anim-drawer-in { animation: drawer-in var(--dur-standard) var(--ease-in-enter) both; }
+@utility anim-sheet-in { animation: sheet-in var(--dur-standard) var(--ease-in-enter) both; --leave-dx: 0px; --leave-dy: 12px; }
+@utility anim-panel-out { animation: panel-out var(--dur-quick) var(--ease-out-leave) both; }
+@utility anim-dialog-in { animation: dialog-in var(--dur-standard) var(--ease-in-enter) both; }
+@utility anim-dialog-out { animation: dialog-out var(--dur-quick) var(--ease-out-leave) both; }
+@utility anim-palette-in { animation: palette-in var(--dur-standard) var(--ease-in-enter) both; }
+@utility anim-palette-out { animation: palette-out var(--dur-quick) var(--ease-out-leave) both; }
+@utility anim-toast-in { animation: toast-in var(--dur-standard) var(--ease-in-enter) both; }
+@utility anim-toast-out { animation: toast-out var(--dur-quick) var(--ease-out-leave) both; }
+@utility anim-fade-in { animation: page-enter-fade var(--dur-standard) var(--ease-in-enter) both; }
+@utility anim-fade-out { animation: fade-out var(--dur-quick) var(--ease-out-leave) both; }
+/* Reduced motion: the same timings, no movement. The in-app setting and the OS setting (when the user has
+   not chosen Full) both land here. Attribute selectors because the classes carry Radix state variants
+   (data-[state=open]:anim-drawer-in); unlayered, so they win over the utilities layer. */
+:root[data-motion="reduced"] [class*="anim-drawer-in"][data-state="open"],
+:root[data-motion="reduced"] [class*="anim-sheet-in"][data-state="open"],
+:root[data-motion="reduced"] [class*="anim-toast-in"][data-state="open"] { animation-name: page-enter-fade; }
+:root[data-motion="reduced"] [class*="anim-dialog-in"][data-state="open"] { animation-name: dialog-out; animation-direction: reverse; }
+:root[data-motion="reduced"] [class*="anim-palette-in"][data-state="open"] { animation-name: palette-out; animation-direction: reverse; }
+:root[data-motion="reduced"] [class*="anim-panel-out"][data-state="closed"] { animation-name: fade-out; }
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-motion]) [class*="anim-drawer-in"][data-state="open"],
+  :root:not([data-motion]) [class*="anim-sheet-in"][data-state="open"],
+  :root:not([data-motion]) [class*="anim-toast-in"][data-state="open"] { animation-name: page-enter-fade; }
+  :root:not([data-motion]) [class*="anim-dialog-in"][data-state="open"] { animation-name: dialog-out; animation-direction: reverse; }
+  :root:not([data-motion]) [class*="anim-palette-in"][data-state="open"] { animation-name: palette-out; animation-direction: reverse; }
+  :root:not([data-motion]) [class*="anim-panel-out"][data-state="closed"] { animation-name: fade-out; }
+  :root:not([data-motion])::view-transition-new(page) { animation-name: page-enter-fade; }
+  :root:not([data-motion])::view-transition-old(page) { animation-name: page-leave; }
+}
+
+/* Backtest unlock (Engaging touches): a one-off accent ring on the tab, opacity only, over --dur-emphasis.
+   Celebrates six months of process, never profit. */
+@keyframes unlock-ring { 0% { opacity: 0; } 30% { opacity: 1; } 100% { opacity: 0; } }
+@layer components {
+  .unlock-ring { animation: unlock-ring var(--dur-emphasis) var(--ease-in-enter) 2 both; }
+}
+
+/* A hidden tab (PageTransition/AppShell set <html data-hidden>): looping decoration pauses. */
+:root[data-hidden] .pulse,
+:root[data-hidden] .skeleton,
+:root[data-hidden] .unlock-ring { animation-play-state: paused; }
 
 /* Component classes live in the components layer so Tailwind utilities can still override them. */
 @layer components {
 /* Safe areas on phones with a notch or home bar. */
 .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
 .safe-top { padding-top: env(safe-area-inset-top); }
+/* Side gutters that also clear the notch / Dynamic Island in landscape (installed app, viewport-fit=cover). */
+.safe-x {
+  padding-left: max(var(--gutter-phone), env(safe-area-inset-left));
+  padding-right: max(var(--gutter-phone), env(safe-area-inset-right));
+}
+@media (width >= theme(--breakpoint-tablet)) {
+  .safe-x {
+    padding-left: max(var(--gutter-tablet), env(safe-area-inset-left));
+    padding-right: max(var(--gutter-tablet), env(safe-area-inset-right));
+  }
+}
+@media (width >= theme(--breakpoint-desktop)) {
+  .safe-x {
+    padding-left: max(var(--gutter-desktop), env(safe-area-inset-left));
+    padding-right: max(var(--gutter-desktop), env(safe-area-inset-right));
+  }
+}
 
 /* Form controls share one look. */
 .input {

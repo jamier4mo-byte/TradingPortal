@@ -4,24 +4,11 @@ import Card from "../../components/Card.tsx";
 import type { OwnerSplit } from "../../lib/analytics.ts";
 import { OwnersCard } from "../journal/analytics/BacktestViews.tsx";
 import { ChartEmpty, KeyEmpty, ListEmpty, PeopleEmpty } from "../../components/ui/Illustrations.tsx";
-import {
-  Chip,
-  ConfirmDialog,
-  Drawer,
-  EmptyState,
-  ErrorState,
-  OfflineBanner,
-  OwnerChip,
-  PillToggle,
-  ReadOnlyBanner,
-  RingGauge,
-  Skeleton,
-  SkeletonCard,
-  SkeletonText,
-  StatTile,
-  useToast,
-  ViewScopeToggle,
-} from "../../components/ui/index.ts";
+import { Copy } from "lucide-react";
+
+import { Chip, ConfirmDialog, Drawer, EmptyState, ErrorState, OfflineBanner, OwnerChip, PillToggle, ReadOnlyBanner, RingGauge, Skeleton, SkeletonCard, SkeletonText, StatTile, useToast, ViewScopeToggle } from "../../components/ui/index.ts";
+import { Checkbox } from "../../components/ui/Checkbox.tsx";
+import { MorphIcon } from "../../components/ui/MorphIcon.tsx";
 
 /** Hidden gallery of every shared component, in every state. Used by e2e and the design reviewer. */
 export default function Components() {
@@ -29,6 +16,8 @@ export default function Components() {
   const [pill, setPill] = useState<"ideal" | "backtest" | "compare">("ideal");
   const [drawer, setDrawer] = useState(false);
   const [confirm, setConfirm] = useState(false);
+  const [ticked, setTicked] = useState(true);
+  const [copied, setCopied] = useState(false);
 
   return (
     <div className="grid grid-cols-4 gap-4 tablet:grid-cols-8 laptop:grid-cols-12 laptop:gap-6">
@@ -98,6 +87,29 @@ export default function Components() {
             ]}
           />
           <ViewScopeToggle />
+        </div>
+      </Card>
+
+      <Card title="Checkbox and morphing icon" subtitle="Ticks draw themselves in; copy icons become a tick" className="col-span-full laptop:col-span-6">
+        <div className="flex flex-wrap items-center gap-6">
+          <label className="flex min-h-11 cursor-pointer items-center gap-3">
+            <Checkbox checked={ticked} onChange={setTicked} />
+            <span className="text-body">Rule followed</span>
+          </label>
+          <label className="flex min-h-11 items-center gap-3">
+            <Checkbox checked disabled onChange={() => undefined} />
+            <span className="text-body text-muted">Read-only</span>
+          </label>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => {
+              setCopied(true);
+              window.setTimeout(() => setCopied(false), 1500);
+            }}
+          >
+            <MorphIcon done={copied} Icon={Copy} /> {copied ? "Copied" : "Copy"}
+          </button>
         </div>
       </Card>
 

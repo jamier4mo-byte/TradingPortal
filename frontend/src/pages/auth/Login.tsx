@@ -7,6 +7,7 @@ import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { Field, TextInput } from "../../components/ui/index.ts";
 import { api, ApiError, type User } from "../../lib/api.ts";
 import { useAuth } from "../../lib/auth.tsx";
+import { markIntroPending } from "../../lib/intro.ts";
 import { AuthFrame } from "./AuthFrame.tsx";
 
 export default function Login() {
@@ -25,6 +26,9 @@ export default function Login() {
   if (!loading && user) return <Navigate to={from} replace />;
 
   const finish = (u: User) => {
+    // The portal intro plays once per UK day, only right after a sign-in; prefetch its chunk so it starts at once.
+    markIntroPending();
+    void import("../../components/PortalIntro.tsx");
     qc.setQueryData(["me"], u);
     navigate(from, { replace: true });
   };

@@ -2,14 +2,16 @@ import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { useMutation } from "@tanstack/react-query";
 import { ArrowLeft, Lock, LockOpen, MoreHorizontal, Pencil, Play, Plus, Trash2, Upload } from "lucide-react";
 import { motion } from "motion/react";
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import Card from "../../components/Card.tsx";
 import { Chip, ConfirmDialog, ErrorState, OwnerChip, PillToggle, ReadOnlyBanner, RingGauge, SkeletonCard, SkeletonText, useToast } from "../../components/ui/index.ts";
 import { api } from "../../lib/api.ts";
 import { type JournalSession, STAGE_LABEL, type Strategy, type TradeKind, useInstruments, useInvalidateJournal, useProfile, useSessions, useStrategy, useTrades } from "../../lib/journal.ts";
+import { remember, remembered } from "../../lib/hub.ts";
 import { dur, easeEnter, motionLevel } from "../../lib/motion.ts";
+import { vtName } from "../../lib/vt.ts";
 import { BriefDrawer } from "./components/BriefDrawer.tsx";
 import { CoverageTracker } from "./components/Coverage.tsx";
 import { ImportDrawer } from "./components/ImportDrawer.tsx";
@@ -117,6 +119,26 @@ function StrategyScreen({ strategy: s, tab, setTab }: { strategy: Strategy; tab:
   const unlocked = s.coverage.unlocked || s.backtest_opened_early;
   const latestRecap = recap ?? null;
 
+  // Backtest unlock moment (Engaging touches): when coverage reaches six months after an import or a log,
+  // or "Open early" succeeds, the lock opens, the Backtest tab lights up once and a toast confirms it.
+  // Process, not profit. Fires once per strategy per device; the previous value comes from the last render
+  // of the cached strategy, so a page that opens already unlocked stays quiet.
+  const [celebrate, setCelebrate] = useState(false);
+  const wasUnlocked = useRef(unlocked);
+  useEffect(() => {
+    const was = wasUnlocked.current;
+    wasUnlocked.current = unlocked;
+    if (was || !unlocked) return;
+    const key = `tp.unlocked.${s.id}`;
+    if (remembered(key)) return;
+    remember(key);
+    if (s.coverage.unlocked) toast({ title: "Backtest unlocked: six months of winners", text: "The strategy profile is built from them. The Backtest tab is open." });
+    if (motionLevel() === "off") return;
+    setCelebrate(true);
+    const timer = window.setTimeout(() => setCelebrate(false), (dur.emphasis() * 2 + 0.3) * 1000);
+    return () => window.clearTimeout(timer);
+  }, [unlocked, s.id, s.coverage.unlocked, toast]);
+
   return (
     <div className="flex flex-col gap-4 laptop:gap-6">
       <header className="flex flex-col gap-3">
@@ -125,7 +147,9 @@ function StrategyScreen({ strategy: s, tab, setTab }: { strategy: Strategy; tab:
         </Link>
         <div className="flex flex-wrap items-start gap-3">
           <div className="min-w-0 basis-full laptop:flex-1 laptop:basis-0">
-            <h1 className="text-heading font-semibold">{s.name}</h1>
+            <h1 className="text-heading font-semibold" style={{ viewTransitionName: vtName("strategy", s.id) }}>
+              {s.name}
+            </h1>
             <div className="mt-1.5 flex flex-wrap items-center gap-2">
               <OwnerChip name={s.owner.display_name} colourIndex={s.owner.colour_index} deactivated={s.owner.status === "deactivated"} />
               <Chip dot dotClass={s.stage === "ideal" ? "bg-muted" : "bg-accent"}>
@@ -189,7 +213,7 @@ function StrategyScreen({ strategy: s, tab, setTab }: { strategy: Strategy; tab:
       </header>
 
       <div className="flex items-center justify-between gap-3">
-        <PillToggle value={tab} onChange={setTab} options={TABS} label="Strategy tab" />
+        <PillToggle value={tab} onChange={setTab} options={TABS} label="Strategy tab" highlight={celebrate ? "backtest" : undefined} />
       </div>
 
       {latestRecap ? <RecapCard session={latestRecap} onClose={() => setRecap(null)} /> : null}
@@ -199,7 +223,7 @@ function StrategyScreen({ strategy: s, tab, setTab }: { strategy: Strategy; tab:
       </Card>
 
       <motion.div key={tab} initial={level === "full" ? { opacity: 0, y: 8 } : { opacity: 0 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: level === "off" ? 0 : dur.standard(), ease: easeEnter }} className="flex flex-col gap-4 laptop:gap-6">
-        {tab === "ideal" ? <IdealTab strategy={s} onLog={() => setLogging("ideal")} onMissed={() => setLogging("missed")} /> : null}
+        {tab === "ideal" ? <IdealTab strategy={s} celebrate={celebrate} onLog={() => setLogging("ideal")} onMissed={() => setLogging("missed")} /> : null}
         {tab === "backtest" ? (
           unlocked ? (
             <BacktestTab strategy={s} onLog={() => setLogging("backtest")} onImport={() => setImporting("backtest")} />
@@ -258,13 +282,13 @@ function StrategyScreen({ strategy: s, tab, setTab }: { strategy: Strategy; tab:
   );
 }
 
-function IdealTab({ strategy: s, onLog, onMissed }: { strategy: Strategy; onLog: () => void; onMissed: () => void }) {
+function IdealTab({ strategy: s, celebrate, onLog, onMissed }: { strategy: Strategy; celebrate: boolean; onLog: () => void; onMissed: () => void }) {
   const trades = useTrades(s.id, "ideal");
   const missed = useTrades(s.id, "missed");
   return (
     <>
       <Card title="Coverage" subtitle="Months with at least one ideal trade, by UK date">
-        <CoverageTracker coverage={s.coverage} />
+        <CoverageTracker coverage={s.coverage} celebrate={celebrate} />
       </Card>
       <Card
         title="Ideal trades"

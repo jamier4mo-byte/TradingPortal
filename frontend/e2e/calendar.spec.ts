@@ -162,7 +162,8 @@ test.describe("Calendar permissions", () => {
   test("a member sees the admin's task but can't edit it", async ({ page, browser }) => {
     const admin = await asAdmin(browser);
     const title = `Jamie's task ${Date.now()}`;
-    const task = await createTask(admin, title, 10);
+    // 14:00: the seed puts Alex's "Tag last week's trades" at 10:00 today, and an overlapping event would sit on top of this one.
+    const task = await createTask(admin, title, 14);
     try {
       await signIn(page, MEMBER);
       await page.goto("/calendar?view=day");

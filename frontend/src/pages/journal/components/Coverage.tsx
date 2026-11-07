@@ -1,8 +1,7 @@
 import { Lock, LockOpen } from "lucide-react";
-import { motion } from "motion/react";
-import { useRef } from "react";
+import { AnimatePresence, motion } from "motion/react";
 
-import { dur, easeEnter, motionLevel } from "../../../lib/motion.ts";
+import { dur, easeEnter, motionLevel, useFirstLoad } from "../../../lib/motion.ts";
 import { type Coverage, fmtMonth } from "../../../lib/journal.ts";
 
 /** Six blocks, one per month of the unlock rule, filled by the best run. Lives on strategy cards. */
@@ -24,23 +23,37 @@ export function CoverageBar({ coverage, compact = false }: { coverage: Coverage;
   );
 }
 
-/** The months grid: every month from the first trade to the last, gaps included. */
-const STAGGER_KEY = "tp.coverage-staggered";
+/** The lock on the coverage status. When `celebrate` is set (the moment a strategy unlocks, once per
+ * strategy per device) the closed lock swaps for the open one with a short rotate-and-settle of the whole
+ * icon over --dur-emphasis. Reduced: a cross-fade. Off: a swap. */
+export function LockIcon({ open, celebrate = false, className = "size-4" }: { open: boolean; celebrate?: boolean; className?: string }) {
+  const level = motionLevel();
+  const move = level === "full" && celebrate;
+  return (
+    <span className={`relative grid place-items-center ${className}`} aria-hidden data-testid={open ? "lock-open" : "lock-closed"}>
+      <AnimatePresence initial={false} mode="popLayout">
+        <motion.span
+          key={open ? "open" : "closed"}
+          className="grid place-items-center"
+          initial={move ? { rotate: -24, scale: 1.35, opacity: 0 } : { opacity: 0 }}
+          animate={{ rotate: 0, scale: 1, opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: level === "off" ? 0 : move ? dur.emphasis() : dur.quick(), ease: [...easeEnter] }}
+        >
+          {open ? <LockOpen className={className} /> : <Lock className={className} />}
+        </motion.span>
+      </AnimatePresence>
+    </span>
+  );
+}
 
-export function CoverageTracker({ coverage }: { coverage: Coverage }) {
+/** The months grid: every month from the first trade to the last, gaps included. */
+export function CoverageTracker({ coverage, celebrate = false }: { coverage: Coverage; celebrate?: boolean }) {
   const level = motionLevel();
   const months = coverage.months;
-  // Stagger on the first load of the screen only (Motion doc), not on every tab switch.
-  const firstLoad = useRef<boolean | null>(null);
-  if (firstLoad.current === null) {
-    try {
-      firstLoad.current = !sessionStorage.getItem(STAGGER_KEY);
-      sessionStorage.setItem(STAGGER_KEY, "1");
-    } catch {
-      firstLoad.current = true;
-    }
-  }
-  const stagger = level === "full" && firstLoad.current;
+  // Stagger on the first load of the screen this session only (Motion doc), not on every tab switch.
+  const firstLoad = useFirstLoad("coverage");
+  const stagger = level === "full" && firstLoad;
   return (
     <div>
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -60,7 +73,7 @@ export function CoverageTracker({ coverage }: { coverage: Coverage }) {
           </p>
         </div>
         <span className={`inline-flex min-h-11 items-center gap-2 rounded-panel border px-3 text-body ${coverage.unlocked ? "border-accent/60 text-accent" : "border-border text-muted"}`}>
-          {coverage.unlocked ? <LockOpen aria-hidden className="size-4" /> : <Lock aria-hidden className="size-4" />}
+          <LockIcon open={coverage.unlocked} celebrate={celebrate} />
           {coverage.unlocked ? "Backtest unlocked" : coverage.next_uncovered ? `Next: replay ${fmtMonth(coverage.next_uncovered)}` : "Log the first winner"}
         </span>
       </div>
