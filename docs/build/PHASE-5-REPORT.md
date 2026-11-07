@@ -53,14 +53,14 @@ Branch `build/05-hub-calendar-launch`, 6–7 Nov 2026. Gate 5: see the checklist
 
 | Check | Result | How verified |
 |---|---|---|
-| `make lint`, `make test`, `make smoke` green; bundle budget | _pending_ | |
+| `make lint`, `make test`, `make smoke` green; bundle budget | Pass | lint clean (ruff, oxlint, tsc); **726 pytest + 6 Node**; **260 Playwright passed, 8 skipped** (keyboard and zoom checks run on the desktop project only) at 1440 and 375 px with axe; Hub initial JS **192.8 KB** of 200 KB, ECharts and FullCalendar lazy |
 | `docker build .` | **Not run** | Docker is not installed on this Mac. Validated instead: `bash -n`/`sh -n` on the entrypoint, `litestream.yml` parsed after env expansion, `fly.toml` parsed, the Litestream tarball name and version from the docs; the first `fly deploy` is the real test |
-| `/check-devices` at 360/375/430/768/1440/1920 clean | _pending_ | |
-| design-reviewer over `frontend/src`: no blockers or majors | _pending_ | |
-| Axe on every route | _pending_ | |
-| Restore test passes | _pending_ | |
-| Offline e2e passes | _pending_ | |
-| Calendar recurrence tests pass | _pending_ | |
+| `/check-devices` at 360/375/430/768/1440/1920 clean | See below | 186 screenshots in `docs/check-devices/2026-11-07-p5/` (31 screens × 6 widths, not committed); reviewed screen by screen, see the paragraph under this table |
+| design-reviewer over `frontend/src`: no blockers or majors | Pass | One pass over the whole Prompt 5 diff: 0 blockers, 4 majors (Reload button and Completed pill at 4.16:1 on surface-2, done rows dimmed to a borderline contrast, the island `aria-label` hiding the live stat), all fixed, plus three minors (settle timing from the token, constant owner-chip labels, layout comment). Left as minors/nits: FullCalendar's "+N more" link and 31 px time slots on touch (the agenda and New task give a 44 px path), the Checkbox relies on its label for 44 px, the account menu's old animation class, error toasts in the loss tone (pre-existing convention), inactive streak dots under 3:1 |
+| Axe on every route | Pass | `e2e/routes.spec.ts`: 31 routes (incl. invite, reset, 404) × 1440 and 375, zero violations; keyboard walkthrough with a focus-ring check on every Tab; 200 % zoom (360 px at DPR 2) on four screens; chart summaries and data tables on all 13 charts |
+| Restore test passes | Pass | `restore-test --replica <dir>` against a seeded `/tmp/tp-restore-src`: `PRAGMA integrity_check` ok, every non-volatile table equal (users 3, strategies 5, trades 337, tasks 11…); `tests/test_backup.py` (10) covers the Litestream-binary path with a stand-in |
+| Offline e2e passes | Pass | `e2e/offline.spec.ts`: Hub reload offline is served by the worker (`fromServiceWorker`), offline banner and "Last updated" stamps shown, private routes never cached, cold offline load shows the offline state |
+| Calendar recurrence tests pass | Pass | `tests/test_calendar.py` (36): both DST changes, all-day across DST, COUNT/UNTIL, this-occurrence vs series, moves, deletions, completions, permissions, rule hardening |
 | Security review: no open high or medium | Pass | `SECURITY-REVIEW-5.md`: no highs found; every medium fixed; two lows documented as accepted |
 
 ## Assumptions
