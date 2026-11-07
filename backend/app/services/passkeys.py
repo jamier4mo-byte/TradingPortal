@@ -132,7 +132,11 @@ def finish_authentication(db: Session, *, challenge_key: str, credential: dict) 
         raise PasskeyError("Malformed passkey response.")
     from webauthn.helpers import base64url_to_bytes
 
-    passkey = db.scalar(select(Passkey).where(Passkey.credential_id == base64url_to_bytes(raw_id)))
+    try:
+        credential_id = base64url_to_bytes(raw_id)
+    except Exception as exc:  # noqa: BLE001 — binascii / value errors from junk input
+        raise PasskeyError("Malformed passkey response.") from exc
+    passkey = db.scalar(select(Passkey).where(Passkey.credential_id == credential_id))
     if not passkey:
         raise PasskeyError("That passkey isn't registered here.", 404)
     try:

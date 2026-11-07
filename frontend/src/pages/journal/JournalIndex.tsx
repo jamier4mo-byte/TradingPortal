@@ -3,9 +3,11 @@ import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import { ChartEmpty } from "../../components/ui/Illustrations.tsx";
-import { Drawer, EmptyState, ErrorState, SkeletonCard, useViewScope, ViewScopeToggle } from "../../components/ui/index.ts";
+import { Drawer, EmptyState, ErrorState, OfflineState, SkeletonCard, Stagger, useViewScope, ViewScopeToggle } from "../../components/ui/index.ts";
+import { offlinePending } from "../../lib/offline.ts";
 import { useAuth } from "../../lib/auth.tsx";
 import { useStrategies } from "../../lib/journal.ts";
+import { useFirstLoad } from "../../lib/motion.ts";
 import { StrategyCard } from "./components/StrategyCard.tsx";
 import { StrategyForm } from "./components/StrategyForm.tsx";
 
@@ -19,6 +21,7 @@ export default function JournalIndex() {
   const { user } = useAuth();
   const quickLog = params.get("quicklog") === "1";
   const editable = (strategies.data ?? []).filter((s) => s.can_edit);
+  const firstLoad = useFirstLoad("journal");
 
   return (
     <div className="flex flex-col gap-4 laptop:gap-6">
@@ -43,7 +46,11 @@ export default function JournalIndex() {
         </div>
       </header>
 
-      {strategies.isPending ? (
+      {offlinePending(strategies) ? (
+        <div className="card">
+          <OfflineState what="The strategy list" />
+        </div>
+      ) : strategies.isPending ? (
         <div className="grid grid-cols-4 gap-4 tablet:grid-cols-8 laptop:grid-cols-12 laptop:gap-6" aria-busy>
           <SkeletonCard className="col-span-4" />
           <SkeletonCard className="col-span-4" />
@@ -67,13 +74,13 @@ export default function JournalIndex() {
           />
         </div>
       ) : (
-        <ul className="grid grid-cols-4 gap-4 tablet:grid-cols-8 laptop:grid-cols-12 laptop:gap-6" aria-label="Strategies">
+        <Stagger as="ul" screenKey="journal-cards" className="grid grid-cols-4 gap-4 tablet:grid-cols-8 laptop:grid-cols-12 laptop:gap-6" aria-label="Strategies">
           {strategies.data.map((s) => (
             <li key={s.id} className="col-span-4 large:col-span-3">
-              <StrategyCard strategy={s} />
+              <StrategyCard strategy={s} countUp={firstLoad} />
             </li>
           ))}
-        </ul>
+        </Stagger>
       )}
 
       <StrategyForm open={creating} onClose={() => setCreating(false)} onSaved={(s) => navigate(`/journal/strategies/${s.id}`)} />

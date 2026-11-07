@@ -1,4 +1,3 @@
-import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import {
   Bell,
   BookOpen,
@@ -7,7 +6,6 @@ import {
   ChevronsRight,
   Home,
   LineChart,
-  LogOut,
   MoreHorizontal,
   Newspaper,
   Plus,
@@ -16,26 +14,37 @@ import {
   Shield,
   Tags,
 } from "lucide-react";
-import { type ReactNode, useEffect, useState } from "react";
+import { lazy, type ReactNode, Suspense, useEffect, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 
 import { useAuth } from "../lib/auth.tsx";
-import { initials } from "../lib/format.ts";
 import { session, ukClock } from "../lib/time.ts";
 import { useNow } from "../lib/useNow.ts";
 import { useOnline } from "../lib/useMediaQuery.ts";
+import { AvatarButton } from "./AvatarButton.tsx";
 import { Logo, Tile } from "./Brand.tsx";
-import { CommandPalette } from "./CommandPalette.tsx";
 import { PageTransition } from "./PageTransition.tsx";
-import { OfflineBanner, ownerBg } from "./ui/index.ts";
+import { OfflineBanner } from "./ui/index.ts";
+import { UpdateReady } from "./UpdateReady.tsx";
 import { setPrintMode } from "../lib/print.ts";
 import { onChimeMessage, playChime } from "../lib/push.ts";
+import { takeIntro } from "../lib/intro.ts";
+import { installVisibilityPause } from "../lib/motion.ts";
+
+// The portal intro and the Cmd+K palette are their own chunks so the Hub's initial JS stays under budget
+// (F18). Login prefetches the intro; the palette is fetched when the Jump button is pointed at or focused,
+// and mounted on its first open (then kept mounted so its close animation can run).
+const PortalIntro = lazy(() => import("./PortalIntro.tsx"));
+// The account menu (Radix menu + floating-ui) loads after first paint: the avatar shows meanwhile.
+const AccountMenu = lazy(() => import("./AccountMenu.tsx"));
+const CommandPalette = lazy(() => import("./CommandPalette.tsx").then((m) => ({ default: m.CommandPalette })));
+const prefetchPalette = () => void import("./CommandPalette.tsx");
 
 const TOOLS = [
   { to: "/", label: "Hub", icon: Home, end: true, dot: "live" },
   { to: "/journal", label: "Replay Journal", short: "Journal", icon: BookOpen, dot: "live" },
   { to: "/news", label: "News Room", short: "News", icon: Newspaper, dot: "live" },
-  { to: "/calendar", label: "Calendar", icon: CalendarDays, dot: "stale" },
+  { to: "/calendar", label: "Calendar", icon: CalendarDays, dot: "live" },
 ];
 
 const SECONDARY = [
@@ -65,10 +74,15 @@ const SIDEBAR_KEY = "tp.sidebar";
 export default function AppShell({ children }: { children: ReactNode }) {
   const now = useNow();
   const online = useOnline();
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [paletteMounted, setPaletteMounted] = useState(false);
+  const openPalette = (open: boolean) => {
+    if (open) setPaletteMounted(true);
+    setPaletteOpen(open);
+  };
   const [collapsed, setCollapsed] = useState(() => {
     try {
       return localStorage.getItem(SIDEBAR_KEY) === "icons";
@@ -79,6 +93,17 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
   // Optional soft chime: the service worker asks an open page to play it (only when the alert says so).
   useEffect(() => onChimeMessage(() => playChime()), []);
+
+  // Portal intro: once per UK day, only right after a sign-in, only in Full motion (lib/intro.ts decides).
+  // The Hub mounts underneath it, so no time is lost.
+  const [intro, setIntro] = useState(() => takeIntro(user?.motion_pref));
+  // Looping decoration (.pulse, .skeleton) pauses while the tab is hidden.
+  useEffect(() => installVisibilityPause(), []);
+  // Fetch the palette chunk once the first paint is out of the way, so the first ⌘K opens at once.
+  useEffect(() => {
+    const timer = window.setTimeout(prefetchPalette, 1500);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   // Save as PDF: the light print tokens for the whole page (charts read them when they redraw).
   useEffect(() => {
@@ -95,6 +120,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
+        setPaletteMounted(true);
         setPaletteOpen((o) => !o);
       }
     };
@@ -180,7 +206,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
       <div className={`tablet:pl-[72px] ${contentPad} print:pl-0 transition-[padding] duration-(--dur-standard) ease-(--ease-in-enter)`}>
         {/* Top bar */}
-        <header className="safe-top sticky top-0 z-10 print:hidden flex min-h-14 items-center gap-2 border-b border-border bg-bg/95 px-(--gutter-phone) tablet:px-(--gutter-tablet) desktop:px-(--gutter-desktop)">
+        <header className="safe-top safe-x sticky top-0 z-10 print:hidden flex min-h-14 items-center gap-2 border-b border-border bg-bg/95">
           <NavLink to="/" className="flex min-h-11 min-w-11 items-center tablet:hidden" aria-label="Trading Portal home">
             <Tile />
           </NavLink>
@@ -188,7 +214,9 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
           <button
             type="button"
-            onClick={() => setPaletteOpen(true)}
+            onClick={() => openPalette(true)}
+            onPointerEnter={prefetchPalette}
+            onFocus={prefetchPalette}
             className="ml-auto flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-panel border border-border px-3 text-muted hover:border-border-strong hover:text-text tablet:ml-0 tablet:min-w-64 tablet:justify-start"
             aria-label="Jump to a screen (⌘K)"
           >
@@ -211,45 +239,14 @@ export default function AppShell({ children }: { children: ReactNode }) {
             <Bell aria-hidden className="size-5" strokeWidth={1.75} />
           </NavLink>
 
-          <DropdownMenu.Root>
-            <DropdownMenu.Trigger asChild>
-              <button type="button" className="btn btn-ghost size-11 px-0" aria-label="Account menu">
-                <span className={`grid size-8 place-items-center rounded-full text-label font-semibold text-bg ${ownerBg(user?.colour_index ?? 0)}`}>
-                  {initials(user?.display_name ?? "?")}
-                </span>
-              </button>
-            </DropdownMenu.Trigger>
-            <DropdownMenu.Portal>
-              <DropdownMenu.Content align="end" sideOffset={6} className="card z-30 min-w-56 p-1.5 data-[state=open]:animate-[page-enter_var(--dur-quick)_var(--ease-in-enter)]">
-                <div className="px-3 py-2">
-                  <p className="truncate text-body font-medium">{user?.display_name}</p>
-                  <p className="truncate text-label text-muted">{user?.email}</p>
-                </div>
-                <DropdownMenu.Separator className="my-1 h-px bg-border" />
-                <MenuItem onSelect={() => navigate("/settings")} icon={Settings}>
-                  Settings
-                </MenuItem>
-                {isAdmin ? (
-                  <MenuItem onSelect={() => navigate("/admin/users")} icon={Shield}>
-                    Admin
-                  </MenuItem>
-                ) : null}
-                <DropdownMenu.Separator className="my-1 h-px bg-border" />
-                <MenuItem
-                  onSelect={() => {
-                    void signOut().then(() => navigate("/login"));
-                  }}
-                  icon={LogOut}
-                >
-                  Sign out
-                </MenuItem>
-              </DropdownMenu.Content>
-            </DropdownMenu.Portal>
-          </DropdownMenu.Root>
+          <Suspense fallback={<AvatarButton disabled aria-disabled="true" />}>
+            <AccountMenu />
+          </Suspense>
         </header>
 
-        <main className="mx-auto max-w-[1760px] px-(--gutter-phone) pt-6 pb-32 tablet:px-(--gutter-tablet) tablet:pb-10 desktop:px-(--gutter-desktop)">
+        <main className="safe-x mx-auto max-w-[1760px] pt-6 pb-32 tablet:pb-10">
           {online ? null : <OfflineBanner className="mb-4" />}
+          <UpdateReady className="mb-4" />
           <PageTransition>{children}</PageTransition>
         </main>
       </div>
@@ -293,19 +290,16 @@ export default function AppShell({ children }: { children: ReactNode }) {
         </NavLink>
       </nav>
 
-      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
+      {paletteMounted ? (
+        <Suspense fallback={null}>
+          <CommandPalette open={paletteOpen} onOpenChange={openPalette} />
+        </Suspense>
+      ) : null}
+      {intro ? (
+        <Suspense fallback={null}>
+          <PortalIntro onDone={() => setIntro(false)} />
+        </Suspense>
+      ) : null}
     </div>
-  );
-}
-
-function MenuItem({ children, onSelect, icon: Icon }: { children: ReactNode; onSelect: () => void; icon: typeof Settings }) {
-  return (
-    <DropdownMenu.Item
-      onSelect={onSelect}
-      className="flex min-h-11 cursor-pointer items-center gap-3 rounded-panel px-3 text-body text-muted outline-none data-[highlighted]:bg-surface-2 data-[highlighted]:text-text"
-    >
-      <Icon aria-hidden className="size-4" strokeWidth={1.75} />
-      {children}
-    </DropdownMenu.Item>
   );
 }

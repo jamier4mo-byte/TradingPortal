@@ -279,6 +279,7 @@ class SessionOut(BaseModel):
     progress: SessionProgressOut
     stats: StatsOut
     can_edit: bool
+    strategy_name: str | None = None  # so the Hub island can say "Last session: 10 trades · Strategy X"
 
 
 class SessionUpdateIn(BaseModel):

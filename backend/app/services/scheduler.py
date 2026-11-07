@@ -9,6 +9,7 @@ Jobs (all safe to call every minute; each decides for itself whether there's wor
   news.tagging      re-tag trades when coverage has grown
   alerts            Web Push notifications that are due
   prices.reactions  price reactions after releases, with opted-in leftover credits
+  trash.purge       once a day (UK date), remove records soft-deleted over 30 days ago and their files
 """
 
 import asyncio
@@ -36,6 +37,7 @@ JOBS: list[tuple[str, str]] = [
     ("news.tagging", "app.services.news.tagging:retag_if_coverage_grew"),
     ("alerts", "app.services.alerts:run_due"),
     ("prices.reactions", "app.services.prices.reactions:run"),
+    ("trash.purge", "app.services.purge:run"),
 ]
 
 

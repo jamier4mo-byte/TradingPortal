@@ -15,6 +15,7 @@ MATRIX = [
     ("GET", "/api/auth/me", None, {"admin": 200, "member": 200, "anon": 401}),
     ("GET", "/api/users", None, {"admin": 200, "member": 200, "anon": 401}),
     ("GET", "/api/admin/users", None, {"admin": 200, "member": 403, "anon": 401}),
+    ("GET", "/api/hub", None, {"admin": 200, "member": 200, "anon": 401}),
     ("POST", "/api/admin/invites", {"role": "member"}, {"admin": 201, "member": 403, "anon": 401}),
     ("PATCH", "/api/admin/users/{id}/role", {"role": "admin"}, {"admin": 200, "member": 403, "anon": 401}),
     (
@@ -37,6 +38,15 @@ MATRIX = [
     ("GET", "/api/me/keys", None, {"admin": 200, "member": 200, "anon": 401}),
     ("PUT", "/api/me/keys/twelve_data", {"key": "abcdefgh1234"}, {"admin": 200, "member": 200, "anon": 401}),
     ("PATCH", "/api/me", {"motion_pref": "reduced"}, {"admin": 200, "member": 200, "anon": 401}),
+    ("GET", "/api/calendar/occurrences", None, {"admin": 200, "member": 200, "anon": 401}),
+    ("GET", "/api/calendar/tasks", None, {"admin": 200, "member": 200, "anon": 401}),
+    (
+        "POST",
+        "/api/calendar/tasks",
+        {"title": "Backtest session", "start_at": "2026-11-09T09:00:00Z"},
+        {"admin": 201, "member": 201, "anon": 401},
+    ),
+    ("GET", "/api/admin/export", None, {"admin": 200, "member": 403, "anon": 401}),
 ]
 
 

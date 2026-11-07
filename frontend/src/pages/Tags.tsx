@@ -4,7 +4,8 @@ import { type FormEvent, useMemo, useState } from "react";
 
 import Card from "../components/Card.tsx";
 import { ListEmpty } from "../components/ui/Illustrations.tsx";
-import { Chip, ConfirmDialog, Drawer, EmptyState, ErrorState, Field, ReadOnlyBanner, SkeletonText, TextInput, useToast } from "../components/ui/index.ts";
+import { Chip, ConfirmDialog, Drawer, EmptyState, ErrorState, Field, OfflineState, ReadOnlyBanner, SkeletonText, TextInput, useToast } from "../components/ui/index.ts";
+import { offlinePending } from "../lib/offline.ts";
 import { api, type Tag, TAG_CATEGORY_LABELS, type TagCategory } from "../lib/api.ts";
 import { useAuth } from "../lib/auth.tsx";
 import { AdminTabs } from "./admin/AdminTabs.tsx";
@@ -114,7 +115,9 @@ export default function Tags({ admin = false }: { admin?: boolean }) {
           aria-label="Filter tags"
           className="input mb-4 tablet:hidden"
         />
-        {tags.isPending ? (
+        {offlinePending(tags) ? (
+          <OfflineState what="The tag list" />
+        ) : tags.isPending ? (
           <SkeletonText lines={6} />
         ) : tags.isError ? (
           <ErrorState text={tags.error.message} onRetry={() => tags.refetch()} />

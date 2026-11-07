@@ -4,7 +4,7 @@ import { Link, useSearchParams } from "react-router-dom";
 
 import Card from "../../components/Card.tsx";
 import { CalendarEmpty } from "../../components/ui/Illustrations.tsx";
-import { Drawer, EmptyState, ErrorState, PillToggle, RefreshFailed, SkeletonText } from "../../components/ui/index.ts";
+import { Drawer, EmptyState, ErrorState, PillToggle, RefreshFailed, SkeletonText, Stagger } from "../../components/ui/index.ts";
 import { relativeTime } from "../../lib/format.ts";
 import { addDays, dayLabel, type Impact, mondayOf, ukISODate, useEvents, useNewsStatus } from "../../lib/news.ts";
 import { ukParts } from "../../lib/time.ts";
@@ -67,7 +67,7 @@ export default function NewsRoom({ initialView }: { initialView?: View }) {
   }, [view, date]);
 
   return (
-    <div className="flex flex-col gap-4 laptop:gap-6">
+    <Stagger screenKey="news" className="flex flex-col gap-4 laptop:gap-6">
       <header className="flex flex-wrap items-center gap-3">
         <h1 className="m-0">
           <img src="/brand/newsroom-logo.png" alt="News Room" className="h-8 w-auto tablet:h-9" />
@@ -135,7 +135,7 @@ export default function NewsRoom({ initialView }: { initialView?: View }) {
       >
         <FilterControls value={filters} onChange={setFilters} />
       </Drawer>
-    </div>
+    </Stagger>
   );
 }
 

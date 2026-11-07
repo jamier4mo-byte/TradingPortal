@@ -1,13 +1,16 @@
 import type { ReactNode } from "react";
 
 import { Logo } from "../../components/Brand.tsx";
+import { OfflineBanner } from "../../components/ui/index.ts";
 import { session, ukClock, ukDate } from "../../lib/time.ts";
+import { useOnline } from "../../lib/useMediaQuery.ts";
 import { useNow } from "../../lib/useNow.ts";
 
 /** Auth screens share one frame: the logo over a brand hairline, the market clock as the only atmosphere,
  * and the form on the page itself rather than a card inside a card. */
 export function AuthFrame({ title, intro, children, aside }: { title: string; intro?: string; children: ReactNode; aside?: ReactNode }) {
   const now = useNow(1000);
+  const online = useOnline();
   const sess = session(now);
   const closed = sess === "Markets closed";
   return (
@@ -33,6 +36,7 @@ export function AuthFrame({ title, intro, children, aside }: { title: string; in
           <Logo className="h-10" />
           <div className="brand-gradient brand-hairline mt-4 w-16" aria-hidden />
         </div>
+        {online ? null : <OfflineBanner className="mb-6" />}
         <h1 className="text-heading font-semibold">{title}</h1>
         {intro ? <p className="mt-2 text-body text-muted">{intro}</p> : null}
         <div className="mt-6">{children}</div>

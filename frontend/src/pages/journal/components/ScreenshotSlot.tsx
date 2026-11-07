@@ -129,6 +129,10 @@ export function ScreenshotSlot({
               key={src}
               src={src}
               alt=""
+              width={shot && !busy && phase !== "error" ? shot.width : undefined}
+              height={shot && !busy && phase !== "error" ? shot.height : undefined}
+              loading="lazy"
+              decoding="async"
               initial={level === "full" ? { opacity: 0, scale: 0.94 } : { opacity: 0 }}
               animate={{ opacity: busy ? 0.55 : 1, scale: 1 }}
               exit={{ opacity: 0 }}

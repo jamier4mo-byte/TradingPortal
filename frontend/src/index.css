@@ -85,6 +85,8 @@
   --dur-standard: 250ms;        /* panels, tabs, fades */
   --dur-emphasis: 500ms;        /* charts drawing in, unlocks (400–600ms) */
   --dur-flash: 600ms;           /* price tick flash fading out (Live data in motion) */
+  --dur-launch: 600ms;          /* launch loader minimum on a tool's first open each day (F14; proposed) */
+  --dur-intro: 1000ms;          /* portal intro after sign-in: logo draws in as a price line, once per UK day (proposed) */
   --ease-in-enter: cubic-bezier(0.16, 1, 0.3, 1);   /* ease-out: things entering */
   --ease-out-leave: cubic-bezier(0.7, 0, 0.84, 0);  /* ease-in: things leaving */
   --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);  /* toggles, dragged items */
@@ -172,7 +174,8 @@ body {
     animation-duration: 1ms !important;
     transition-duration: 1ms !important;
   }
-  :root:not([data-motion="full"]) ::view-transition-new(page) {
+  /* View-transition pseudos hang off the root itself, so no descendant combinator here. */
+  :root:not([data-motion="full"])::view-transition-new(page) {
     animation-name: page-enter-fade;
   }
 }
@@ -228,25 +231,113 @@ body {
 /* Reduced: digits don't roll; the number simply changes (the price flash fades as usual). */
 :root[data-motion="reduced"] .odo-strip { transition: none; }
 
-/* Route change: content fades with a slight rise while the shell stays still. */
+/* Route change: content fades with a slight rise while the shell stays still. Going back (PageTransition
+   sets <html data-nav="back"> for the length of the transition) reverses the rise, so the old page sinks
+   and the new one settles down from above: you feel which way you moved. Shared elements (view-transition-
+   name set by vtName() on both ends) morph by default and need no rule of their own. */
 ::view-transition-old(page) {
   animation: var(--dur-standard) var(--ease-out-leave) both page-leave;
 }
 ::view-transition-new(page) {
   animation: var(--dur-standard) var(--ease-in-enter) both page-enter;
 }
+:root[data-nav="back"]::view-transition-old(page) { animation-name: page-leave-back; }
+:root[data-nav="back"]::view-transition-new(page) { animation-name: page-enter-back; }
 @keyframes page-enter { from { opacity: 0; transform: translateY(10px); } }
 @keyframes page-leave { to { opacity: 0; } }
-:root[data-motion="reduced"] ::view-transition-new(page) { animation-name: page-enter-fade; }
+@keyframes page-enter-back { from { opacity: 0; transform: translateY(-10px); } }
+@keyframes page-leave-back { to { opacity: 0; transform: translateY(6px); } }
+:root[data-motion="reduced"]::view-transition-new(page) { animation-name: page-enter-fade; }
+:root[data-motion="reduced"]::view-transition-old(page) { animation-name: page-leave; }
 /* The same for any element animating with page-enter (menus, drawers, toasts): a plain fade in Reduced. */
 :root[data-motion="reduced"] [class*="animate-[page-enter_"] { animation-name: page-enter-fade !important; }
 @keyframes page-enter-fade { from { opacity: 0; } }
+
+/* Overlays (Radix keeps the element mounted while a data-[state=closed] animation runs, so these give
+   drawers, dialogs, the palette and toasts a real leave as well as an enter). Transform and opacity only.
+   --dur-standard in, --dur-quick out; ease-out entering, ease-in leaving. Reduced: every one is a fade. */
+@keyframes drawer-in {
+  /* Default: slide in from the right (24px). A drawer opened from a list row sets --origin-dx/--origin-dy to
+     the row's offset from the panel's centre, so it grows out of the thing you tapped (calendar tasks). */
+  from { opacity: 0; transform: translate(var(--origin-dx, 24px), var(--origin-dy, 0px)) scale(var(--origin-scale, 1)); }
+}
+@keyframes sheet-in {
+  from { opacity: 0; transform: translate(0px, var(--origin-dy, 24px)) scale(var(--origin-scale, 1)); }
+}
+@keyframes panel-out { to { opacity: 0; transform: translate(var(--leave-dx, 12px), var(--leave-dy, 0px)); } }
+@keyframes dialog-in { from { opacity: 0; transform: translate(-50%, -50%) scale(0.96); } to { transform: translate(-50%, -50%) scale(1); } }
+@keyframes dialog-out { from { transform: translate(-50%, -50%); } to { opacity: 0; transform: translate(-50%, -50%); } }
+@keyframes palette-in { from { opacity: 0; transform: translateX(-50%) scale(0.96); } to { transform: translateX(-50%) scale(1); } }
+@keyframes palette-out { from { transform: translateX(-50%); } to { opacity: 0; transform: translateX(-50%); } }
+@keyframes toast-in { from { opacity: 0; transform: translateY(16px); } }
+@keyframes toast-out { to { opacity: 0; } }
+@keyframes fade-out { to { opacity: 0; } }
+/* @utility, not @layer components, so Radix state variants (data-[state=open]:anim-…) are generated. */
+@utility anim-drawer-in { animation: drawer-in var(--dur-standard) var(--ease-in-enter) both; }
+@utility anim-sheet-in { animation: sheet-in var(--dur-standard) var(--ease-in-enter) both; --leave-dx: 0px; --leave-dy: 12px; }
+@utility anim-panel-out { animation: panel-out var(--dur-quick) var(--ease-out-leave) both; }
+@utility anim-dialog-in { animation: dialog-in var(--dur-standard) var(--ease-in-enter) both; }
+@utility anim-dialog-out { animation: dialog-out var(--dur-quick) var(--ease-out-leave) both; }
+@utility anim-palette-in { animation: palette-in var(--dur-standard) var(--ease-in-enter) both; }
+@utility anim-palette-out { animation: palette-out var(--dur-quick) var(--ease-out-leave) both; }
+@utility anim-toast-in { animation: toast-in var(--dur-standard) var(--ease-in-enter) both; }
+@utility anim-toast-out { animation: toast-out var(--dur-quick) var(--ease-out-leave) both; }
+@utility anim-fade-in { animation: page-enter-fade var(--dur-standard) var(--ease-in-enter) both; }
+@utility anim-fade-out { animation: fade-out var(--dur-quick) var(--ease-out-leave) both; }
+/* Reduced motion: the same timings, no movement. The in-app setting and the OS setting (when the user has
+   not chosen Full) both land here. Attribute selectors because the classes carry Radix state variants
+   (data-[state=open]:anim-drawer-in); unlayered, so they win over the utilities layer. */
+:root[data-motion="reduced"] [class*="anim-drawer-in"][data-state="open"],
+:root[data-motion="reduced"] [class*="anim-sheet-in"][data-state="open"],
+:root[data-motion="reduced"] [class*="anim-toast-in"][data-state="open"] { animation-name: page-enter-fade; }
+:root[data-motion="reduced"] [class*="anim-dialog-in"][data-state="open"] { animation-name: dialog-out; animation-direction: reverse; }
+:root[data-motion="reduced"] [class*="anim-palette-in"][data-state="open"] { animation-name: palette-out; animation-direction: reverse; }
+:root[data-motion="reduced"] [class*="anim-panel-out"][data-state="closed"] { animation-name: fade-out; }
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-motion]) [class*="anim-drawer-in"][data-state="open"],
+  :root:not([data-motion]) [class*="anim-sheet-in"][data-state="open"],
+  :root:not([data-motion]) [class*="anim-toast-in"][data-state="open"] { animation-name: page-enter-fade; }
+  :root:not([data-motion]) [class*="anim-dialog-in"][data-state="open"] { animation-name: dialog-out; animation-direction: reverse; }
+  :root:not([data-motion]) [class*="anim-palette-in"][data-state="open"] { animation-name: palette-out; animation-direction: reverse; }
+  :root:not([data-motion]) [class*="anim-panel-out"][data-state="closed"] { animation-name: fade-out; }
+  :root:not([data-motion])::view-transition-new(page) { animation-name: page-enter-fade; }
+  :root:not([data-motion])::view-transition-old(page) { animation-name: page-leave; }
+}
+
+/* Backtest unlock (Engaging touches): a one-off accent ring on the tab, opacity only, over --dur-emphasis.
+   Celebrates six months of process, never profit. */
+@keyframes unlock-ring { 0% { opacity: 0; } 30% { opacity: 1; } 100% { opacity: 0; } }
+@layer components {
+  .unlock-ring { animation: unlock-ring var(--dur-emphasis) var(--ease-in-enter) 2 both; }
+}
+
+/* A hidden tab (PageTransition/AppShell set <html data-hidden>): looping decoration pauses. */
+:root[data-hidden] .pulse,
+:root[data-hidden] .skeleton,
+:root[data-hidden] .unlock-ring { animation-play-state: paused; }
 
 /* Component classes live in the components layer so Tailwind utilities can still override them. */
 @layer components {
 /* Safe areas on phones with a notch or home bar. */
 .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
 .safe-top { padding-top: env(safe-area-inset-top); }
+/* Side gutters that also clear the notch / Dynamic Island in landscape (installed app, viewport-fit=cover). */
+.safe-x {
+  padding-left: max(var(--gutter-phone), env(safe-area-inset-left));
+  padding-right: max(var(--gutter-phone), env(safe-area-inset-right));
+}
+@media (width >= theme(--breakpoint-tablet)) {
+  .safe-x {
+    padding-left: max(var(--gutter-tablet), env(safe-area-inset-left));
+    padding-right: max(var(--gutter-tablet), env(safe-area-inset-right));
+  }
+}
+@media (width >= theme(--breakpoint-desktop)) {
+  .safe-x {
+    padding-left: max(var(--gutter-desktop), env(safe-area-inset-left));
+    padding-right: max(var(--gutter-desktop), env(safe-area-inset-right));
+  }
+}
 
 /* Form controls share one look. */
 .input {
@@ -287,12 +378,80 @@ body {
 .btn-danger { background: transparent; color: var(--color-loss); border-color: var(--color-loss); }
 .btn-danger:hover:not(:disabled) { background: color-mix(in srgb, var(--color-loss) 12%, transparent); }
 
-/* Hub hero card: the only atmospheric surface. */
+/* Hub hero card: the only atmospheric surface. The hero sets data-daypart (dawn | day | dusk | night, UK
+   hours 05–08 / 08–17 / 17–20 / 20–05) and data-session (asia | london | newyork | closed) and only these two
+   gradient mixes change; everything is color-mix() of existing tokens, and only opacity transitions.
+   Opacity stays ≤ 0.55 so text over the ambience keeps ≥ 4.5:1; the closed/weekend state is dimmer and calmer. */
 .hero-atmosphere {
+  --amb-a: color-mix(in srgb, var(--color-violet) 28%, transparent);
+  --amb-b: color-mix(in srgb, var(--color-accent) 22%, transparent);
+  --amb-a-at: 85% -20%;
+  --amb-b-at: 10% 120%;
   background:
-    radial-gradient(700px 260px at 85% -20%, color-mix(in srgb, var(--color-violet) 28%, transparent), transparent 70%),
-    radial-gradient(600px 240px at 10% 120%, color-mix(in srgb, var(--color-accent) 22%, transparent), transparent 70%);
+    radial-gradient(700px 260px at var(--amb-a-at), var(--amb-a), transparent 70%),
+    radial-gradient(600px 240px at var(--amb-b-at), var(--amb-b), transparent 70%);
+  opacity: 0.55;
+  transition: opacity var(--dur-emphasis) var(--ease-in-enter);
 }
+/* Dawn: a low warm glow on the horizon, blue above. */
+[data-daypart="dawn"] > .hero-atmosphere {
+  --amb-a: color-mix(in srgb, var(--color-impact-medium) 16%, transparent);
+  --amb-b: color-mix(in srgb, var(--color-accent) 24%, transparent);
+  --amb-a-at: 20% 130%;
+  --amb-b-at: 80% -30%;
+}
+/* Day: the brand blue with a touch of cyan, high and bright. */
+[data-daypart="day"] > .hero-atmosphere {
+  --amb-a: color-mix(in srgb, var(--color-accent) 26%, transparent);
+  --amb-b: color-mix(in srgb, var(--color-data-2) 14%, transparent);
+  --amb-a-at: 85% -20%;
+  --amb-b-at: 10% 110%;
+}
+/* Dusk: a warm glow sinking at the edge (in --amb-a so the session tint below can't override it), violet high. */
+[data-daypart="dusk"] > .hero-atmosphere {
+  --amb-a: color-mix(in srgb, var(--color-impact-medium) 12%, transparent);
+  --amb-b: color-mix(in srgb, var(--color-violet) 30%, transparent);
+  --amb-a-at: 5% 140%;
+  --amb-b-at: 75% -20%;
+}
+/* Night: violet and the News Room purple, low and quiet. */
+[data-daypart="night"] > .hero-atmosphere {
+  --amb-a: color-mix(in srgb, var(--color-violet) 24%, transparent);
+  --amb-b: color-mix(in srgb, var(--color-news) 12%, transparent);
+  --amb-a-at: 90% 110%;
+  --amb-b-at: 15% -30%;
+  opacity: 0.45;
+}
+/* Session tints: London leans blue, New York leans cyan, Asia leans violet. */
+[data-session="london"] > .hero-atmosphere { --amb-b: color-mix(in srgb, var(--color-accent) 26%, transparent); }
+[data-session="newyork"] > .hero-atmosphere { --amb-b: color-mix(in srgb, var(--color-data-2) 18%, transparent); }
+[data-session="asia"] > .hero-atmosphere { --amb-b: color-mix(in srgb, var(--color-violet) 20%, transparent); }
+/* Markets closed / weekend: calmer and dimmer, less violet. */
+[data-session="closed"] > .hero-atmosphere {
+  --amb-a: color-mix(in srgb, var(--color-accent) 14%, transparent);
+  --amb-b: color-mix(in srgb, var(--color-violet) 10%, transparent);
+  opacity: 0.3;
+}
+
+/* Launch islands (1.3): lift 2px, border brightens and a soft accent glow fades in. The glow sits on a
+   pseudo-element so it animates on opacity (plus the house border-colour fade, as .btn). The accent glow is
+   allowed here only (proposed). */
+.launch-island { position: relative; transition: transform var(--dur-quick) var(--ease-in-enter), border-color var(--dur-quick); }
+.launch-island::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--color-accent) 25%, transparent),
+    0 16px 40px -20px color-mix(in srgb, var(--color-accent) 45%, transparent);
+  transition: opacity var(--dur-quick) var(--ease-in-enter);
+}
+.launch-island:hover, .launch-island:focus-visible { transform: translateY(-2px); border-color: var(--color-border-strong); }
+.launch-island:hover::after, .launch-island:focus-visible::after { opacity: 1; }
+.launch-island:active { transform: scale(0.98); }
 
 /* Brand hairline: a 2px rule under the logo on the auth screens only (a brand moment). Pair with .brand-gradient. */
 .brand-hairline { height: 2px; border-radius: 1px; }
@@ -359,3 +518,108 @@ body {
   .card { break-inside: avoid; border-color: var(--color-print-rule); }
   .print\:hidden { display: none !important; }
 }
+
+/* Team calendar (FullCalendar) — themed entirely from the tokens above. FullCalendar's own CSS is injected
+   by its JS inside the lazy /calendar chunk, so none of it reaches the Hub. Owner colours appear only as
+   the dot and the left rule on an event (owners only); news markers use the impact colour plus an "H". */
+.tp-calendar {
+  --fc-border-color: var(--color-border);
+  --fc-page-bg-color: var(--color-surface-1);
+  --fc-neutral-bg-color: var(--color-surface-2);
+  --fc-neutral-text-color: var(--color-muted);
+  --fc-today-bg-color: var(--color-accent-soft);
+  --fc-now-indicator-color: var(--color-accent);
+  --fc-highlight-color: var(--color-accent-soft);
+  --fc-non-business-color: transparent;
+  --fc-event-bg-color: var(--color-surface-2);
+  --fc-event-border-color: var(--color-border-strong);
+  --fc-event-text-color: var(--color-text);
+  --fc-event-selected-overlay-color: transparent;
+  --fc-more-link-bg-color: var(--color-surface-2);
+  --fc-more-link-text-color: var(--color-text);
+  --fc-bg-event-color: var(--color-impact-high);
+  --fc-bg-event-opacity: 0.12;
+  --fc-small-font-size: var(--text-label);
+  --fc-list-event-hover-bg-color: var(--color-surface-2);
+  font-size: var(--text-body);
+}
+.tp-calendar .fc { font-family: var(--font-sans); }
+.tp-calendar .fc .fc-timegrid-slot-label-cushion,
+.tp-calendar .fc .fc-col-header-cell-cushion,
+.tp-calendar .fc .fc-daygrid-day-number,
+.tp-calendar .fc .fc-timegrid-axis-cushion {
+  color: var(--color-muted);
+  font-size: var(--text-label);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "zero" 1;
+  padding: 4px 6px;
+}
+.tp-calendar .fc .fc-col-header-cell-cushion { font-weight: 500; }
+.tp-calendar .fc .fc-day-today .fc-col-header-cell-cushion,
+.tp-calendar .fc .fc-day-today .fc-daygrid-day-number { color: var(--color-text); font-weight: 600; box-shadow: inset 0 -2px 0 var(--color-accent); }
+.tp-calendar .fc .fc-scrollgrid { border-radius: var(--radius-panel); overflow: hidden; }
+.tp-calendar .fc .fc-timegrid-slot { height: 2.25em; }
+.tp-calendar .fc .fc-timegrid-slot-minor { border-top-style: dotted; }
+.tp-calendar .fc .fc-timegrid-now-indicator-line { border-width: 2px 0 0; }
+.tp-calendar .fc .fc-timegrid-now-indicator-arrow { border-color: var(--color-accent) transparent; }
+.tp-calendar .fc .fc-day-sat, .tp-calendar .fc .fc-day-sun { background: color-mix(in srgb, var(--color-surface-2) 55%, transparent); }
+.tp-calendar .fc .fc-day-today { background: var(--fc-today-bg-color); }
+.tp-calendar .fc .fc-popover { background: var(--color-surface-1); border: 1px solid var(--color-border-strong); border-radius: var(--radius-panel); box-shadow: none; }
+.tp-calendar .fc .fc-popover-header { background: var(--color-surface-2); color: var(--color-text); }
+.tp-calendar .fc .fc-popover-close { min-width: var(--tap); min-height: var(--tap); display: grid; place-items: center; }
+.tp-calendar .fc .fc-daygrid-more-link { min-height: 24px; padding: 0 6px; border-radius: var(--radius-pill); font-size: var(--text-label); }
+.tp-calendar .fc .fc-daygrid-day-frame { min-height: 96px; }
+/* Other-month days: FullCalendar fades them to 30%, which fails contrast; use muted ink and a quieter cell instead. */
+.tp-calendar .fc .fc-day-other .fc-daygrid-day-top { opacity: 1; }
+.tp-calendar .fc .fc-day-other .fc-daygrid-day-number { color: var(--color-muted); font-weight: 400; }
+.tp-calendar .fc .fc-daygrid-day.fc-day-other { background: color-mix(in srgb, var(--color-bg) 50%, transparent); }
+.tp-calendar .fc a:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 1px; border-radius: var(--radius-panel); }
+
+/* Events: a quiet surface with a 1px border; the owner shows as a 3px rule on the left and the dot. */
+.tp-calendar .fc .fc-event.tp-ev {
+  border: 1px solid var(--color-border-strong);
+  border-left-width: 3px;
+  border-radius: calc(var(--radius-panel) * 0.6);
+  background: var(--color-surface-2);
+  box-shadow: none;
+  transition: border-color var(--dur-quick), transform var(--dur-standard) var(--ease-spring), opacity var(--dur-quick);
+}
+.tp-calendar .fc .fc-event.tp-ev:hover { border-color: var(--color-muted); }
+.tp-calendar .fc .fc-event.tp-ev.tp-readonly { cursor: default; }
+.tp-calendar .fc .fc-event.tp-ev.tp-done { border-color: var(--color-border); }
+.tp-calendar .fc .fc-event.tp-ev.tp-done .tp-ev-title { color: var(--color-muted); text-decoration: line-through; font-weight: 400; }
+.tp-calendar .fc .fc-timegrid-event .fc-event-main { padding: 2px 4px; }
+.tp-calendar .fc .fc-daygrid-event { white-space: normal; }
+.tp-calendar .fc .fc-daygrid-block-event .fc-event-main { padding: 1px 4px; }
+.tp-ev-body { display: flex; flex-direction: column; gap: 1px; min-width: 0; font-size: var(--text-label); line-height: 16px; color: var(--color-text); }
+.tp-ev-body.tp-ev-row { flex-direction: row; align-items: center; gap: 6px; }
+.tp-ev-row .tp-ev-head { flex-shrink: 0; }
+.tp-ev-row .tp-ev-title { flex: 1 1 auto; min-width: 0; }
+.tp-ev-head { display: inline-flex; align-items: center; gap: 4px; min-width: 0; }
+.tp-ev-time { color: var(--color-muted); }
+.tp-ev-title { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tp-ev-meta { color: var(--color-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tp-owner-0 { border-left-color: var(--color-owner-0) !important; }
+.tp-owner-1 { border-left-color: var(--color-owner-1) !important; }
+.tp-owner-2 { border-left-color: var(--color-owner-2) !important; }
+.tp-owner-3 { border-left-color: var(--color-owner-3) !important; }
+.tp-owner-4 { border-left-color: var(--color-owner-4) !important; }
+.tp-owner-5 { border-left-color: var(--color-owner-5) !important; }
+.tp-owner-6 { border-left-color: var(--color-owner-6) !important; }
+.tp-owner-7 { border-left-color: var(--color-owner-7) !important; }
+
+/* Drag and drop (Motion: "lift when picked up, the drop target lights up, settle into place"). Transform and
+   opacity only; no shadow, the border brightens instead. */
+.tp-calendar .fc .fc-event.fc-event-dragging { transform: scale(1.02); border-color: var(--color-accent); opacity: 0.95; }
+.tp-calendar .fc .fc-event.fc-event-dragging.fc-event-mirror { background: var(--color-surface-2); }
+.tp-calendar .fc .fc-highlight { background: var(--fc-highlight-color); outline: 1px solid var(--color-accent); outline-offset: -1px; }
+@keyframes tp-settle { from { transform: scale(1.03); } to { transform: scale(1); } }
+.tp-calendar .fc .fc-event.tp-settle { animation: tp-settle var(--dur-standard) var(--ease-spring) both; }
+:root[data-motion="reduced"] .tp-calendar .fc .fc-event.tp-settle { animation: none; }
+:root[data-motion="reduced"] .tp-calendar .fc .fc-event.fc-event-dragging { transform: none; }
+
+/* High-impact news as faint background markers with a visible "H" (never colour alone). */
+.tp-calendar .fc .fc-bg-event.tp-news { border-left: 2px solid var(--color-impact-high); opacity: 1; background: color-mix(in srgb, var(--color-impact-high) 10%, transparent); }
+.tp-calendar .fc .fc-bg-event.tp-news .fc-event-title { display: none; }
+.tp-news-label { display: inline-flex; align-items: center; gap: 4px; padding: 1px 4px; font-size: var(--text-label); line-height: 16px; color: var(--color-text); white-space: nowrap; overflow: hidden; }
+.tp-news-h { display: inline-grid; place-items: center; min-width: 16px; height: 16px; border-radius: calc(var(--radius-panel) * 0.4); border: 1px solid var(--color-impact-high); color: var(--color-text); font-weight: 700; font-size: var(--text-label); line-height: 1; }

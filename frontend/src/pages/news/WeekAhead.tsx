@@ -3,7 +3,8 @@ import { Link } from "react-router-dom";
 import Card from "../../components/Card.tsx";
 import { CurrencyTag, ImpactChip } from "../../components/news/NewsBits.tsx";
 import { CalendarEmpty } from "../../components/ui/Illustrations.tsx";
-import { EmptyState, ErrorState, RefreshFailed, SkeletonCard } from "../../components/ui/index.ts";
+import { EmptyState, ErrorState, OfflineState, RefreshFailed, SkeletonCard } from "../../components/ui/index.ts";
+import { offlinePending } from "../../lib/offline.ts";
 import { displaySymbol } from "../../lib/markets.ts";
 import { dayLabel, useWeekAhead } from "../../lib/news.ts";
 import { vtName } from "../../lib/vt.ts";
@@ -12,6 +13,7 @@ import { vtName } from "../../lib/vt.ts";
  * from Sunday 18:00 UK, and a planning aid for the team calendar (quieter days for backtesting). */
 export function WeekAheadView() {
   const q = useWeekAhead();
+  if (offlinePending(q)) return <OfflineState what="The week ahead" />;
   if (q.isPending) {
     return (
       <div className="grid gap-4 tablet:grid-cols-2 laptop:grid-cols-3 desktop:grid-cols-5">

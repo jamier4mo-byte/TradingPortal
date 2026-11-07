@@ -48,7 +48,7 @@ export function TagInput({ value, onChange, label = "Tags", id }: { value: strin
         {label}
       </label>
       <div className="relative">
-        <div className="input flex min-h-11 flex-wrap items-center gap-1.5 py-0" onClick={() => document.getElementById(inputId)?.focus()}>
+        <div className="input flex min-h-11 flex-wrap items-center gap-1.5 py-0 focus-within:border-transparent focus-within:outline-2 focus-within:outline-accent" onClick={() => document.getElementById(inputId)?.focus()}>
           {value.map((v) => (
             <Chip key={v} onRemove={() => onChange(value.filter((x) => x !== v))}>
               {v}

@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { useAuth } from "../lib/auth.tsx";
+import { motionLevel } from "../lib/motion.ts";
+import { useReturnFocus } from "./ui/returnFocus.ts";
 
 interface Command {
   label: string;
@@ -23,6 +25,7 @@ const COMMANDS: Command[] = [
   { label: "News · Alerts", to: "/settings/alerts", icon: Newspaper, keywords: "push notifications reminders" },
   { label: "Markets", to: "/markets", icon: LineChart, keywords: "prices watchlist ticker twelve data quotes" },
   { label: "Calendar", to: "/calendar", icon: CalendarDays, keywords: "tasks week" },
+  { label: "Calendar · New task", to: "/calendar?new=1", icon: CalendarDays, keywords: "add task backtest session review" },
   { label: "Tags", to: "/tags", icon: Tags, keywords: "vocabulary synonyms" },
   { label: "Settings", to: "/settings", icon: Settings, keywords: "profile password passkeys keys motion" },
   { label: "Admin · Users", to: "/admin/users", icon: Shield, keywords: "invite roles", adminOnly: true },
@@ -54,14 +57,20 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
     onOpenChange(false);
     navigate(to);
   };
+  // Fade-and-scale open (.96 → 1) and fade close (Micro-interactions → Command palette). Off: nothing.
+  const animated = motionLevel() !== "off";
+  const returnFocus = useReturnFocus(open);
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-40 bg-bg/70" />
+        <Dialog.Overlay className={`fixed inset-0 z-40 bg-bg/70 ${animated ? "data-[state=open]:anim-fade-in data-[state=closed]:anim-fade-out" : ""}`} />
         <Dialog.Content
+          {...returnFocus}
           aria-describedby={undefined}
-          className="card fixed left-1/2 top-[12dvh] z-50 w-[calc(100%-32px)] max-w-lg -translate-x-1/2 overflow-hidden p-0 data-[state=open]:animate-[page-enter_var(--dur-standard)_var(--ease-in-enter)]"
+          className={`card fixed left-1/2 top-[12dvh] z-50 w-[calc(100%-32px)] max-w-lg -translate-x-1/2 overflow-hidden p-0 ${
+            animated ? "data-[state=open]:anim-palette-in data-[state=closed]:anim-palette-out" : ""
+          }`}
           onKeyDown={(e) => {
             if (e.key === "ArrowDown") {
               e.preventDefault();
@@ -84,7 +93,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
               onChange={(e) => setQ(e.target.value)}
               placeholder="Jump to a screen"
               aria-label="Jump to a screen"
-              className="min-h-12 flex-1 bg-transparent text-body outline-none placeholder:text-muted"
+              className="min-h-12 flex-1 rounded-panel bg-transparent text-body placeholder:text-muted focus-visible:-outline-offset-4"
             />
             <kbd className="hidden rounded border border-border px-1.5 font-mono text-label text-muted tablet:inline">esc</kbd>
           </div>

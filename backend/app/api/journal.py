@@ -6,7 +6,15 @@ from typing import Annotated
 from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse, Response
 
-from ..core.deps import AdminUser, CurrentUser, Db, ScopeParam, apply_scope, require_owner_or_admin
+from ..core.deps import (
+    AdminUser,
+    CurrentUser,
+    Db,
+    HeavyUser,
+    ScopeParam,
+    apply_scope,
+    require_owner_or_admin,
+)
 from ..models import Instrument, JournalSession, Screenshot, Strategy, Trade, User
 from ..schemas.auth import OkOut, PublicUserOut
 from ..schemas.journal import (
@@ -39,7 +47,7 @@ from ..services import journal as svc
 from ..services import journal_rules as rules
 from ..services import matcher
 from ..services import screenshots as shots_svc
-from ..services.fxreplay import CsvFormatError
+from ..services.fxreplay import MAX_CSV_BYTES, CsvFormatError
 from ..services.journal import JournalError
 from ..services.news import queries as news_queries
 from ..services.screenshots import ScreenshotError
@@ -123,12 +131,13 @@ def session_out(db, session: JournalSession, user: User) -> SessionOut:
         **{
             k: getattr(session, k)
             for k in SessionOut.model_fields
-            if k not in ("owner", "progress", "stats", "can_edit")
+            if k not in ("owner", "progress", "stats", "can_edit", "strategy_name")
         },
         owner=_owner(db, session.owner_id),
         progress=SessionProgressOut(**svc.session_progress(db, session)),
         stats=StatsOut(**svc.headline_stats(trades, user.breakeven_threshold)),
         can_edit=_can_edit(session, user),
+        strategy_name=session.strategy.name if session.strategy else None,
     )
 
 
@@ -324,16 +333,18 @@ def restore_trade(trade_id: int, user: CurrentUser, db: Db) -> TradeOut:
 
 
 async def _read_csv(file: UploadFile) -> bytes:
-    data = await file.read()
+    data = await file.read(MAX_CSV_BYTES + 1)
     if not data:
         raise HTTPException(400, "The file is empty.")
+    if len(data) > MAX_CSV_BYTES:
+        raise HTTPException(413, "That file is over 5 MB. Is it really an FX Replay export?")
     return data
 
 
 @router.post("/strategies/{strategy_id}/imports/preview", response_model=ImportPreviewOut)
 async def preview_import(
     strategy_id: int,
-    user: CurrentUser,
+    user: HeavyUser,
     db: Db,
     file: Annotated[UploadFile, File()],
     timezone: Annotated[str | None, Form()] = None,
@@ -495,7 +506,11 @@ def _serve(key: str, content_type: str) -> Response:
     headers = {"Cache-Control": "private, max-age=31536000, immutable"}
     if path:
         return FileResponse(path, media_type=content_type, headers=headers)
-    return Response(storage.get(key), media_type=content_type, headers=headers)
+    try:  # remote stores (S3Storage) have no local path: stream the bytes with the same headers
+        data = storage.get(key)
+    except FileNotFoundError as exc:
+        raise HTTPException(404, "That screenshot's file is missing.") from exc
+    return Response(data, media_type=content_type, headers=headers)
 
 
 @router.get("/screenshots/{shot_id}/full", include_in_schema=False)

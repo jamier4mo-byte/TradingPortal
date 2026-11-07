@@ -7,7 +7,7 @@ import { InstrumentSearch } from "../../components/market/InstrumentSearch.tsx";
 import { TickerCard } from "../../components/market/TickerCard.tsx";
 import { WatchlistRow } from "../../components/market/WatchlistRow.tsx";
 import { ChartEmpty } from "../../components/ui/Illustrations.tsx";
-import { EmptyState, ErrorState, RefreshFailed, SkeletonCard, useToast } from "../../components/ui/index.ts";
+import { EmptyState, ErrorState, RefreshFailed, SkeletonCard, Stagger, useToast } from "../../components/ui/index.ts";
 import { type Quote, usePinMutations, usePins, useQuotes, useSparkline } from "../../lib/markets.ts";
 import { useDevice } from "../../lib/useMediaQuery.ts";
 
@@ -36,7 +36,7 @@ export default function Markets() {
     });
 
   return (
-    <div className="flex flex-col gap-4 laptop:gap-6">
+    <Stagger screenKey="markets" className="flex flex-col gap-4 laptop:gap-6">
       <header className="flex flex-wrap items-center gap-3">
         <h1 className="text-heading font-semibold">Markets</h1>
         <p className="text-body text-muted">Delayed prices from your Twelve Data key, refreshed every 15 minutes while this page is open.</p>
@@ -130,7 +130,7 @@ export default function Markets() {
           </Card>
         </div>
       </div>
-    </div>
+    </Stagger>
   );
 }
 

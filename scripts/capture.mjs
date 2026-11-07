@@ -36,6 +36,8 @@ const ROUTES = {
   instrument: "/markets/EURUSD",
   "instrument-unavailable": "/markets/GER40",
   calendar: "/calendar",
+  "calendar-day": "/calendar?view=day",
+  "calendar-month": "/calendar?view=month",
   login: "/login",
   tags: "/tags",
   settings: "/settings",

@@ -15,6 +15,7 @@ from sqlalchemy import text
 from . import __version__
 from .api import api
 from .core.csrf import CsrfMiddleware
+from .core.headers import BodyLimitMiddleware, SecurityHeadersMiddleware
 from .core.settings import FRONTEND_DIST, get_settings
 from .db import get_engine
 from .services import scheduler
@@ -42,21 +43,30 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title="Trading Portal",
         version=__version__,
+        # Interactive docs and the schema are development tools: off in production (redoc never).
         docs_url=None if settings.is_production else "/api/docs",
+        openapi_url=None if settings.is_production else "/api/openapi.json",
+        redoc_url=None,
         lifespan=lifespan,
     )
+    # Middleware runs outermost-first in reverse order of add_middleware: headers wrap everything (so even a
+    # 413 or a CSRF 403 carries them), then the body cap, then CSRF.
     app.add_middleware(CsrfMiddleware)
+    app.add_middleware(BodyLimitMiddleware)
+    app.add_middleware(SecurityHeadersMiddleware)
     app.include_router(api)
 
     @app.exception_handler(RequestValidationError)
-    async def validation_error(_: Request, exc: RequestValidationError) -> JSONResponse:
-        """422 as usual, but never echo a non-finite input back (JSON can't carry Infinity or NaN)."""
+    async def validation_error(request: Request, exc: RequestValidationError) -> JSONResponse:
+        """422 as usual, but never echo a non-finite input back (JSON can't carry Infinity or NaN), and
+        never echo the submitted input on the credential routes (a mistyped password must not come back)."""
+        secret_route = request.url.path.startswith(("/api/auth/", "/api/me"))
 
         def clean(value):
             if isinstance(value, float) and not math.isfinite(value):
                 return str(value)
             if isinstance(value, dict):
-                return {k: clean(v) for k, v in value.items()}
+                return {k: clean(v) for k, v in value.items() if not (secret_route and k == "input")}
             if isinstance(value, list | tuple):
                 return [clean(v) for v in value]
             return value

@@ -43,6 +43,8 @@ Values marked **proposed** weren't given in the Foundations doc; they're startin
 
 Reserved colours mean one thing and are used for nothing else. Colour is never the only signal: wins and losses carry +/− or an icon.
 
+**Stale figures** (offline, or an answer the service worker served from its cache): wrap the card's content in `StaleFigures` (`pages/hub/StaleStamp.tsx`, built on `useStaleness` in `lib/offline.ts`). It puts a `--color-stale` dot and `Last updated HH:MM` (`.num`, UK time, `role="status"`) under the card title and fades every `.num` inside to 70% (`[&_.num]:opacity-70`; muted labels stay ≥ 4.5:1 on `surface-1`). Never grey the whole card, never hide the figures, and never use win/loss colours for staleness. Fresh data renders untouched.
+
 ## Type
 
 | Token | Value |
@@ -79,6 +81,8 @@ Card pattern (`components/Card.tsx`): title and optional subtitle top-left, cont
 | `--dur-standard` | 250ms | Panels, tabs, fades |
 | `--dur-emphasis` | 500ms (range 400–600) | Charts drawing in, unlocks |
 | `--dur-flash` | 600ms | Price tick flash fading out (`.price-flash`), Live data in motion |
+| `--dur-launch` | 600ms (proposed) | Launch loader minimum on a tool's first open each UK day (F14); `--dur-standard` after that. Read as `dur.launch()` |
+| `--dur-intro` | 1000ms (proposed) | The portal intro after sign-in (`components/PortalIntro.tsx`): the logo mark draws in as a price line and candles, then dissolves into the Hub. Once per UK day per device, Full motion only. Read as `dur.intro()` |
 | `--ease-in-enter` | `cubic-bezier(.16,1,.3,1)` | **Ease-out** when things enter |
 | `--ease-out-leave` | `cubic-bezier(.7,0,.84,0)` | **Ease-in** when things leave |
 | `--ease-spring` | `cubic-bezier(.34,1.4,.64,1)` | Toggles, dragged items |
@@ -89,9 +93,20 @@ Rules:
 - `prefers-reduced-motion` is honoured globally, and so is the per-user Full / Reduced / Off setting (`data-motion` on `<html>`, from `user.motion_pref`). Read `motionLevel()` from `src/lib/motion.ts` before animating; use the presets there (`pageVariants`, `panelVariants`, `spring`). `motion` is the only animation library.
 - First-load stagger is 30–50ms apart, on first load only.
 - Launch loaders run for at least about 600ms and exit as soon as the tool is ready.
+- **Hero ambience** (Hub only): the hero sets `data-daypart` (dawn 05–08 · day 08–17 · dusk 17–20 · night 20–05, UK) and `data-session` (asia · london · newyork · closed) and `.hero-atmosphere` changes only its two gradient mixes, all `color-mix()` of `--color-accent`, `--color-violet`, `--color-data-2`, `--color-news` and a little `--color-impact-medium` warmth at dawn and dusk. No new hex. Only opacity transitions, and it stays ≤ 0.55 (0.3 when markets are closed) so text keeps ≥ 4.5:1. The launch islands' accent glow (`.launch-island::after`, opacity only) is the one place the accent is used as a glow.
 - Live data: `.price-flash` (win/loss wash fading over `--dur-flash`, always with ▲/▼), `.odo-digit`/`.odo-strip` (odometer roll), `.flip-in` (a released actual; a fade in Reduced). The news countdown pulses with `.pulse` only in its last 15 minutes.
 - No looping motion at the screen edge. `.pulse` (2s, opacity only) is for cards fed by live data, never the shell. `.skeleton` shimmers at 1.4s. Both are loader rhythms outside the 150/250/500 tokens on purpose.
 - The in-app Full setting overrides the OS reduce-motion preference on purpose (a user choice); Reduced and the default follow the OS.
+- `motionLevel()` resolves exactly like the CSS: `data-motion="full"` → full (even when the OS prefers reduced motion), `"reduced"` → reduced, `"off"` → off, no attribute (signed out) → the OS setting. `resolveMotion(pref)` does the same from a stored preference.
+- **Page transitions** (`components/PageTransition.tsx`, View Transitions API with a `motion` fallback): the shell stays still, the content cross-fades with a 10px rise over `--dur-standard`. Going back (a POP navigation) sets `<html data-nav="back">` for the length of the transition and the rise reverses. Off never calls `startViewTransition`.
+- **Shared elements**: `vtName(kind, id)` on both ends (strategy card title ↔ strategy page heading, trade row instrument ↔ trade detail heading, ticker card ↔ instrument view, news row ↔ event detail). Only one element per name on screen: trade rows are named only when clicked (plus the row you came back from).
+- **First-load stagger**: `<Stagger screenKey="…" as="ul">` (`components/ui/Stagger.tsx`) fades and rises its direct children 40ms apart (`STAGGER_STEP`) the first time that screen is shown this session (`useFirstLoad(key)`, a module-level `Set`); revisits render at once. Reduced: fade only. Off: nothing. Used on the Hub, Journal grid, News Room, Markets and Calendar.
+- **Overlays** leave as well as enter: `anim-drawer-in` / `anim-sheet-in` + `anim-panel-out` (Drawer; from the right on tablet and up, up as a sheet on the phone, or out of the tapped row via `--origin-dx/dy` when the Drawer gets an `origin`), `anim-dialog-in/out` (ConfirmDialog, fade-and-scale .96 → 1), `anim-palette-in/out` (Cmd+K), `anim-toast-in/out` (slide up 16px in, fade out). `--dur-standard` in, `--dur-quick` out; Reduced maps every one to a fade; Off adds no animation classes.
+- **Checkbox** (`components/ui/Checkbox.tsx`): a native input under a box whose SVG tick draws in (`pathLength`) over `--dur-quick`; fades in Reduced. Use it instead of a bare `<input type="checkbox">`.
+- **MorphIcon** (`components/ui/MorphIcon.tsx`): a copy/download icon that morphs into a tick when done, over `--dur-quick`. Use it on every copy and export action.
+- **Backtest unlock** (`StrategyPage.tsx`): when coverage reaches six months or "Open early" succeeds, `LockIcon` opens with a rotate-and-settle over `--dur-emphasis`, the Backtest pill gets a one-off `.unlock-ring` (opacity only) and a toast says "Backtest unlocked: six months of winners". Once per strategy per device (`localStorage tp.unlocked.<id>`). Process, not profit.
+- Looping decoration (`.pulse`, `.skeleton`, `.unlock-ring`) pauses while the tab is hidden (`<html data-hidden>` from `installVisibilityPause()`).
+- Deliberate exceptions to "transform and opacity only": the sidebar's `transition-[width]` and the content's `transition-[padding]` when the sidebar collapses (a rare, user-initiated layout change), and the countdown ring's `stroke-dashoffset` (a paint property on one small SVG).
 
 ## Not allowed on working screens
 

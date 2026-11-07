@@ -30,6 +30,10 @@ for _name in (
     "VAPID_PUBLIC_KEY",
     "VAPID_PRIVATE_KEY",
     "VAPID_SUBJECT",
+    # Screenshot storage stays local in tests; S3 tests build their own S3Storage inside moto.
+    "STORAGE_BACKEND",
+    "BUCKET_NAME",
+    "AWS_ENDPOINT_URL_S3",
 ):
     os.environ[_name] = ""
 
@@ -40,7 +44,7 @@ from fastapi.testclient import TestClient  # noqa: E402
 from sqlalchemy import delete  # noqa: E402
 
 from app.api.auth import login_limiter  # noqa: E402
-from app.core.deps import CSRF_COOKIE, CSRF_HEADER  # noqa: E402
+from app.core.deps import CSRF_COOKIE, CSRF_HEADER, heavy_limiter  # noqa: E402
 from app.db import session_factory  # noqa: E402
 from app.main import app  # noqa: E402
 from app.models import (  # noqa: E402
@@ -67,6 +71,9 @@ from app.models import (  # noqa: E402
     Session,
     Strategy,
     Tag,
+    Task,
+    TaskCompletion,
+    TaskException,
     Trade,
     User,
     UserApiKey,
@@ -118,6 +125,9 @@ def clean_db() -> Iterator[None]:
             db.execute(delete(model))
         db.execute(delete(EventType).where(EventType.seeded.is_(False)))
         for model in (
+            TaskCompletion,
+            TaskException,
+            Task,
             Screenshot,
             Trade,
             JournalSession,
@@ -158,6 +168,7 @@ def clean_db() -> Iterator[None]:
     if hasattr(storage, "wipe"):
         storage.wipe()
     login_limiter.reset()
+    heavy_limiter.reset()
     challenges.clear()
 
 

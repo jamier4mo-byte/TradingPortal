@@ -3,7 +3,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 
-import { ErrorState, Field, SkeletonText, TextInput, useToast } from "../../components/ui/index.ts";
+import { EmptyState, ErrorState, Field, OfflineState, SkeletonText, TextInput, useToast } from "../../components/ui/index.ts";
+import { offlinePending } from "../../lib/offline.ts";
+import { Checkbox } from "../../components/ui/Checkbox.tsx";
+import { ListEmpty } from "../../components/ui/Illustrations.tsx";
 import { imageFiles, prepareImage } from "../../lib/images.ts";
 import { fmtR, fmtUkDateTime, isCompleted, LABELLED_SLOTS, missingForCompletion, type Slot, SLOT_LABEL, slotShot, type Trade, type TradePatch, uploadScreenshot, useSession, useSessionTrades, useStrategy, useUpdateTrade } from "../../lib/journal.ts";
 import { OutcomeChip, SideChip } from "./components/OutcomeChip.tsx";
@@ -18,6 +21,13 @@ export default function Annotate() {
   const session = useSession(sid);
   const trades = useSessionTrades(sid);
   const navigate = useNavigate();
+  if (offlinePending(session) || offlinePending(trades)) {
+    return (
+      <div className="card">
+        <OfflineState what="This session" />
+      </div>
+    );
+  }
   if (session.isPending || trades.isPending) {
     return (
       <div aria-busy>
@@ -26,10 +36,23 @@ export default function Annotate() {
     );
   }
   if (session.isError || trades.isError) {
-    return <ErrorState title="Session didn't load" text={(session.error ?? trades.error)?.message} onRetry={() => navigate(-1)} />;
+    return <ErrorState title="Session didn't load" text={(session.error ?? trades.error)?.message} onRetry={() => void Promise.all([session.refetch(), trades.refetch()])} />;
   }
   if (!trades.data.length) {
-    return <ErrorState title="Nothing to annotate" text="This session has no trades." onRetry={() => navigate(`/journal/strategies/${session.data.strategy_id}`)} />;
+    return (
+      <div className="card">
+        <EmptyState
+          illustration={<ListEmpty />}
+          title="Nothing to annotate"
+          text="This session has no trades."
+          action={
+            <button type="button" className="btn btn-secondary" onClick={() => navigate(`/journal/strategies/${session.data.strategy_id}`)}>
+              Back to the strategy
+            </button>
+          }
+        />
+      </div>
+    );
   }
   return <Stepper strategyId={session.data.strategy_id} trades={trades.data} canEdit={session.data.can_edit} />;
 }
@@ -314,13 +337,7 @@ function Stepper({ strategyId, trades, canEdit }: { strategyId: number; trades: 
                 const v = rulesFollowed[r.key];
                 return (
                   <label key={r.key} className="flex min-h-11 cursor-pointer items-center gap-3 rounded-panel px-2 hover:bg-surface-2">
-                    <input
-                      type="checkbox"
-                      className="size-5 accent-accent"
-                      checked={v === true}
-                      disabled={!canEdit}
-                      onChange={(e) => patch({ rules_followed: { ...rulesFollowed, [r.key]: e.target.checked } })}
-                    />
+                    <Checkbox checked={v === true} disabled={!canEdit} onChange={(checked) => patch({ rules_followed: { ...rulesFollowed, [r.key]: checked } })} />
                     <span className="text-body">{r.text}</span>
                   </label>
                 );

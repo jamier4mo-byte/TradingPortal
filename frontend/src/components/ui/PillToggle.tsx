@@ -8,19 +8,22 @@ export interface PillOption<T extends string> {
   label: string;
 }
 
-/** Segmented control with a sliding indicator (a gentle spring). */
+/** Segmented control with a sliding indicator (a gentle spring in Full; an instant move in Reduced and Off).
+ * `highlight` lights one option up once with an accent ring (opacity only): the Backtest tab on unlock. */
 export function PillToggle<T extends string>({
   value,
   onChange,
   options,
   label,
   size = "md",
+  highlight,
 }: {
   value: T;
   onChange: (value: T) => void;
   options: PillOption<T>[];
   label: string;
   size?: "sm" | "md";
+  highlight?: T;
 }) {
   const layoutId = useId();
   const level = motionLevel();
@@ -46,6 +49,9 @@ export function PillToggle<T extends string>({
                 className="absolute inset-0 rounded-pill bg-accent"
                 transition={level === "full" ? spring : { duration: 0 }}
               />
+            ) : null}
+            {highlight === opt.value && level !== "off" ? (
+              <span aria-hidden className="unlock-ring pointer-events-none absolute -inset-0.5 rounded-pill border-2 border-accent" data-testid="unlock-ring" />
             ) : null}
             <span className="relative">{opt.label}</span>
           </button>

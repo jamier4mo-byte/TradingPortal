@@ -5,7 +5,8 @@ import Card from "../../components/Card.tsx";
 import { CountdownRing } from "../../components/news/CountdownRing.tsx";
 import { CurrencyTag, Figures, ImpactChip, SurpriseBadge } from "../../components/news/NewsBits.tsx";
 import { ListEmpty, PulseEmpty } from "../../components/ui/Illustrations.tsx";
-import { EmptyState, ErrorState, SkeletonCard } from "../../components/ui/index.ts";
+import { EmptyState, ErrorState, OfflineState, SkeletonCard } from "../../components/ui/index.ts";
+import { offlinePending } from "../../lib/offline.ts";
 import { displaySymbol } from "../../lib/markets.ts";
 import { dayLabel, type EventDetail as Detail, type HorizonReaction, useEventDetail } from "../../lib/news.ts";
 import { useNow } from "../../lib/useNow.ts";
@@ -33,7 +34,11 @@ export default function EventDetailPage() {
           News Room
         </Link>
       </div>
-      {q.isPending ? (
+      {offlinePending(q) ? (
+        <div className="card">
+          <OfflineState what="This event" />
+        </div>
+      ) : q.isPending ? (
         <>
           <SkeletonCard className="h-36" />
           <div className="grid gap-4 laptop:grid-cols-2">
