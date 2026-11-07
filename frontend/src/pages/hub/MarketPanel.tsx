@@ -10,6 +10,7 @@ import { ChartEmpty } from "../../components/ui/Illustrations.tsx";
 import { EmptyState, ErrorState, RefreshFailed, Skeleton, useToast } from "../../components/ui/index.ts";
 import { type Quote, usePinMutations, usePins, useQuotes, useSparkline } from "../../lib/markets.ts";
 import { useDevice } from "../../lib/useMediaQuery.ts";
+import { StaleFigures } from "./StaleStamp.tsx";
 
 const SUGGESTED = ["EURUSD", "GBPUSD", "XAUUSD", "BTCUSD", "GER40", "NAS100"];
 
@@ -48,7 +49,7 @@ export default function MarketPanel() {
         </Link>
       }
     >
-      <div className="flex flex-col gap-4">
+      <StaleFigures paths={["/api/prices/quotes", "/api/prices/pins"]} dataUpdatedAt={quotes.dataUpdatedAt} className="flex flex-col gap-4">
         {usage?.paused ? <PausedBanner reason={usage.paused_reason ?? "Live data paused – daily limit reached"} /> : null}
         {(quotes.isError && quotes.data) || (pins.isError && pins.data) ? <RefreshFailed updatedAt={quotes.dataUpdatedAt} onRetry={retry} /> : null}
 
@@ -111,7 +112,7 @@ export default function MarketPanel() {
         />
 
         {usage && (usage.has_key || usage.provider === "fake") ? <CreditsMeter usage={usage} /> : null}
-      </div>
+      </StaleFigures>
     </Card>
   );
 }

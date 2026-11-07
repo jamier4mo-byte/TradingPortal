@@ -1,4 +1,5 @@
 {
+  "id": "/",
   "name": "Trading Portal",
   "short_name": "Portal",
   "description": "Hub, Replay Journal and News Room for Jamie and the mates.",
@@ -8,6 +9,10 @@
   "orientation": "any",
   "background_color": "#0B0F1A",
   "theme_color": "#0B0F1A",
+  "categories": [
+    "finance",
+    "productivity"
+  ],
   "icons": [
     {
       "src": "/favicon-192.png",

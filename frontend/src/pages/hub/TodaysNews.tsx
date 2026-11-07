@@ -7,6 +7,7 @@ import { EmptyState, ErrorState, SkeletonText } from "../../components/ui/index.
 import { relativeTime } from "../../lib/format.ts";
 import { type NewsEvent, ukISODate, useEvents, useToday } from "../../lib/news.ts";
 import { useDevice } from "../../lib/useMediaQuery.ts";
+import { StaleFigures } from "./StaleStamp.tsx";
 
 const TITLE = "Today's news";
 const SUBTITLE = "Scheduled events for your instruments, UK time";
@@ -50,7 +51,7 @@ export function TodaysNews({ className = "" }: { className?: string }) {
       ) : pending ? (
         <SkeletonText lines={4} />
       ) : (
-        <>
+        <StaleFigures paths={["/api/news/today", "/api/news/events"]} dataUpdatedAt={Math.max(today.dataUpdatedAt, events.dataUpdatedAt)}>
           {today.data?.headline ? <p className="num text-body font-medium">{today.data.headline}</p> : null}
           {(today.isError || events.isError) && updated ? (
             <p role="status" className="num mt-2 text-label text-muted">
@@ -74,7 +75,7 @@ export function TodaysNews({ className = "" }: { className?: string }) {
             ) : null}
             {updated ? <span className="num ml-auto">Updated {relativeTime(updated)}</span> : null}
           </p>
-        </>
+        </StaleFigures>
       )}
     </Card>
   );

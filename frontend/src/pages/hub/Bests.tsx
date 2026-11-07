@@ -6,6 +6,7 @@ import { OfflineGlyph } from "../../components/ui/Illustrations.tsx";
 import { EmptyState, ErrorState, SkeletonText, useToast } from "../../components/ui/index.ts";
 import { celebratedKey, type PersonalBest, queryState, remember, remembered, useHub } from "../../lib/hub.ts";
 import { dur, easeEnter, motionLevel } from "../../lib/motion.ts";
+import { StaleFigures } from "./StaleStamp.tsx";
 
 function describe(b: PersonalBest): string {
   if (b.key === "longest_rule_run") return `${b.value_text} following every rule`;
@@ -44,7 +45,8 @@ export default function Bests() {
     );
   }
   return (
-    <ul className="grid gap-3 tablet:grid-cols-2" aria-label="Personal bests">
+    <StaleFigures paths={["/api/hub"]} dataUpdatedAt={hub.dataUpdatedAt}>
+      <ul className="grid gap-3 tablet:grid-cols-2" aria-label="Personal bests">
       {bests.map((b) => (
         <li key={b.key} className="relative rounded-panel border border-border bg-surface-2 p-3">
           <AnimatePresence>{celebrating === b.key ? <RingSweep onDone={() => setCelebrating(null)} /> : null}</AnimatePresence>
@@ -56,7 +58,8 @@ export default function Bests() {
           {b.detail ? <p className="num mt-1 text-label text-muted">{b.detail}</p> : null}
         </li>
       ))}
-    </ul>
+      </ul>
+    </StaleFigures>
   );
 }
 

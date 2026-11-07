@@ -12,7 +12,9 @@ import { Link } from "react-router-dom";
 import { ApiError } from "../../lib/api.ts";
 import { datesBetween, groupByDay, type Occurrence, ukClockOf, useCompleteTask, useOccurrences } from "../../lib/calendar.ts";
 import { addDays, dayLabel, mondayOf, ukISODate } from "../../lib/news.ts";
+import { useStaleness } from "../../lib/offline.ts";
 import { useOnline } from "../../lib/useMediaQuery.ts";
+import { StaleStamp } from "../../pages/hub/StaleStamp.tsx";
 import { useNow } from "../../lib/useNow.ts";
 import { CalendarEmpty } from "../ui/Illustrations.tsx";
 import { EmptyState, ErrorState, OwnerDot, Skeleton, useToast } from "../ui/index.ts";
@@ -26,6 +28,8 @@ export default function CalendarCard({ variant }: { variant: "week" | "agenda" }
   const from = variant === "week" ? mondayOf(today) : today;
   const to = variant === "week" ? addDays(from, 6) : addDays(today, 2);
   const q = useOccurrences(from, to);
+  // Offline, or served from the service worker's cache: dim the figures and stamp "Last updated HH:MM".
+  const stale = useStaleness(["/api/calendar/occurrences"], q.dataUpdatedAt);
 
   if (q.isPending && q.fetchStatus === "paused") {
     return <EmptyState illustration={<CalendarEmpty />} title="You're offline" text="Your tasks show when you're back online." />;
@@ -65,12 +69,8 @@ export default function CalendarCard({ variant }: { variant: "week" | "agenda" }
   }
   const days = groupByDay(items, datesBetween(from, to));
   return (
-    <div className="flex flex-col gap-2">
-      {!online ? (
-        <p role="status" className="text-label text-muted">
-          Offline · last loaded tasks
-        </p>
-      ) : null}
+    <div className={`flex flex-col gap-2 ${stale.stale ? "[&_.num]:opacity-70" : ""}`} data-stale={stale.stale || undefined}>
+      <StaleStamp s={stale} className="-mt-3" />
       {variant === "week" ? <WeekStrip days={days} today={today} /> : <AgendaList days={days} today={today} online={online} />}
     </div>
   );

@@ -4,6 +4,7 @@ import { OfflineGlyph } from "../../components/ui/Illustrations.tsx";
 import { EmptyState, ErrorState, SkeletonText } from "../../components/ui/index.ts";
 import { queryState, useHub } from "../../lib/hub.ts";
 import { dayLabel } from "../../lib/news.ts";
+import { StaleFigures } from "./StaleStamp.tsx";
 
 /** Process streak ("Showing up"): days with a session logged, a note written or a trade reviewed. It
  * rewards showing up, never P&L. Lazy: lives below the fold. */
@@ -29,7 +30,7 @@ export default function Streak() {
     );
   }
   return (
-    <div className="flex flex-col gap-3">
+    <StaleFigures paths={["/api/hub"]} dataUpdatedAt={hub.dataUpdatedAt} className="flex flex-col gap-3">
       <p className="text-title font-semibold">
         <span className="num">{s.current_days}</span>-day streak · best <span className="num">{s.best_days}</span>
       </p>
@@ -44,7 +45,7 @@ export default function Streak() {
         {s.active_today ? "You showed up today." : s.current_days > 0 ? "Nothing yet today; a session or a review keeps it going." : "Start again today: a session logged or a trade reviewed."}{" "}
         Showing up counts, not the result.
       </p>
-    </div>
+    </StaleFigures>
   );
 }
 

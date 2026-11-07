@@ -7,6 +7,7 @@ import { EmptyState, ErrorState, SkeletonText, StatTile } from "../../components
 import { queryState, useHub, type WeekRecap } from "../../lib/hub.ts";
 import { signed } from "../../lib/markets.ts";
 import { dayLabel, useWeekAhead } from "../../lib/news.ts";
+import { StaleFigures } from "./StaleStamp.tsx";
 
 /** Week behind / week ahead (Engaging touches): from Sunday 18:00 UK until Monday night, a recap of the
  * user's own week sits beside the key events of the coming week. Lazy: only mounted inside that window. */
@@ -36,7 +37,9 @@ function WeekBehind() {
       ) : recap.trades === 0 && recap.sessions === 0 ? (
         <EmptyState illustration={<CalendarEmpty />} title="A quiet week" text="No sessions or trades logged last week. A fresh week starts now." />
       ) : (
-        <Recap recap={recap} />
+        <StaleFigures paths={["/api/hub"]} dataUpdatedAt={hub.dataUpdatedAt}>
+          <Recap recap={recap} />
+        </StaleFigures>
       )}
     </Card>
   );

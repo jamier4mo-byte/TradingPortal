@@ -14,6 +14,37 @@ const CSRF_HEADER = "X-CSRF-Token";
 
 export const unauthorised = new EventTarget();
 
+// ---- offline plumbing (lib/offline.ts builds the hooks on this) ----
+// The service worker stamps an answer it serves from its cache with X-TP-Cached-At. We remember the
+// stamp per API path (query string dropped) so a card can dim its figures and say "Last updated HH:MM".
+// A fresh network answer clears the entry.
+const cachedStamps = new Map<string, number>();
+
+/** When the last answer for this API path came from the service worker's cache: its stored-at time (ms). */
+export function cachedAt(path: string): number | null {
+  return cachedStamps.get(pathOnly(path)) ?? null;
+}
+
+function pathOnly(path: string): string {
+  const q = path.indexOf("?");
+  return q === -1 ? path : path.slice(0, q);
+}
+
+function noteCachedAt(path: string, res: Response): void {
+  const stamp = res.headers.get("X-TP-Cached-At");
+  const at = stamp ? Date.parse(stamp) : Number.NaN;
+  if (Number.isFinite(at)) cachedStamps.set(pathOnly(path), at);
+  else cachedStamps.delete(pathOnly(path));
+}
+
+/** fetch() threw (no network, or the service worker had nothing cached): a readable error, status 0. */
+function networkFailure(err: unknown): ApiError {
+  const offline = typeof navigator !== "undefined" && navigator.onLine === false;
+  const e = new ApiError(0, offline ? "You're offline: changes will need a connection" : "Couldn't reach the server");
+  e.cause = err;
+  return e;
+}
+
 function readCookie(name: string): string | null {
   const match = document.cookie.split("; ").find((c) => c.startsWith(`${name}=`));
   return match ? decodeURIComponent(match.slice(name.length + 1)) : null;
@@ -32,12 +63,18 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   const headers: Record<string, string> = { Accept: "application/json" };
   if (body !== undefined) headers["Content-Type"] = "application/json";
   if (method !== "GET") headers[CSRF_HEADER] = await ensureCsrf();
-  const res = await fetch(path, {
-    method,
-    headers,
-    credentials: "same-origin",
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
+  let res: Response;
+  try {
+    res = await fetch(path, {
+      method,
+      headers,
+      credentials: "same-origin",
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+  } catch (err) {
+    throw networkFailure(err);
+  }
+  if (method === "GET") noteCachedAt(path, res);
   if (res.status === 401) unauthorised.dispatchEvent(new Event("unauthorised"));
   if (!res.ok) {
     let detail = res.statusText;
@@ -55,7 +92,12 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 
 async function upload<T>(path: string, form: FormData): Promise<T> {
   const headers: Record<string, string> = { Accept: "application/json", [CSRF_HEADER]: await ensureCsrf() };
-  const res = await fetch(path, { method: "POST", headers, credentials: "same-origin", body: form });
+  let res: Response;
+  try {
+    res = await fetch(path, { method: "POST", headers, credentials: "same-origin", body: form });
+  } catch (err) {
+    throw networkFailure(err);
+  }
   if (res.status === 401) unauthorised.dispatchEvent(new Event("unauthorised"));
   if (!res.ok) {
     let detail = res.statusText;

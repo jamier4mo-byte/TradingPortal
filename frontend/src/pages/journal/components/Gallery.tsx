@@ -19,7 +19,15 @@ export function Gallery({ shots }: { shots: Screenshot[] }) {
         {shots.map((s, i) => (
           <li key={s.id} className="w-[86%] shrink-0 snap-center tablet:w-[60%] laptop:w-[48%]">
             <button type="button" onClick={() => setOpen(i)} className="group relative block w-full overflow-hidden rounded-panel border border-border bg-surface-2 focus-visible:border-accent" aria-label={`Open ${SLOT_LABEL[s.slot]} screenshot at full size`}>
-              <img src={s.thumb_url} alt="" className="aspect-video w-full object-cover" loading={i < 2 ? "eager" : "lazy"} />
+              <img
+                src={s.thumb_url}
+                alt=""
+                width={s.width}
+                height={s.height}
+                className="aspect-video w-full object-cover"
+                loading={i < 2 ? "eager" : "lazy"}
+                decoding="async"
+              />
               <span className="absolute left-2 top-2 rounded-pill border border-border bg-bg px-2 py-0.5 text-label">{SLOT_LABEL[s.slot]}</span>
               <span className="absolute right-2 bottom-2 grid size-8 place-items-center rounded-full bg-bg/80 text-muted group-hover:text-text">
                 <ZoomIn aria-hidden className="size-4" />
@@ -134,13 +142,17 @@ function Viewer({ shots, index, onIndex, onClose }: { shots: Screenshot[]; index
         onDoubleClick={() => setScale((s) => (s > 1 ? 1 : 2.5))}
       >
         <img
-          src={scale > 1 ? shot.full_url : shot.thumb_url}
+          src={shot.full_url}
+          srcSet={`${shot.thumb_url} 400w, ${shot.full_url} ${Math.max(shot.width, 401)}w`}
+          sizes={scale > 1 ? `${Math.round(scale * 100)}vw` : "100vw"}
+          width={shot.width}
+          height={shot.height}
           alt={`${SLOT_LABEL[shot.slot]} chart`}
           draggable={false}
+          decoding="async"
           className="absolute inset-0 m-auto max-h-full max-w-full object-contain"
           style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`, transition: pinch.current || drag.current ? "none" : "transform var(--dur-quick) var(--ease-in-enter)" }}
         />
-        {scale === 1 ? <img src={shot.full_url} alt="" aria-hidden className="absolute inset-0 m-auto max-h-full max-w-full object-contain opacity-0" loading="lazy" /> : null}
       </div>
         </Dialog.Content>
       </Dialog.Portal>
