@@ -13,7 +13,7 @@ export function UpdateReady({ className = "" }: { className?: string }) {
       <span>
         A new version is ready. <span className="text-muted">Reload to use it.</span>
       </span>
-      <button type="button" className="btn btn-ghost ml-auto text-accent" onClick={applyUpdate}>
+      <button type="button" className="btn btn-secondary ml-auto" onClick={applyUpdate}>
         Reload
       </button>
     </div>

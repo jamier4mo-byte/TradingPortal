@@ -64,7 +64,7 @@ export function AgendaRow({
         <Check className="size-4" /> <span className="ml-1">{occ.done ? "Not done" : "Done"}</span>
       </div>
       <div
-        className={`relative flex min-h-14 touch-pan-y items-center gap-2 bg-surface-2 pr-1 pl-3 ${dragging ? "" : "transition-transform duration-(--dur-standard) ease-(--ease-spring)"} ${occ.done ? "opacity-70" : ""}`}
+        className={`relative flex min-h-14 touch-pan-y items-center gap-2 bg-surface-2 pr-1 pl-3 ${dragging ? "" : "transition-transform duration-(--dur-standard) ease-(--ease-spring)"}`}
         style={{ transform: `translateX(${dx}px)` }}
         onPointerDown={onDown}
         onPointerMove={onMove}
@@ -75,7 +75,7 @@ export function AgendaRow({
           <OwnerDot colourIndex={occ.owner.colour_index} className="size-2.5 shrink-0" />
           <span className="num w-[5.5rem] shrink-0 text-label text-muted">{time}</span>
           <span className="min-w-0 flex-1">
-            <span className={`block truncate text-body ${occ.done ? "line-through" : ""}`}>{occ.title}</span>
+            <span className={`block truncate text-body ${occ.done ? "line-through text-muted" : ""}`}>{occ.title}</span>
             <span className="block truncate text-label text-muted">
               {occ.owner.display_name} · {categoryShort(occ.category)}
               {occ.recurring ? (

@@ -56,8 +56,8 @@ function MissingShots({ t }: { t: Trade }) {
 function Completed({ t }: { t: Trade }) {
   if (!isCompleted(t)) return null;
   return (
-    <span className="inline-flex items-center gap-1 rounded-pill border border-accent/60 px-2 py-0.5 text-label text-accent">
-      <CheckCircle2 aria-hidden className="size-3" />
+    <span className="inline-flex items-center gap-1 rounded-pill border border-accent/60 px-2 py-0.5 text-label text-text">
+      <CheckCircle2 aria-hidden className="size-3 text-accent" />
       Completed
     </span>
   );

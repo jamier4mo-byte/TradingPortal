@@ -25,7 +25,7 @@ const Bests = lazy(() => import("./hub/Bests.tsx"));
 const WeekPair = lazy(() => import("./hub/WeekPair.tsx"));
 
 /** The Hub (Foundations §1), top to bottom per 1.6: hero → today's news → launch islands → team calendar →
- * live market data, then the engagement cards. From 1920 px the market panel becomes a side column beside
+ * live market data, then the engagement cards. From 1440 px the market panel becomes a side column beside
  * the hero, news and islands instead of a stretched full-width card. */
 export default function Hub() {
   const { user } = useAuth();

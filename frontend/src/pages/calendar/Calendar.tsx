@@ -12,6 +12,7 @@ import { CalendarEmpty } from "../../components/ui/Illustrations.tsx";
 import { ConfirmDialog, type DrawerOrigin, EmptyState, ErrorState, originOf, OwnerDot, PillToggle, RefreshFailed, Skeleton, Stagger, ToggleChip, useToast } from "../../components/ui/index.ts";
 import { ApiError, type PublicUser } from "../../lib/api.ts";
 import { useAuth } from "../../lib/auth.tsx";
+import { dur } from "../../lib/motion.ts";
 import {
   type CalendarView,
   type Mode,
@@ -157,7 +158,7 @@ export default function CalendarPage() {
       {
         onSuccess: () => {
           setSettling(occ.id);
-          window.setTimeout(() => setSettling(null), 600);
+          window.setTimeout(() => setSettling(null), dur.standard() * 1000);
         },
         onError: (err) => toast({ title: "Couldn't move that", text: err instanceof ApiError ? err.message : "It's back where it was.", tone: "loss" }),
       },
@@ -335,7 +336,7 @@ export default function CalendarPage() {
         {owners.map((o) => {
           const on = !hidden.includes(o.id);
           return (
-            <ToggleChip key={o.id} pressed={on} onClick={() => setHidden(on ? [...hidden, o.id] : hidden.filter((id) => id !== o.id))} label={`${on ? "Hide" : "Show"} ${o.label}`}>
+            <ToggleChip key={o.id} pressed={on} onClick={() => setHidden(on ? [...hidden, o.id] : hidden.filter((id) => id !== o.id))} label={o.label}>
               <OwnerDot colourIndex={o.colour_index} />
               {o.display_name}
             </ToggleChip>

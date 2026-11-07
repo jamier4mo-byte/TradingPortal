@@ -36,7 +36,9 @@ export function LaunchIsland({
   return (
     <Link
       to={meta.to}
-      aria-label={`Open ${meta.name}`}
+      // The whole card is the link: its name says what it opens and carries the subtitle and the live stat,
+      // so a screen reader hears the same as a sighted user ("Open Replay Journal. Ideal trades… Last session…").
+      aria-label={[`Open ${meta.name}`, subtitle, typeof stat === "string" ? stat : null].filter(Boolean).join(". ")}
       onClick={onClick}
       onMouseEnter={() => setLit(true)}
       onMouseLeave={() => setLit(false)}

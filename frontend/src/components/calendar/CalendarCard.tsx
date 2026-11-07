@@ -136,11 +136,11 @@ function AgendaList({ days, today, online }: { days: { date: string; items: Occu
                 const time = o.all_day ? "All day" : ukClockOf(o.start_at);
                 const can = o.can_edit && online;
                 return (
-                  <li key={o.id} className={`flex items-center gap-2 rounded-panel border border-border bg-surface-2 pl-3 ${o.done ? "opacity-70" : ""}`}>
+                  <li key={o.id} className={`flex items-center gap-2 rounded-panel border border-border bg-surface-2 pl-3`}>
                     <Link to={`/calendar?view=day&date=${date}`} className="flex min-h-11 min-w-0 flex-1 items-center gap-3" aria-label={`${o.title}, ${time}, ${o.owner.display_name}${o.done ? ", done" : ""}`}>
                       <OwnerDot colourIndex={o.owner.colour_index} className="shrink-0" />
                       <span className="num w-14 shrink-0 text-label text-muted">{time}</span>
-                      <span className={`truncate text-body ${o.done ? "line-through" : ""}`}>{o.title}</span>
+                      <span className={`truncate text-body ${o.done ? "line-through text-muted" : ""}`}>{o.title}</span>
                     </Link>
                     <button
                       type="button"
