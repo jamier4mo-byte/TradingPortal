@@ -1,4 +1,3 @@
-import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import {
   Bell,
   BookOpen,
@@ -7,7 +6,6 @@ import {
   ChevronsRight,
   Home,
   LineChart,
-  LogOut,
   MoreHorizontal,
   Newspaper,
   Plus,
@@ -20,13 +18,13 @@ import { lazy, type ReactNode, Suspense, useEffect, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 
 import { useAuth } from "../lib/auth.tsx";
-import { initials } from "../lib/format.ts";
 import { session, ukClock } from "../lib/time.ts";
 import { useNow } from "../lib/useNow.ts";
 import { useOnline } from "../lib/useMediaQuery.ts";
+import { AvatarButton } from "./AvatarButton.tsx";
 import { Logo, Tile } from "./Brand.tsx";
 import { PageTransition } from "./PageTransition.tsx";
-import { OfflineBanner, ownerBg } from "./ui/index.ts";
+import { OfflineBanner } from "./ui/index.ts";
 import { UpdateReady } from "./UpdateReady.tsx";
 import { setPrintMode } from "../lib/print.ts";
 import { onChimeMessage, playChime } from "../lib/push.ts";
@@ -37,6 +35,8 @@ import { installVisibilityPause } from "../lib/motion.ts";
 // (F18). Login prefetches the intro; the palette is fetched when the Jump button is pointed at or focused,
 // and mounted on its first open (then kept mounted so its close animation can run).
 const PortalIntro = lazy(() => import("./PortalIntro.tsx"));
+// The account menu (Radix menu + floating-ui) loads after first paint: the avatar shows meanwhile.
+const AccountMenu = lazy(() => import("./AccountMenu.tsx"));
 const CommandPalette = lazy(() => import("./CommandPalette.tsx").then((m) => ({ default: m.CommandPalette })));
 const prefetchPalette = () => void import("./CommandPalette.tsx");
 
@@ -74,7 +74,7 @@ const SIDEBAR_KEY = "tp.sidebar";
 export default function AppShell({ children }: { children: ReactNode }) {
   const now = useNow();
   const online = useOnline();
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -239,41 +239,9 @@ export default function AppShell({ children }: { children: ReactNode }) {
             <Bell aria-hidden className="size-5" strokeWidth={1.75} />
           </NavLink>
 
-          <DropdownMenu.Root>
-            <DropdownMenu.Trigger asChild>
-              <button type="button" className="btn btn-ghost size-11 px-0" aria-label="Account menu">
-                <span className={`grid size-8 place-items-center rounded-full text-label font-semibold text-bg ${ownerBg(user?.colour_index ?? 0)}`}>
-                  {initials(user?.display_name ?? "?")}
-                </span>
-              </button>
-            </DropdownMenu.Trigger>
-            <DropdownMenu.Portal>
-              <DropdownMenu.Content align="end" sideOffset={6} className="card z-30 min-w-56 p-1.5 data-[state=open]:animate-[page-enter_var(--dur-quick)_var(--ease-in-enter)]">
-                <div className="px-3 py-2">
-                  <p className="truncate text-body font-medium">{user?.display_name}</p>
-                  <p className="truncate text-label text-muted">{user?.email}</p>
-                </div>
-                <DropdownMenu.Separator className="my-1 h-px bg-border" />
-                <MenuItem onSelect={() => navigate("/settings")} icon={Settings}>
-                  Settings
-                </MenuItem>
-                {isAdmin ? (
-                  <MenuItem onSelect={() => navigate("/admin/users")} icon={Shield}>
-                    Admin
-                  </MenuItem>
-                ) : null}
-                <DropdownMenu.Separator className="my-1 h-px bg-border" />
-                <MenuItem
-                  onSelect={() => {
-                    void signOut().then(() => navigate("/login"));
-                  }}
-                  icon={LogOut}
-                >
-                  Sign out
-                </MenuItem>
-              </DropdownMenu.Content>
-            </DropdownMenu.Portal>
-          </DropdownMenu.Root>
+          <Suspense fallback={<AvatarButton disabled aria-disabled="true" />}>
+            <AccountMenu />
+          </Suspense>
         </header>
 
         <main className="safe-x mx-auto max-w-[1760px] pt-6 pb-32 tablet:pb-10">
@@ -333,17 +301,5 @@ export default function AppShell({ children }: { children: ReactNode }) {
         </Suspense>
       ) : null}
     </div>
-  );
-}
-
-function MenuItem({ children, onSelect, icon: Icon }: { children: ReactNode; onSelect: () => void; icon: typeof Settings }) {
-  return (
-    <DropdownMenu.Item
-      onSelect={onSelect}
-      className="flex min-h-11 cursor-pointer items-center gap-3 rounded-panel px-3 text-body text-muted outline-none data-[highlighted]:bg-surface-2 data-[highlighted]:text-text"
-    >
-      <Icon aria-hidden className="size-4" strokeWidth={1.75} />
-      {children}
-    </DropdownMenu.Item>
   );
 }
