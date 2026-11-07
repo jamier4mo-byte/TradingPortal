@@ -245,8 +245,21 @@ def use_reset(db: Session, token: str, new_password: str) -> User:
     user = db.get(User, reset.user_id)
     if not user or not user.is_active:
         raise AuthError("This account is deactivated.", 403)
-    reset.used_at = utcnow()
-    set_password(db, user, new_password, actor=user)
+    # Claim the link atomically so two browsers can't both use it.
+    now = utcnow()
+    claimed = db.execute(
+        update(PasswordReset)
+        .where(PasswordReset.id == reset.id, PasswordReset.used_at.is_(None), PasswordReset.expires_at > now)
+        .values(used_at=now)
+    ).rowcount
+    if claimed != 1:
+        db.rollback()
+        raise AuthError("This reset link isn't valid any more. Ask the admin for a new one.", 410)
+    try:
+        set_password(db, user, new_password, actor=user)
+    except AuthError:
+        db.rollback()
+        raise
     audit.record(db, "reset.used", actor=user, target_type="user", target_id=user.id)
     db.commit()
     return user

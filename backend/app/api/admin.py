@@ -3,6 +3,7 @@
 from fastapi import APIRouter, HTTPException, Request
 
 from ..core.deps import AdminUser, CurrentUser, Db
+from ..core.settings import get_settings
 from ..models import User
 from ..schemas.admin import InviteCreateIn, InviteOut, ResetLinkOut, RoleIn, StatusIn
 from ..schemas.auth import PublicUserOut, UserOut
@@ -14,10 +15,18 @@ router = APIRouter(tags=["admin"])
 
 
 def _origin(request: Request) -> str:
-    """The front end's origin for links the admin will copy: prefer Origin, then the request host."""
-    origin = request.headers.get("origin")
-    if origin:
-        return origin.rstrip("/")
+    """The front end's origin for links the admin will copy.
+
+    The request's Origin header is used only when it is one of the configured TRADING_PORTAL_ORIGINS (the
+    same allow-list WebAuthn trusts), so a spoofed Origin or Host header can't point an invite link at
+    another site. Otherwise the first configured origin, and only as a last resort the request host.
+    """
+    allowed = [o.rstrip("/") for o in get_settings().origins]
+    origin = (request.headers.get("origin") or "").rstrip("/")
+    if origin and origin in allowed:
+        return origin
+    if allowed:
+        return allowed[0]
     return str(request.base_url).rstrip("/")
 
 

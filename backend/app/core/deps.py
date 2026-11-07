@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from ..db import get_session
 from ..models import User
 from ..services import users as users_svc
+from .ratelimit import RateLimiter
 from .settings import get_settings
 
 SESSION_COOKIE = "tp_session"
@@ -65,6 +66,20 @@ def require_admin(user: CurrentUser) -> User:
 
 
 AdminUser = Annotated[User, Depends(require_admin)]
+
+# The expensive endpoints (zip exports, the whole-database export, CSV import previews) share one modest
+# per-user budget so a stuck retry loop or a script can't keep the single machine busy. Per user, not per
+# IP: the four of us may share a network. Tests reset it between cases (conftest).
+heavy_limiter = RateLimiter(limit=10, window_seconds=60)
+
+
+def heavy_endpoint(user: CurrentUser) -> User:
+    if not heavy_limiter.allow(str(user.id)):
+        raise HTTPException(429, "You're doing that a lot. Wait a minute and try again.")
+    return user
+
+
+HeavyUser = Annotated[User, Depends(heavy_endpoint)]
 
 
 class Owned(Protocol):

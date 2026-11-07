@@ -32,6 +32,14 @@ jobs:
       - name: Front end
         working-directory: frontend
         run: npm ci && npm run lint && npx tsc -b && npm run build && npm run check-bundle
+      # Advisory only: a new CVE in a dependency shows up here without blocking the deploy
+      # (the same two commands as `make audit`).
+      - name: Dependency audit (non-blocking)
+        continue-on-error: true
+        run: |
+          (cd frontend && npm audit --omit=dev) || true
+          pip freeze | grep -v -i 'trading.portal' > /tmp/tp-audit-requirements.txt
+          pipx run pip-audit -r /tmp/tp-audit-requirements.txt --progress-spinner off || true
 
   deploy:
     needs: test

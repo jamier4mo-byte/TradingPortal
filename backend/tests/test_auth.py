@@ -156,8 +156,21 @@ def _invite_token(admin_client, **body) -> str:
     res = admin_client.post("/api/admin/invites", json={"role": "member", **body})
     assert res.status_code == 201, res.text
     url = res.json()["url"]
-    assert url.startswith("http://localhost/invite/")
+    # Links use the configured TRADING_PORTAL_ORIGINS (the test env sets http://localhost:5173), never
+    # the request's Host; an Origin header that isn't configured is ignored too.
+    assert url.startswith("http://localhost:5173/invite/")
     return url.rsplit("/", 1)[1]
+
+
+def test_invite_link_ignores_a_spoofed_origin_header(admin_client) -> None:
+    res = admin_client.post(
+        "/api/admin/invites", json={"role": "member"}, headers={"Origin": "https://evil.example"}
+    )
+    assert res.status_code == 201 and res.json()["url"].startswith("http://localhost:5173/invite/")
+    res = admin_client.post(
+        "/api/admin/invites", json={"role": "member"}, headers={"Origin": "http://localhost:5173"}
+    )
+    assert res.json()["url"].startswith("http://localhost:5173/invite/")
 
 
 def test_invite_flow_creates_member_and_signs_in(admin_client, db) -> None:

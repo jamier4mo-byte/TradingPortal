@@ -16,6 +16,7 @@
 #   make migrate-screenshots  copy the data dir's screenshots into the S3 bucket (STORAGE_BACKEND=s3; idempotent)
 #   make restore-test  restore the backup replica to /tmp/tp-restore-test, integrity-check it, compare row counts
 #                      (REPLICA=<s3 url or dir with a snapshot>; see docs/ops/RESTORE-TEST.md)
+#   make audit         dependency audit: `npm audit --omit=dev` and `pip-audit` (via pipx) on the backend venv
 #
 # Data lives in $TRADING_PORTAL_DATA_DIR (default ~/TradingPortal/data), never in the repo.
 
@@ -23,7 +24,7 @@ PYTHON ?= python3
 PORT   ?= 8765
 VENV   := backend/.venv
 
-.PHONY: icons setup setup-backend setup-frontend dev dev-backend dev-frontend test lint fmt build run migrate smoke smoke-browser clean dev-secrets create-admin seed-dev news-backfill vapid migrate-screenshots restore-test
+.PHONY: icons setup setup-backend setup-frontend dev dev-backend dev-frontend test lint fmt build run migrate smoke smoke-browser clean dev-secrets create-admin seed-dev news-backfill vapid migrate-screenshots restore-test audit
 
 setup: setup-backend setup-frontend
 
@@ -86,6 +87,13 @@ migrate-screenshots:
 
 restore-test:
 	cd backend && .venv/bin/python -m app.cli restore-test $(if $(REPLICA),--replica "$(REPLICA)") $(if $(OUT),--out "$(OUT)")
+
+# Known-vulnerability check on what is actually installed. pip-audit runs through pipx so it never joins
+# the app's venv; `pipx` comes with Homebrew Python (`brew install pipx`) or `pip install --user pipx`.
+audit:
+	cd frontend && npm audit --omit=dev
+	$(VENV)/bin/pip freeze | grep -v -i 'trading.portal' > /tmp/tp-audit-requirements.txt
+	pipx run pip-audit -r /tmp/tp-audit-requirements.txt --progress-spinner off
 
 run:
 	cd backend && .venv/bin/alembic upgrade head && .venv/bin/uvicorn app.main:app --host 0.0.0.0 --port $(PORT)

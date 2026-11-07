@@ -6,7 +6,15 @@ from typing import Annotated
 from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse, Response
 
-from ..core.deps import AdminUser, CurrentUser, Db, ScopeParam, apply_scope, require_owner_or_admin
+from ..core.deps import (
+    AdminUser,
+    CurrentUser,
+    Db,
+    HeavyUser,
+    ScopeParam,
+    apply_scope,
+    require_owner_or_admin,
+)
 from ..models import Instrument, JournalSession, Screenshot, Strategy, Trade, User
 from ..schemas.auth import OkOut, PublicUserOut
 from ..schemas.journal import (
@@ -39,7 +47,7 @@ from ..services import journal as svc
 from ..services import journal_rules as rules
 from ..services import matcher
 from ..services import screenshots as shots_svc
-from ..services.fxreplay import CsvFormatError
+from ..services.fxreplay import MAX_CSV_BYTES, CsvFormatError
 from ..services.journal import JournalError
 from ..services.news import queries as news_queries
 from ..services.screenshots import ScreenshotError
@@ -325,16 +333,18 @@ def restore_trade(trade_id: int, user: CurrentUser, db: Db) -> TradeOut:
 
 
 async def _read_csv(file: UploadFile) -> bytes:
-    data = await file.read()
+    data = await file.read(MAX_CSV_BYTES + 1)
     if not data:
         raise HTTPException(400, "The file is empty.")
+    if len(data) > MAX_CSV_BYTES:
+        raise HTTPException(413, "That file is over 5 MB. Is it really an FX Replay export?")
     return data
 
 
 @router.post("/strategies/{strategy_id}/imports/preview", response_model=ImportPreviewOut)
 async def preview_import(
     strategy_id: int,
-    user: CurrentUser,
+    user: HeavyUser,
     db: Db,
     file: Annotated[UploadFile, File()],
     timezone: Annotated[str | None, Form()] = None,

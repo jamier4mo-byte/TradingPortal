@@ -44,7 +44,7 @@ from fastapi.testclient import TestClient  # noqa: E402
 from sqlalchemy import delete  # noqa: E402
 
 from app.api.auth import login_limiter  # noqa: E402
-from app.core.deps import CSRF_COOKIE, CSRF_HEADER  # noqa: E402
+from app.core.deps import CSRF_COOKIE, CSRF_HEADER, heavy_limiter  # noqa: E402
 from app.db import session_factory  # noqa: E402
 from app.main import app  # noqa: E402
 from app.models import (  # noqa: E402
@@ -168,6 +168,7 @@ def clean_db() -> Iterator[None]:
     if hasattr(storage, "wipe"):
         storage.wipe()
     login_limiter.reset()
+    heavy_limiter.reset()
     challenges.clear()
 
 

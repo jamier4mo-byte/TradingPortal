@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from pydantic import ValidationError
 
-from ..core.deps import CurrentUser, Db
+from ..core.deps import CurrentUser, Db, HeavyUser
 from ..schemas.analytics import AnalyticsQuery, ExportQuery
 from ..services import journal as journal_svc
 from ..services.analytics import export as export_svc
@@ -72,7 +72,7 @@ def _attachment(name: str) -> dict[str, str]:
 
 
 @router.get("/analytics/export/ai")
-def export_for_ai(user: CurrentUser, db: Db, q: str = Query("{}", max_length=8000)) -> StreamingResponse:
+def export_for_ai(user: HeavyUser, db: Db, q: str = Query("{}", max_length=8000)) -> StreamingResponse:
     """Export for AI (F8): a zip of trades.jsonl, images/, strategy.md, README_prompt.md and manifest.json."""
     query = _parse(q)
     _check_strategy(db, query)
@@ -82,7 +82,7 @@ def export_for_ai(user: CurrentUser, db: Db, q: str = Query("{}", max_length=800
 
 
 @router.get("/analytics/export/csv")
-def export_csv(user: CurrentUser, db: Db, q: str = Query("{}", max_length=8000)) -> StreamingResponse:
+def export_csv(user: HeavyUser, db: Db, q: str = Query("{}", max_length=8000)) -> StreamingResponse:
     """The filtered trades as CSV (UTF-8 with a BOM for Excel)."""
     query = _parse(q)
     _check_strategy(db, query)

@@ -95,3 +95,48 @@ def test_export_with_no_screenshots(admin_client):
     manifest = json.loads(zf.read("manifest.json"))
     assert manifest["screenshots"] == {"records": 0, "files": 0}
     assert {"db/portal.db", "manifest.json", "README.md"} == set(zf.namelist())
+
+
+def test_snapshot_carries_no_sessions_invites_resets_or_plaintext_secrets(
+    admin_client, admin, member, db, tmp_path
+):
+    """The exporting admin is signed in (a sessions row), has an invite and a reset link open, and a vault
+    key saved: the zip must hold none of the ephemeral rows and never the key's plaintext."""
+    from app.services import keys as keys_svc
+
+    secret = "tdk-plaintext-should-never-leave-the-server-9f8e7d6c"
+    keys_svc.set_key(db, admin, "twelve_data", secret)
+    assert admin_client.post("/api/admin/invites", json={"role": "member"}).status_code == 201
+    assert admin_client.post(f"/api/admin/users/{member.id}/reset-link").status_code == 201
+
+    zf = export(admin_client)
+    manifest = json.loads(zf.read("manifest.json"))
+    assert manifest["omitted_tables"] == ["sessions", "password_resets", "invites"]
+    assert manifest["counts"]["sessions"] == 0
+    assert manifest["counts"]["invites"] == 0
+    assert manifest["counts"]["password_resets"] == 0
+    assert manifest["counts"]["user_api_keys"] == 1  # the encrypted vault row stays (a restore needs it)
+
+    for name in zf.namelist():
+        assert secret.encode() not in zf.read(name), name
+        assert b"tdk-plaintext" not in zf.read(name), name
+
+    db_path = tmp_path / "scrubbed.db"
+    db_path.write_bytes(zf.read("db/portal.db"))
+    conn = sqlite3.connect(db_path)
+    assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+    for table in ("sessions", "invites", "password_resets"):
+        assert conn.execute(f"select count(*) from {table}").fetchone()[0] == 0, table
+    assert conn.execute("select count(*) from users").fetchone()[0] == 2
+    assert (
+        conn.execute("select password_hash from users where id = ?", (admin.id,))
+        .fetchone()[0]
+        .startswith("$argon2id$")
+    )
+    conn.close()
+
+    # The live database is untouched: the admin is still signed in and the links still work.
+    assert admin_client.get("/api/auth/me").status_code == 200
+    from app.models import Invite, PasswordReset
+
+    assert db.scalar(select(Invite)) is not None and db.scalar(select(PasswordReset)) is not None

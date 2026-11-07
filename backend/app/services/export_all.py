@@ -17,6 +17,7 @@ import hashlib
 import io
 import json
 import shutil
+import sqlite3
 import tempfile
 import zipfile
 from collections.abc import Iterator
@@ -32,6 +33,12 @@ from .backup import restorable_screenshots, row_counts, snapshot
 from .storage import StorageError, get_storage
 
 CHUNK = 1024 * 1024
+# Rows removed from the snapshot copy before it is zipped (never from the live database): sign-in
+# sessions, invite links and reset links. Their tokens are stored hashed, so they're useless to an
+# attacker anyway, but they're also useless to a restore (everyone signs in again; an admin re-issues any
+# open invite), so the export carries none. Password hashes (Argon2id) and the Fernet-encrypted vault stay:
+# a restore needs them and neither is readable without the password / TRADING_PORTAL_SECRET_KEY.
+OMITTED_TABLES = ("sessions", "password_resets", "invites")
 
 README = """# Trading Portal: export of everything
 
@@ -44,6 +51,8 @@ Made {when} by {who} from Trading Portal {version} (screenshots stored in: {back
 - `screenshots/…`: every screenshot that is live or still in the 30-day Trash, under the same key the
   `screenshots` table uses (`full_key`, `thumb_key`).
 - `manifest.json`: counts per table and a SHA-256 for every file, so you can tell nothing is missing.
+- Left out on purpose: sign-in sessions, invite links and password-reset links (`manifest.json` →
+  `omitted_tables`). After a restore everyone signs in again and the admin re-issues any open invite.
 
 ## To bring it back
 
@@ -73,6 +82,18 @@ class _Sink(io.RawIOBase):
         out = bytes(self.buf)
         self.buf.clear()
         return out
+
+
+def scrub_snapshot(path: Path) -> None:
+    """Delete the OMITTED_TABLES rows from a snapshot copy and VACUUM so the bytes are really gone."""
+    conn = sqlite3.connect(path)
+    try:
+        for table in OMITTED_TABLES:
+            conn.execute(f'DELETE FROM "{table}"')
+        conn.commit()
+        conn.execute("VACUUM")
+    finally:
+        conn.close()
 
 
 def export_filename(now: datetime | None = None) -> str:
@@ -110,6 +131,7 @@ def stream_everything(db: Session, user: User) -> Iterator[bytes]:
             with zipfile.ZipFile(sink, "w", zipfile.ZIP_DEFLATED, allowZip64=True) as zf:
                 # 1. the database, streamed in chunks from a consistent snapshot
                 snapshot(live_db, tmp_db)
+                scrub_snapshot(tmp_db)
                 counts = row_counts(tmp_db)
                 digest, size = hashlib.sha256(), 0
                 with zf.open(_info("db/portal.db", compress=True), "w", force_zip64=True) as member:
@@ -159,6 +181,7 @@ def stream_everything(db: Session, user: User) -> Iterator[bytes]:
                     "exported_by": display_name,
                     "storage_backend": backend,
                     "counts": counts,
+                    "omitted_tables": list(OMITTED_TABLES),
                     "screenshots": {"records": len(shots), "files": 2 * len(shots) - len(missing)},
                     "missing_files": missing,
                     "files": files,

@@ -52,7 +52,10 @@ DATE_FORMATS = (
     "%d/%m/%Y %H:%M",
 )
 
-MAX_CSV_BYTES = 20 * 1024 * 1024
+# A real FX Replay export is a few hundred KB; both caps are generous. The request-body middleware
+# (core/headers.py) refuses a 6 MB+ upload before it is read; this is the in-service belt and braces.
+MAX_CSV_BYTES = 5 * 1024 * 1024
+MAX_CSV_ROWS = 50_000
 TAG_SEPARATORS = re.compile(r"[;,|]")
 
 
@@ -142,7 +145,7 @@ def resolve_zone(name: str) -> ZoneInfo:
 def parse_csv(data: bytes | str, *, timezone: str = "Europe/London") -> ParseResult:
     if isinstance(data, bytes):
         if len(data) > MAX_CSV_BYTES:
-            raise CsvFormatError("That file is over 20 MB. Is it really an FX Replay export?")
+            raise CsvFormatError("That file is over 5 MB. Is it really an FX Replay export?")
         text = data.decode("utf-8-sig", errors="replace")
     else:
         text = data.lstrip("﻿")
@@ -164,6 +167,10 @@ def parse_csv(data: bytes | str, *, timezone: str = "Europe/London") -> ParseRes
     result = ParseResult(timezone=timezone, unknown_columns=[h for h in header if h not in KNOWN_COLUMNS])
     seen: set[str] = set()
     for line_no, values in enumerate(reader, start=2):
+        if line_no - 1 > MAX_CSV_ROWS:
+            raise CsvFormatError(
+                f"That file has over {MAX_CSV_ROWS:,} rows. Is it really an FX Replay export?"
+            )
         if not any(v.strip() for v in values):
             continue
         row = {header[i]: (values[i].strip() if i < len(values) else "") for i in range(len(header))}
