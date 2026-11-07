@@ -221,12 +221,12 @@ prompt's branch. If a prompt stops part-way, the next run continues from the fir
 - [x] Big screens get extra panels; everything below the fold lazy-loads; Hub initial JS ≤ 200 KB gzip
 
 ### 3. Motion pass (F18)
-- [ ] Page transitions (View Transitions + fallback), shared-element transitions for strategy / trade / ticker / calendar event / news event, reversed on back
-- [ ] Staggered first-load entrance; pills slide, charts morph, numbers count up, toggles spring, ticks draw, copy icons morph
-- [ ] Toasts from the bottom corner, drawers from the right / sheet on the phone, Cmd+K fade-and-scale, backtest unlock moment
-- [ ] Portal intro after login (once a day per device, skipped under Reduced / Off)
-- [ ] Full / Reduced / Off honoured everywhere; only transform and opacity; paused off-screen and in hidden tabs
-- [ ] Performance trace of a chart morph and the Hub load (Chrome DevTools MCP, if available)
+- [x] Page transitions (View Transitions + fallback), shared-element transitions for strategy / trade / ticker / calendar event / news event, reversed on back
+- [x] Staggered first-load entrance; pills slide, charts morph, numbers count up, toggles spring, ticks draw, copy icons morph
+- [x] Toasts from the bottom corner, drawers from the right / sheet on the phone, Cmd+K fade-and-scale, backtest unlock moment
+- [x] Portal intro after login (once a day per device, skipped under Reduced / Off)
+- [x] Full / Reduced / Off honoured everywhere; only transform and opacity; paused off-screen and in hidden tabs
+- [x] Performance trace of a chart morph and the Hub load (Chrome DevTools MCP, if available)
 
 ### 4. PWA and offline
 - [x] `sw.js`: app shell, last Hub API answers, prices and today's events cached
