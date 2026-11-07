@@ -243,8 +243,8 @@ prompt's branch. If a prompt stops part-way, the next run continues from the fir
 - [x] `fly.toml`: always on, volume, health check on `/api/health`, `[env]` for non-secret settings
 
 ### 6. Security and quality review
-- [ ] Review: auth, sessions, CSRF, lockout, invites, resets; route × role table from OpenAPI; uploads and path traversal; zip export; key vault; SSRF; headers (CSP, HSTS, frame-ancestors, Referrer-Policy); rate limits; `pip-audit`, `npm audit --omit=dev`
-- [ ] Every high and medium fixed
+- [x] Review: auth, sessions, CSRF, lockout, invites, resets; route × role table from OpenAPI; uploads and path traversal; zip export; key vault; SSRF; headers (CSP, HSTS, frame-ancestors, Referrer-Policy); rate limits; `pip-audit`, `npm audit --omit=dev`
+- [x] Every high and medium fixed
 - [ ] Accessibility sweep: axe on every route, keyboard walkthrough, 200% zoom, chart summaries and tables, focus rings
 
 ### 7. Could items (only after everything above passes)
