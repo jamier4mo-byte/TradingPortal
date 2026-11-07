@@ -15,8 +15,16 @@
 const VERSION = "v1";
 const SHELL_CACHE = `tp-shell-${VERSION}`;
 const API_CACHE = `tp-api-${VERSION}`;
-// POSTs that change who is signed in: login, logout, passkey login, accepting an invite, resetting a password.
-const AUTH_CHANGE = /^\/api\/auth\/(login|logout|passkeys?\/[a-z-]*login[a-z-]*|invite\/|reset\/)/;
+// POSTs that change who is signed in (exact paths from backend/app/api/auth.py): login, logout, passkey login,
+// accepting an invite, resetting a password.
+const AUTH_CHANGE = new Set([
+  "/api/auth/login",
+  "/api/auth/logout",
+  "/api/auth/passkey/login/begin",
+  "/api/auth/passkey/login/finish",
+  "/api/auth/invite/accept",
+  "/api/auth/reset",
+]);
 const API_TIMEOUT_MS = 4000;
 const API_MAX_ENTRIES = 40;
 const CACHED_AT = "X-TP-Cached-At";
@@ -110,7 +118,7 @@ self.addEventListener("fetch", (event) => {
 
   // Any change of who is signed in empties the API cache, so one person's Hub is never served to the next:
   // sign-out, and every sign-in (password, passkey or invite) on this device.
-  if (req.method === "POST" && AUTH_CHANGE.test(url.pathname)) {
+  if (req.method === "POST" && AUTH_CHANGE.has(url.pathname)) {
     event.waitUntil(caches.delete(API_CACHE));
     return; // the request itself goes to the network untouched
   }
