@@ -201,7 +201,7 @@ prompt's branch. If a prompt stops part-way, the next run continues from the fir
 - [x] Clean `main`; branch `build/05-hub-calendar-launch`
 - [x] Baseline: `make lint` clean (Hub 187.8 KB) · `make test` 467 pytest + 6 Node · smoke deferred to the gate (144 at Prompt 4)
 - [x] Docs read in full; Context7 works this session; Docker is **not installed** on this Mac (noted for Gate 5)
-- [ ] Every route has the five states (checked in step 6's accessibility sweep)
+- [x] Every route has the five states (checked in step 6's accessibility sweep)
 
 ### 1. Team calendar (1.4)
 - [x] Migration `0009`: `tasks`, `task_exceptions`, `task_completions`
@@ -245,7 +245,7 @@ prompt's branch. If a prompt stops part-way, the next run continues from the fir
 ### 6. Security and quality review
 - [x] Review: auth, sessions, CSRF, lockout, invites, resets; route × role table from OpenAPI; uploads and path traversal; zip export; key vault; SSRF; headers (CSP, HSTS, frame-ancestors, Referrer-Policy); rate limits; `pip-audit`, `npm audit --omit=dev`
 - [x] Every high and medium fixed
-- [ ] Accessibility sweep: axe on every route, keyboard walkthrough, 200% zoom, chart summaries and tables, focus rings
+- [x] Accessibility sweep: axe on every route, keyboard walkthrough, 200% zoom, chart summaries and tables, focus rings
 
 ### 7. Could items (only after everything above passes)
 - [ ] Flashcard review (U14) · Konva annotator · presence and activity feed
