@@ -254,7 +254,7 @@ prompt's branch. If a prompt stops part-way, the next run continues from the fir
 - [x] `docs/DEPLOY.md`
 
 ### 9. Gate 5
-- [ ] `make lint`, `make test`, `make smoke` green; bundle budget; `docker build .` (not available here: say so)
+- [x] `make lint`, `make test`, `make smoke` green; bundle budget; `docker build .` (not available here: say so)
 - [ ] `/check-devices` at 360/375/430/768/1440/1920 clean; design-reviewer: no blockers or majors; axe on every route
-- [ ] Restore test, offline e2e and calendar recurrence tests pass; no open high or medium security findings
+- [x] Restore test, offline e2e and calendar recurrence tests pass; no open high or medium security findings
 - [ ] `PHASE-5-REPORT.md`, `FINAL-REPORT.md`, `README.md`, `CLAUDE.md`; merged to local `main`

@@ -107,7 +107,7 @@ Status words: **Done** = built and tested · **Partial** = built with a gap name
 | F15 Five states per screen + first-run checklist | Done | Checklist ticks itself and hides when complete; five states checked in the Phase 5 sweep |
 | F16 FX Replay metric set, Monte Carlo, Reconcile | Done | Phase 3 (breakeven ±$10, Jamie 6 Nov) |
 | F17 Head tags | Done | Phase 1; startup images added in Phase 5 |
-| F18 View Transitions + Motion only, inline SVG, 200 KB Hub | Done | Hub initial JS under budget (see Phase 5 report for the final figure) |
+| F18 View Transitions + Motion only, inline SVG, 200 KB Hub | Done | Hub initial JS 192.8 KB gzip at v1 (ECharts, FullCalendar, the palette and the account menu are lazy) |
 | F19 NAS100 in the instrument list and USD mapping | Done | Phase 2 and 4 |
 
 ## U-ideas
