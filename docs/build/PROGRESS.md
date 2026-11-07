@@ -229,10 +229,10 @@ prompt's branch. If a prompt stops part-way, the next run continues from the fir
 - [ ] Performance trace of a chart morph and the Hub load (Chrome DevTools MCP, if available)
 
 ### 4. PWA and offline
-- [ ] `sw.js`: app shell, last Hub API answers, prices and today's events cached
-- [ ] Offline: cached data with the OfflineBanner, stale figures dimmed with "last updated"
-- [ ] Launch screen matching the intro, dark status bar, safe areas; images sized per device; long trade lists load as you scroll
-- [ ] e2e: load the Hub, go offline, reload, cached Hub shows with offline marking
+- [x] `sw.js`: app shell, last Hub API answers, prices and today's events cached
+- [x] Offline: cached data with the OfflineBanner, stale figures dimmed with "last updated"
+- [x] Launch screen matching the intro, dark status bar, safe areas; images sized per device; long trade lists load as you scroll
+- [x] e2e: load the Hub, go offline, reload, cached Hub shows with offline marking
 
 ### 5. Backups, storage and data safety (F2, F5)
 - [x] `S3Storage` (boto3, Tigris) behind `Storage`, `STORAGE_BACKEND=local|s3`, moto tests; `make migrate-screenshots` (resumable, idempotent)
