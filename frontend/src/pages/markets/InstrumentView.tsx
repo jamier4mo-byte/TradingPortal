@@ -8,7 +8,8 @@ import { IntradayChart } from "../../components/market/IntradayChart.tsx";
 import { DelayedLabel, LiveDot, PriceFigure } from "../../components/market/TickerCard.tsx";
 import { CurrencyTag, ImpactChip } from "../../components/news/NewsBits.tsx";
 import { ChartEmpty } from "../../components/ui/Illustrations.tsx";
-import { EmptyState, ErrorState, SkeletonCard, SkeletonText, useToast } from "../../components/ui/index.ts";
+import { EmptyState, ErrorState, OfflineState, SkeletonCard, SkeletonText, useToast } from "../../components/ui/index.ts";
+import { offlinePending } from "../../lib/offline.ts";
 import { api } from "../../lib/api.ts";
 import { displaySymbol, formatPrice, signed, usePinMutations, usePins, useQuote, useSparkline, useUsage } from "../../lib/markets.ts";
 import { addDays, dayLabel, ukISODate, useEvents } from "../../lib/news.ts";
@@ -41,7 +42,11 @@ export default function InstrumentView() {
       </div>
       {usage.data?.paused ? <PausedBanner reason={usage.data.paused_reason ?? "Live data paused – daily limit reached"} /> : null}
 
-      {q.isPending ? (
+      {offlinePending(q) ? (
+        <div className="card">
+          <OfflineState what="This instrument" />
+        </div>
+      ) : q.isPending ? (
         <SkeletonCard className="h-56" />
       ) : q.isError ? (
         <ErrorState title="This instrument didn't load" text={q.error.message} onRetry={() => q.refetch()} />

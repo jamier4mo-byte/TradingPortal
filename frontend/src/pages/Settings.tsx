@@ -5,7 +5,8 @@ import { type FormEvent, useState } from "react";
 
 import Card from "../components/Card.tsx";
 import { KeyEmpty } from "../components/ui/Illustrations.tsx";
-import { ConfirmDialog, EmptyState, ErrorState, Field, PillToggle, SkeletonText, TextInput, useToast } from "../components/ui/index.ts";
+import { ConfirmDialog, EmptyState, ErrorState, Field, OfflineState, PillToggle, SkeletonText, TextInput, useToast } from "../components/ui/index.ts";
+import { offlinePending } from "../lib/offline.ts";
 import { api, type ApiKey, type MotionPref, type Passkey, type User } from "../lib/api.ts";
 import { useAuth } from "../lib/auth.tsx";
 import { relativeTime, shortDateTime } from "../lib/format.ts";
@@ -168,7 +169,9 @@ function PasskeysCard() {
         ) : null
       }
     >
-      {passkeys.isPending ? (
+      {offlinePending(passkeys) ? (
+        <OfflineState what="The passkey list" />
+      ) : passkeys.isPending ? (
         <SkeletonText lines={2} />
       ) : passkeys.isError ? (
         <ErrorState text={passkeys.error.message} onRetry={() => passkeys.refetch()} />
@@ -285,7 +288,9 @@ function ApiKeysCard() {
 
   return (
     <Card id="keys" title="API keys" subtitle="Your own Twelve Data key, kept encrypted on the server">
-      {keys.isPending ? (
+      {offlinePending(keys) ? (
+        <OfflineState what="Your API keys" />
+      ) : keys.isPending ? (
         <SkeletonText lines={3} />
       ) : keys.isError ? (
         <ErrorState text={keys.error.message} onRetry={() => keys.refetch()} />
@@ -360,7 +365,9 @@ function NewsPrefsCard() {
   const done = { onSuccess: () => toast({ title: "Saved", text: "Your trades' news tags are being updated." }), onError: (err: Error) => toast({ title: "Couldn't save", text: err.message, tone: "loss" as const }) };
   return (
     <Card id="news" title="News Room" subtitle="The instruments you follow and your news window">
-      {prefs.isPending ? (
+      {offlinePending(prefs) ? (
+        <OfflineState what="News preferences" />
+      ) : prefs.isPending ? (
         <SkeletonText lines={4} />
       ) : prefs.isError ? (
         <ErrorState text={prefs.error.message} onRetry={() => prefs.refetch()} />
@@ -431,7 +438,9 @@ function LivePricesCard() {
   const save = useSaveMarketSettings();
   return (
     <Card title="Live prices" subtitle="How your Twelve Data credits are used">
-      {usage.isPending ? (
+      {offlinePending(usage) ? (
+        <OfflineState what="Credit usage" />
+      ) : usage.isPending ? (
         <SkeletonText lines={3} />
       ) : usage.isError ? (
         <ErrorState text={usage.error.message} onRetry={() => usage.refetch()} />

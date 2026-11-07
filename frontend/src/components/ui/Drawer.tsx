@@ -4,6 +4,7 @@ import { type ReactNode, useCallback } from "react";
 
 import { motionLevel } from "../../lib/motion.ts";
 import { useDevice } from "../../lib/useMediaQuery.ts";
+import { useReturnFocus } from "./returnFocus.ts";
 
 /** Viewport coordinates of the thing that opened a drawer (its centre), so the panel can grow out of it. */
 export interface DrawerOrigin {
@@ -43,6 +44,7 @@ export function Drawer({
   const phone = useDevice() === "phone";
   const animated = motionLevel() !== "off";
   const fromOrigin = motionLevel() === "full" && origin !== undefined;
+  const returnFocus = useReturnFocus(open);
 
   // Runs when the panel mounts (Radix mounts Content on open), before its first paint: measure where the
   // panel sits and point the enter keyframe at the origin. Custom properties only; the keyframe reads them.
@@ -73,6 +75,7 @@ export function Drawer({
         />
         <Dialog.Content
           ref={contentRef}
+          {...returnFocus}
           className={
             phone
               ? `safe-bottom fixed inset-x-0 bottom-0 z-50 flex max-h-[88dvh] flex-col rounded-t-card border border-border bg-surface-1 ${

@@ -4,7 +4,8 @@ import { useState } from "react";
 
 import Card from "../../components/Card.tsx";
 import { PeopleEmpty } from "../../components/ui/Illustrations.tsx";
-import { ConfirmDialog, Drawer, EmptyState, ErrorState, OwnerChip, PillToggle, SkeletonText, useToast } from "../../components/ui/index.ts";
+import { ConfirmDialog, Drawer, EmptyState, ErrorState, OfflineState, OwnerChip, PillToggle, SkeletonText, useToast } from "../../components/ui/index.ts";
+import { offlinePending } from "../../lib/offline.ts";
 import { MorphIcon } from "../../components/ui/MorphIcon.tsx";
 import { api, type Invite, type ResetLink, type Role, type User } from "../../lib/api.ts";
 import { useAuth } from "../../lib/auth.tsx";
@@ -71,7 +72,9 @@ export default function AdminUsers() {
           </div>
         }
       >
-        {users.isPending ? (
+        {offlinePending(users) ? (
+          <OfflineState what="The user list" />
+        ) : users.isPending ? (
           <SkeletonText lines={4} />
         ) : users.isError ? (
           <ErrorState text={users.error.message} onRetry={() => users.refetch()} />

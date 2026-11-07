@@ -69,6 +69,19 @@ export function ReadOnlyBanner({ owner, what = "work", className = "" }: { owner
   );
 }
 
+/** Cold load with no connection and nothing cached (TanStack `fetchStatus === "paused"`, see `offlinePending`
+ * in lib/offline.ts): one clear line instead of a skeleton that never resolves. `what` names the thing. */
+export function OfflineState({ what = "This", text, className = "" }: { what?: string; text?: string; className?: string }) {
+  return (
+    <EmptyState
+      illustration={<OfflineGlyph className="size-8" />}
+      title="You're offline"
+      text={text ?? `${what} loads when you're back online.`}
+      className={className}
+    />
+  );
+}
+
 /** Slides in when the browser goes offline. Last-loaded data stays visible. */
 export function OfflineBanner({ className = "" }: { className?: string }) {
   return (

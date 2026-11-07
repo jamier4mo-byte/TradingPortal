@@ -52,6 +52,23 @@ test("the Hub still renders offline from the service worker's cache", async ({ p
   await expect(page.getByText("You’re offline")).toHaveCount(0);
 });
 
+test("a cold offline load of a tool shows an offline state, not an endless skeleton", async ({ page, context }) => {
+  await signIn(page, ADMIN);
+  await page.evaluate(() => navigator.serviceWorker.ready);
+  await expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller), { timeout: 10_000 }).toBe(true);
+  // Visit once online so the journal's chunk is in the worker's asset cache (its API answers never are).
+  await page.goto("/journal");
+  await expect(page.locator('main a[href^="/journal/strategies/"]').first()).toBeVisible();
+  await page.waitForLoadState("networkidle");
+
+  await context.setOffline(true);
+  await page.goto("/journal");
+  await expect(page.getByText("You’re offline")).toBeVisible({ timeout: 15_000 }); // the shell's banner
+  await expect(page.getByText("The strategy list loads when you're back online.")).toBeVisible({ timeout: 15_000 });
+  await expect(page.locator(".skeleton")).toHaveCount(0);
+  await context.setOffline(false);
+});
+
 test("the service worker never caches private routes", async ({ page }) => {
   await signIn(page, ADMIN);
   await page.evaluate(() => navigator.serviceWorker.ready);

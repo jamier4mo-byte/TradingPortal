@@ -6,7 +6,7 @@ import { OwnersCard } from "../journal/analytics/BacktestViews.tsx";
 import { ChartEmpty, KeyEmpty, ListEmpty, PeopleEmpty } from "../../components/ui/Illustrations.tsx";
 import { Copy } from "lucide-react";
 
-import { Chip, ConfirmDialog, Drawer, EmptyState, ErrorState, OfflineBanner, OwnerChip, PillToggle, ReadOnlyBanner, RingGauge, Skeleton, SkeletonCard, SkeletonText, StatTile, useToast, ViewScopeToggle } from "../../components/ui/index.ts";
+import { Chip, ConfirmDialog, Drawer, EmptyState, ErrorState, OfflineBanner, OfflineState, OwnerChip, PillToggle, ReadOnlyBanner, RingGauge, Skeleton, SkeletonCard, SkeletonText, StatTile, useToast, ViewScopeToggle } from "../../components/ui/index.ts";
 import { Checkbox } from "../../components/ui/Checkbox.tsx";
 import { MorphIcon } from "../../components/ui/MorphIcon.tsx";
 
@@ -41,6 +41,7 @@ export default function Components() {
           <EmptyState illustration={<ListEmpty />} title="No tasks this week" text="Add one to the calendar." />
           <EmptyState illustration={<PeopleEmpty />} title="Just you so far" text="Invite a mate." />
           <EmptyState illustration={<KeyEmpty />} title="No API key" text="Paste your Twelve Data key." />
+          <OfflineState what="The strategy list" />
         </div>
       </Card>
       <Card title="Error state" subtitle="What went wrong and how to fix it" className="col-span-full laptop:col-span-6">

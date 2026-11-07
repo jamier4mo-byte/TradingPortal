@@ -37,10 +37,12 @@ function noteCachedAt(path: string, res: Response): void {
   else cachedStamps.delete(pathOnly(path));
 }
 
-/** fetch() threw (no network, or the service worker had nothing cached): a readable error, status 0. */
-function networkFailure(err: unknown): ApiError {
+/** fetch() threw (no network, or the service worker had nothing cached): a readable error, status 0. Reads
+ * and writes get different words: a read loads again on its own when the connection returns, a write waits. */
+function networkFailure(err: unknown, method = "GET"): ApiError {
   const offline = typeof navigator !== "undefined" && navigator.onLine === false;
-  const e = new ApiError(0, offline ? "You're offline: changes will need a connection" : "Couldn't reach the server");
+  const message = !offline ? "Couldn't reach the server" : method === "GET" ? "You're offline: this loads when you're back online" : "You're offline: changes will need a connection";
+  const e = new ApiError(0, message);
   e.cause = err;
   return e;
 }
@@ -72,7 +74,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
       body: body === undefined ? undefined : JSON.stringify(body),
     });
   } catch (err) {
-    throw networkFailure(err);
+    throw networkFailure(err, method);
   }
   if (method === "GET") noteCachedAt(path, res);
   if (res.status === 401) unauthorised.dispatchEvent(new Event("unauthorised"));
@@ -96,7 +98,7 @@ async function upload<T>(path: string, form: FormData): Promise<T> {
   try {
     res = await fetch(path, { method: "POST", headers, credentials: "same-origin", body: form });
   } catch (err) {
-    throw networkFailure(err);
+    throw networkFailure(err, "POST");
   }
   if (res.status === 401) unauthorised.dispatchEvent(new Event("unauthorised"));
   if (!res.ok) {

@@ -3,7 +3,8 @@ import { ArrowLeft, RotateCcw } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import Card from "../../components/Card.tsx";
-import { ErrorState, OwnerChip, SkeletonText, useToast } from "../../components/ui/index.ts";
+import { ErrorState, OfflineState, OwnerChip, SkeletonText, useToast } from "../../components/ui/index.ts";
+import { offlinePending } from "../../lib/offline.ts";
 import { relativeTime } from "../../lib/format.ts";
 import { api } from "../../lib/api.ts";
 import { fmtRange, fmtUkDateTime, useInvalidateJournal, useTrash } from "../../lib/journal.ts";
@@ -44,7 +45,11 @@ export default function Trash() {
         <h1 className="text-heading font-semibold">Trash</h1>
         <p className="text-body text-muted">Deleted items stay here for {d?.days ?? 30} days, then they're removed for good.</p>
       </header>
-      {trash.isPending ? (
+      {offlinePending(trash) ? (
+        <div className="card">
+          <OfflineState what="The Trash" />
+        </div>
+      ) : trash.isPending ? (
         <Card title="Loading">
           <SkeletonText lines={4} />
         </Card>

@@ -35,6 +35,16 @@ export function useStaleness(paths: string[], dataUpdatedAt: number | undefined 
   return { stale, at, label: at ? `Last updated ${UK_CLOCK.format(at)}` : null };
 }
 
+/** A cold load with no connection and nothing to show: either TanStack Query has paused the fetch (its retry
+ * waits for the connection to come back), or the one attempt `networkMode: "offlineFirst"` allows failed
+ * while the browser says it's offline. A skeleton would shimmer, and "didn't load" would be the wrong
+ * story; show an offline empty state instead. When the connection returns the query refetches on its own. */
+export function offlinePending(q: { isPending: boolean; isError: boolean; fetchStatus: string; data: unknown }): boolean {
+  if (q.data !== undefined) return false;
+  if (q.fetchStatus === "paused") return true;
+  return q.isError && typeof navigator !== "undefined" && !navigator.onLine;
+}
+
 // ---- service worker updates ----
 
 const updates = new EventTarget();

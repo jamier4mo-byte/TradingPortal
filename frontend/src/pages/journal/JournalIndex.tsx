@@ -3,7 +3,8 @@ import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import { ChartEmpty } from "../../components/ui/Illustrations.tsx";
-import { Drawer, EmptyState, ErrorState, SkeletonCard, Stagger, useViewScope, ViewScopeToggle } from "../../components/ui/index.ts";
+import { Drawer, EmptyState, ErrorState, OfflineState, SkeletonCard, Stagger, useViewScope, ViewScopeToggle } from "../../components/ui/index.ts";
+import { offlinePending } from "../../lib/offline.ts";
 import { useAuth } from "../../lib/auth.tsx";
 import { useStrategies } from "../../lib/journal.ts";
 import { useFirstLoad } from "../../lib/motion.ts";
@@ -45,7 +46,11 @@ export default function JournalIndex() {
         </div>
       </header>
 
-      {strategies.isPending ? (
+      {offlinePending(strategies) ? (
+        <div className="card">
+          <OfflineState what="The strategy list" />
+        </div>
+      ) : strategies.isPending ? (
         <div className="grid grid-cols-4 gap-4 tablet:grid-cols-8 laptop:grid-cols-12 laptop:gap-6" aria-busy>
           <SkeletonCard className="col-span-4" />
           <SkeletonCard className="col-span-4" />

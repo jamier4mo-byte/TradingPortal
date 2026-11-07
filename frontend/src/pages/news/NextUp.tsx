@@ -3,7 +3,8 @@ import { Link } from "react-router-dom";
 
 import { CountdownRing } from "../../components/news/CountdownRing.tsx";
 import { CurrencyTag, Figures, ImpactChip } from "../../components/news/NewsBits.tsx";
-import { Skeleton } from "../../components/ui/index.ts";
+import { OfflineState, Skeleton } from "../../components/ui/index.ts";
+import { offlinePending } from "../../lib/offline.ts";
 import { dayLabel, type NewsEvent, useEventDetail, useNextEvent } from "../../lib/news.ts";
 import { useNow } from "../../lib/useNow.ts";
 
@@ -48,6 +49,13 @@ export function NextUp({ compact = false }: { compact?: boolean }) {
   const releasedDetail = useEventDetail(held?.id ?? 0);
   const shown = held ? (releasedDetail.data?.event ?? held) : next.data?.event ?? null;
 
+  if (offlinePending(next)) {
+    return (
+      <section aria-label="Next high-impact event" className="card p-4 tablet:p-5">
+        <OfflineState what="The countdown" className="py-2" />
+      </section>
+    );
+  }
   if (next.isPending) {
     return (
       <section aria-label="Next high-impact event" className="card flex items-center gap-4 p-4 tablet:p-5">

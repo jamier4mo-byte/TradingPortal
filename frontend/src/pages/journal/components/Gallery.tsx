@@ -1,6 +1,7 @@
 import { ChevronLeft, ChevronRight, X, ZoomIn } from "lucide-react";
 import { type PointerEvent, useEffect, useRef, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
+import { useReturnFocus } from "../../../components/ui/returnFocus.ts";
 
 import type { Screenshot } from "../../../lib/journal.ts";
 
@@ -103,10 +104,11 @@ function Viewer({ shots, index, onIndex, onClose }: { shots: Screenshot[]; index
     if (scale <= 1.02) setOffset({ x: 0, y: 0 });
   };
 
+  const returnFocus = useReturnFocus();
   return (
     <Dialog.Root open modal onOpenChange={(o) => !o && onClose()}>
       <Dialog.Portal>
-        <Dialog.Content aria-label={`${SLOT_LABEL[shot.slot]} screenshot ${index + 1} of ${shots.length}`} aria-describedby={undefined} className="fixed inset-0 z-50 flex flex-col bg-bg outline-none">
+        <Dialog.Content {...returnFocus} aria-label={`${SLOT_LABEL[shot.slot]} screenshot ${index + 1} of ${shots.length}`} aria-describedby={undefined} className="fixed inset-0 z-50 flex flex-col bg-bg outline-none">
       <div className="safe-top flex min-h-14 items-center gap-2 border-b border-border px-(--gutter-phone) tablet:px-(--gutter-tablet) desktop:px-(--gutter-desktop)">
         <Dialog.Title asChild>
           <span className="text-body">

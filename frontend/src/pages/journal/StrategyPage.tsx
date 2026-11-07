@@ -6,7 +6,8 @@ import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import Card from "../../components/Card.tsx";
-import { Chip, ConfirmDialog, ErrorState, OwnerChip, PillToggle, ReadOnlyBanner, RingGauge, SkeletonCard, SkeletonText, useToast } from "../../components/ui/index.ts";
+import { Chip, ConfirmDialog, ErrorState, OfflineState, OwnerChip, PillToggle, ReadOnlyBanner, RingGauge, SkeletonCard, SkeletonText, useToast } from "../../components/ui/index.ts";
+import { offlinePending } from "../../lib/offline.ts";
 import { api } from "../../lib/api.ts";
 import { type JournalSession, STAGE_LABEL, type Strategy, type TradeKind, useInstruments, useInvalidateJournal, useProfile, useSessions, useStrategy, useTrades } from "../../lib/journal.ts";
 import { remember, remembered } from "../../lib/hub.ts";
@@ -44,6 +45,13 @@ export default function StrategyPage() {
     setParams(next, { replace: true });
   };
 
+  if (offlinePending(strategy)) {
+    return (
+      <div className="card">
+        <OfflineState what="This strategy" />
+      </div>
+    );
+  }
   if (strategy.isPending) {
     return (
       <div className="flex flex-col gap-4" aria-busy>
@@ -333,7 +341,7 @@ function IdealTab({ strategy: s, celebrate, onLog, onMissed }: { strategy: Strat
           ) : undefined
         }
       >
-        {missed.isPending ? <SkeletonText lines={2} /> : missed.isError ? <ErrorState text={missed.error.message} /> : missed.data.length ? <TradeList trades={missed.data} strategyId={s.id} mode="missed" emptyTitle="" /> : <p className="text-body text-muted">Nothing missed so far.</p>}
+        {missed.isPending ? <SkeletonText lines={2} /> : missed.isError ? <ErrorState text={missed.error.message} onRetry={() => missed.refetch()} /> : missed.data.length ? <TradeList trades={missed.data} strategyId={s.id} mode="missed" emptyTitle="" /> : <p className="text-body text-muted">Nothing missed so far.</p>}
       </Card>
     </>
   );

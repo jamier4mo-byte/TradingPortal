@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import Card from "../../components/Card.tsx";
-import { ConfirmDialog, EmptyState, ErrorState, SkeletonText, useToast } from "../../components/ui/index.ts";
+import { ConfirmDialog, EmptyState, ErrorState, OfflineState, SkeletonText, useToast } from "../../components/ui/index.ts";
+import { offlinePending } from "../../lib/offline.ts";
 import { api } from "../../lib/api.ts";
 import { relativeTime } from "../../lib/format.ts";
 import { CURRENCIES } from "../../lib/news.ts";
@@ -140,7 +141,9 @@ function ThisDevice() {
   });
 
   let body;
-  if (config.isPending || hash === undefined) {
+  if (offlinePending(config)) {
+    body = <OfflineState what="Alert setup" />;
+  } else if (config.isPending || hash === undefined) {
     body = <SkeletonText lines={3} />;
   } else if (config.isError) {
     body = <ErrorState text={config.error.message} onRetry={() => config.refetch()} />;
@@ -235,7 +238,9 @@ function Devices() {
   });
   return (
     <Card title="Your devices" subtitle="Each gets its own notification">
-      {devices.isPending ? (
+      {offlinePending(devices) ? (
+        <OfflineState what="The device list" />
+      ) : devices.isPending ? (
         <SkeletonText lines={2} />
       ) : devices.isError ? (
         <ErrorState text={devices.error.message} onRetry={() => devices.refetch()} />
@@ -286,6 +291,7 @@ function PrefsCard() {
   });
   const [quiet, setQuiet] = useState<{ start: string; end: string } | null>(null);
 
+  if (offlinePending(prefs)) return <Card title="What to alert"><OfflineState what="Alert preferences" /></Card>;
   if (prefs.isPending) return <Card title="What to alert"><SkeletonText lines={6} /></Card>;
   if (prefs.isError) return <Card title="What to alert"><ErrorState text={prefs.error.message} onRetry={() => prefs.refetch()} /></Card>;
   const p = prefs.data;

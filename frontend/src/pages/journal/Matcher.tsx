@@ -4,7 +4,8 @@ import { type DragEvent, Fragment, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import Card from "../../components/Card.tsx";
-import { ErrorState, SkeletonText, useToast } from "../../components/ui/index.ts";
+import { ErrorState, OfflineState, SkeletonText, useToast } from "../../components/ui/index.ts";
+import { offlinePending } from "../../lib/offline.ts";
 import { api } from "../../lib/api.ts";
 import { imageFiles, type PreparedImage, prepareImage } from "../../lib/images.ts";
 import { fmtR, fmtUkDateTime, fmtUkTime, LABELLED_SLOTS, type LabelledSlot, type Match, SLOT_LABEL, slotShot, type Trade, uploadScreenshot, useInvalidateJournal, useSession, useSessionTrades } from "../../lib/journal.ts";
@@ -33,8 +34,17 @@ export default function Matcher() {
   const sid = Number(useParams().sid);
   const session = useSession(sid);
   const trades = useSessionTrades(sid);
+  if (offlinePending(session) || offlinePending(trades)) {
+    return (
+      <div className="card">
+        <OfflineState what="This session" />
+      </div>
+    );
+  }
   if (session.isPending || trades.isPending) return <SkeletonText lines={6} className="max-w-md" />;
-  if (session.isError || trades.isError) return <ErrorState title="Session didn't load" text={(session.error ?? trades.error)?.message} />;
+  if (session.isError || trades.isError) {
+    return <ErrorState title="Session didn't load" text={(session.error ?? trades.error)?.message} onRetry={() => void Promise.all([session.refetch(), trades.refetch()])} />;
+  }
   return <MatcherScreen sessionId={sid} strategyId={session.data.strategy_id} trades={trades.data} canEdit={session.data.can_edit} timezone={session.data.csv_timezone} />;
 }
 

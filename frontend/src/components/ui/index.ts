@@ -6,7 +6,7 @@ export { PillToggle } from "./PillToggle.tsx";
 export { RingGauge } from "./RingGauge.tsx";
 export { Skeleton, SkeletonCard, SkeletonText } from "./Skeleton.tsx";
 export { StatTile } from "./StatTile.tsx";
-export { EmptyState, ErrorState, OfflineBanner, ReadOnlyBanner } from "./States.tsx";
+export { EmptyState, ErrorState, OfflineBanner, OfflineState, ReadOnlyBanner } from "./States.tsx";
 export { ToastProvider, useToast } from "./Toast.tsx";
 export { useViewScope, ViewScopeToggle } from "./ViewScopeToggle.tsx";
 export { RefreshFailed, Switch, ToggleChip } from "./Toggles.tsx";

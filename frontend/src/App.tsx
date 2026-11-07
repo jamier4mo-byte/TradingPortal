@@ -90,7 +90,7 @@ export default function App() {
                       }
                     />
                     <Route path="/dev/components" element={<Components />} />
-                    <Route path="*" element={<Placeholder title="Not found" />} />
+                    <Route path="*" element={<Placeholder title="Not found" text="There's no page at this address. Check the link, or head back to the Hub." />} />
                   </Routes>
                 </Suspense>
               </AppShell>

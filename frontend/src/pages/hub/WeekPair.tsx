@@ -3,7 +3,8 @@ import { Link } from "react-router-dom";
 import Card from "../../components/Card.tsx";
 import { CurrencyTag, ImpactChip } from "../../components/news/NewsBits.tsx";
 import { CalendarEmpty } from "../../components/ui/Illustrations.tsx";
-import { EmptyState, ErrorState, SkeletonText, StatTile } from "../../components/ui/index.ts";
+import { EmptyState, ErrorState, OfflineState, SkeletonText, StatTile } from "../../components/ui/index.ts";
+import { offlinePending } from "../../lib/offline.ts";
 import { queryState, useHub, type WeekRecap } from "../../lib/hub.ts";
 import { signed } from "../../lib/markets.ts";
 import { dayLabel, useWeekAhead } from "../../lib/news.ts";
@@ -73,7 +74,9 @@ function WeekAheadCompact() {
         </Link>
       }
     >
-      {q.isPending ? (
+      {offlinePending(q) ? (
+        <OfflineState what="The week ahead" />
+      ) : q.isPending ? (
         <SkeletonText lines={5} />
       ) : !q.data ? (
         <ErrorState title="The week ahead didn't load" text={q.error?.message} onRetry={() => void q.refetch()} />
