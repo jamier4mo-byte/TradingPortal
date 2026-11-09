@@ -178,10 +178,11 @@ export function TradeList({
                   </span>
                   <SideChip side={t.side} />
                   {backtest ? <OutcomeChip outcome={t.outcome} /> : null}
+                  {/* Backtests lead with dollars, R beneath; ideal trades have no $ so R stays the figure. */}
                   <span
-                    className={`num ml-auto text-body font-medium ${(t.r_multiple ?? 0) > 0 ? "text-win" : (t.r_multiple ?? 0) < 0 ? "text-loss" : ""}`}
+                    className={`num ml-auto text-body font-medium ${((backtest ? t.pnl : t.r_multiple) ?? 0) > 0 ? "text-win" : ((backtest ? t.pnl : t.r_multiple) ?? 0) < 0 ? "text-loss" : ""}`}
                   >
-                    {fmtR(t.r_multiple)}
+                    {backtest ? fmtPnl(t.pnl) : fmtR(t.r_multiple)}
                   </span>
                 </div>
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-label text-muted">
@@ -191,7 +192,7 @@ export function TradeList({
                   <span>{t.session_label}</span>
                   {t.entry_model ? <span>{t.entry_model}</span> : null}
                   {backtest ? (
-                    <span className="num">{fmtPnl(t.pnl)}</span>
+                    <span className="num">{fmtR(t.r_multiple)}</span>
                   ) : null}
                   <Completed t={t} />
                   <MissingShots t={t} />
@@ -266,12 +267,6 @@ export function TradeList({
               >
                 Held
               </th>
-              <th
-                scope="col"
-                className="border-b border-border px-2 py-2 text-right font-normal"
-              >
-                R
-              </th>
               {backtest ? (
                 <th
                   scope="col"
@@ -280,6 +275,12 @@ export function TradeList({
                   P&amp;L
                 </th>
               ) : null}
+              <th
+                scope="col"
+                className="border-b border-border px-2 py-2 text-right font-normal"
+              >
+                R
+              </th>
               {backtest ? (
                 <th
                   scope="col"
@@ -365,18 +366,18 @@ export function TradeList({
                 <td className="num border-b border-border px-2 py-2.5 text-right text-muted">
                   {fmtDuration(t.duration_seconds)}
                 </td>
-                <td
-                  className={`num border-b border-border px-2 py-2.5 text-right font-medium ${(t.r_multiple ?? 0) > 0 ? "text-win" : (t.r_multiple ?? 0) < 0 ? "text-loss" : ""}`}
-                >
-                  {fmtR(t.r_multiple)}
-                </td>
                 {backtest ? (
                   <td
-                    className={`num border-b border-border px-2 py-2.5 text-right ${(t.pnl ?? 0) > 0 ? "text-win" : (t.pnl ?? 0) < 0 ? "text-loss" : ""}`}
+                    className={`num border-b border-border px-2 py-2.5 text-right font-medium ${(t.pnl ?? 0) > 0 ? "text-win" : (t.pnl ?? 0) < 0 ? "text-loss" : ""}`}
                   >
                     {fmtPnl(t.pnl)}
                   </td>
                 ) : null}
+                <td
+                  className={`num border-b border-border px-2 py-2.5 text-right ${backtest ? "" : "font-medium "}${(t.r_multiple ?? 0) > 0 ? "text-win" : (t.r_multiple ?? 0) < 0 ? "text-loss" : ""}`}
+                >
+                  {fmtR(t.r_multiple)}
+                </td>
                 {backtest ? (
                   <td className="border-b border-border px-2 py-2.5">
                     <OutcomeChip outcome={t.outcome} />

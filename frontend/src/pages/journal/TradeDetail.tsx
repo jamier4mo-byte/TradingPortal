@@ -127,8 +127,8 @@ function Detail({ trade: t, templateFields, rules }: { trade: Trade; templateFie
             <Fact label="Stop" value={fmtPrice(current.initial_sl)} hint={current.sl_distance !== null ? `${current.sl_distance}` : undefined} />
             <Fact label="Target" value={fmtPrice(current.max_tp)} hint={current.tp_r ? `${current.tp_distance} · ${current.tp_r.toFixed(1)}R` : undefined} />
             <Fact label="Exit" value={fmtPrice(current.exit_price)} />
-            <Fact label="R" value={fmtR(current.r_multiple)} tone={(current.r_multiple ?? 0) > 0 ? "win" : (current.r_multiple ?? 0) < 0 ? "loss" : undefined} />
             {current.kind === "backtest" ? <Fact label="P&L" value={fmtPnl(current.pnl)} tone={(current.pnl ?? 0) > 0 ? "win" : (current.pnl ?? 0) < 0 ? "loss" : undefined} /> : null}
+            <Fact label="R" value={fmtR(current.r_multiple)} tone={(current.r_multiple ?? 0) > 0 ? "win" : (current.r_multiple ?? 0) < 0 ? "loss" : undefined} />
             <Fact label="Held" value={fmtDuration(current.duration_seconds)} />
             <Fact label="Closed" value={fmtUkDateTime(current.closed_at)} />
             <Fact label="Entry model" value={current.entry_model ?? "—"} />

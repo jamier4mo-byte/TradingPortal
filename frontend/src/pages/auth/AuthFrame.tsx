@@ -16,7 +16,7 @@ export function AuthFrame({ title, intro, children, aside }: { title: string; in
   return (
     <div className="safe-top safe-bottom min-h-dvh px-(--gutter-phone) py-8 tablet:px-(--gutter-tablet) laptop:grid laptop:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] laptop:gap-16 laptop:px-(--gutter-desktop) laptop:py-0">
       <section className="hidden laptop:flex laptop:min-h-dvh laptop:flex-col laptop:justify-between laptop:py-12">
-        <Logo className="h-10" />
+        <Logo className="h-10 desktop:h-12" />
         <div>
           <p className="text-label text-muted">{ukDate(now)}</p>
           <p className="num mt-1 font-mono text-hero font-semibold leading-none">{ukClock(now)}</p>

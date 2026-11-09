@@ -67,7 +67,7 @@ test("sign in, open the journal, a strategy, the Backtest tab and the import dra
   expect(back.text).toBe(trigger.text);
 });
 
-test("add a calendar task, jump with Cmd+K and open a news event with the keyboard", async ({ page }) => {
+test("jump with Cmd+K and open a news event with the keyboard", async ({ page }) => {
   await page.goto("/login");
   await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible(); // the sign-in screen is lazy-loaded
   await tabUntil(page, (f) => f.tag === "input" && f.label === "Email");
@@ -77,25 +77,6 @@ test("add a calendar task, jump with Cmd+K and open a news event with the keyboa
   await page.keyboard.press("Enter");
   await page.waitForURL((u) => !u.pathname.startsWith("/login"));
   await ready(page);
-
-  // Calendar: New task → title → Add task
-  await page.goto("/calendar");
-  await expect(page.getByRole("heading", { level: 1, name: "Calendar" })).toBeVisible();
-  await ready(page);
-  await tabUntil(page, (f) => f.tag === "button" && f.text.endsWith("New task"));
-  await page.keyboard.press("Enter");
-  const dialog = page.getByRole("dialog", { name: "New task" });
-  await expect(dialog).toBeVisible();
-  const title = `Keyboard task ${Date.now()}`;
-  const focused = await expectFocusVisible(page);
-  expect(focused.label).toBe("Title");
-  await page.keyboard.type(title);
-  await tabUntil(page, (f) => f.tag === "button" && f.text === "Add task", 20);
-  await page.keyboard.press("Enter");
-  await expect(dialog).toBeHidden();
-  await expect(page.getByText(title).first()).toBeVisible();
-  // Focus goes back to the button that opened the drawer
-  await expect.poll(() => page.evaluate(() => document.activeElement?.textContent?.trim())).toMatch(/New task$/);
 
   // Cmd+K: arrows + Enter
   await page.keyboard.press("ControlOrMeta+k");
@@ -109,7 +90,7 @@ test("add a calendar task, jump with Cmd+K and open a news event with the keyboa
   const picked = await page.locator('[role="option"][aria-selected="true"]').textContent();
   expect(picked?.trim()).toBeTruthy();
   await page.keyboard.press("Enter");
-  await expect(page).not.toHaveURL(/\/calendar$/);
+  await expect(page).not.toHaveURL(/\/$/);
   // The screen's h1 (some are a logo image, so match the accessible name, not the text)
   await expect(page.getByRole("heading", { level: 1, name: picked!.trim() }).first()).toBeAttached();
 

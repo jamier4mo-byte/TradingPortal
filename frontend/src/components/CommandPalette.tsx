@@ -1,5 +1,5 @@
 import * as Dialog from "@radix-ui/react-dialog";
-import { BookOpen, CalendarDays, Home, LineChart, Newspaper, Search, Settings, Shield, Tags } from "lucide-react";
+import { BookOpen, Home, LineChart, Newspaper, Search, Settings, Shield, Tags } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -20,12 +20,10 @@ const COMMANDS: Command[] = [
   { label: "Replay Journal", to: "/journal", icon: BookOpen, keywords: "strategies trades backtest" },
   { label: "Journal · Trash", to: "/journal/trash", icon: BookOpen, keywords: "deleted restore" },
   { label: "Journal · Log a trade", to: "/journal?quicklog=1", icon: BookOpen, keywords: "quick log new ideal trade" },
-  { label: "News Room", to: "/news", icon: Newspaper, keywords: "calendar events economic" },
+  { label: "News Room", to: "/news", icon: Newspaper, keywords: "calendar events economic bank holidays" },
   { label: "News · Week ahead", to: "/news/week", icon: Newspaper, keywords: "sunday plan high impact" },
   { label: "News · Alerts", to: "/settings/alerts", icon: Newspaper, keywords: "push notifications reminders" },
   { label: "Markets", to: "/markets", icon: LineChart, keywords: "prices watchlist ticker twelve data quotes" },
-  { label: "Calendar", to: "/calendar", icon: CalendarDays, keywords: "tasks week" },
-  { label: "Calendar · New task", to: "/calendar?new=1", icon: CalendarDays, keywords: "add task backtest session review" },
   { label: "Tags", to: "/tags", icon: Tags, keywords: "vocabulary synonyms" },
   { label: "Settings", to: "/settings", icon: Settings, keywords: "profile password passkeys keys motion" },
   { label: "Admin · Users", to: "/admin/users", icon: Shield, keywords: "invite roles", adminOnly: true },

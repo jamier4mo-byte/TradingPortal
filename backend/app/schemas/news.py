@@ -68,6 +68,13 @@ class StatusOut(BaseModel):
     jblanked: JBlankedStatusOut
 
 
+class HolidayOut(BaseModel):
+    date: str
+    currency: str
+    centre: str
+    name: str
+
+
 class EventsOut(BaseModel):
     model_config = {"populate_by_name": True}
 
@@ -77,6 +84,10 @@ class EventsOut(BaseModel):
     last_updated_at: str | None
     window_minutes: int
     my_instruments: list[str]
+    # Last UK date the published schedule (Forex Factory, this week + next) reaches; later days are empty
+    # because nothing is published yet, not because nothing happens.
+    schedule_through: str | None = None
+    holidays: list[HolidayOut] = []
 
 
 class EventTypeOut(BaseModel):
@@ -149,6 +160,7 @@ class WeekDayOut(BaseModel):
     date: str
     label: str
     events: list[EventOut]
+    holidays: list[HolidayOut] = []
 
 
 class WeekAheadOut(BaseModel):
@@ -156,6 +168,7 @@ class WeekAheadOut(BaseModel):
     end: str
     default_view: bool
     days: list[WeekDayOut]
+    schedule_through: str | None = None
 
 
 class SessionSpanOut(BaseModel):

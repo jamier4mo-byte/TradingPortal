@@ -119,11 +119,11 @@ export function RunsChart({ streaks, dim }: { streaks: Streak[]; dim?: boolean }
 
 // ---- breakdowns and distributions -----------------------------------------------------------------
 
-export type BreakdownMetric = "total_r" | "win_rate" | "avg_r" | "n";
+export type BreakdownMetric = "pnl" | "total_r" | "win_rate" | "avg_r" | "n";
 
 export function BreakdownChart({ groups, metric, label, dim }: { groups: Group[]; metric: BreakdownMetric; label: string; dim?: boolean }) {
   const shown = groups.filter((g) => g.n > 0 || label === "weekday");
-  const fmt = (v: number | null) => (v === null ? "—" : metric === "win_rate" ? `${Math.round(v * 100)}%` : metric === "n" ? String(v) : fmtR(v));
+  const fmt = (v: number | null) => (v === null ? "—" : metric === "win_rate" ? `${Math.round(v * 100)}%` : metric === "n" ? String(v) : metric === "pnl" ? fmtPnl(v) : fmtR(v));
   const option = useMemo<OptionBuilder>(
     () => (t) => ({
       tooltip: {
@@ -135,7 +135,7 @@ export function BreakdownChart({ groups, metric, label, dim }: { groups: Group[]
         },
       },
       xAxis: categoryAxis(t, shown.map((g) => g.label), { axisLabel: { color: t.muted, interval: 0, hideOverlap: true, rotate: shown.length > 8 ? 45 : 0 } }),
-      yAxis: valueAxis(t, metric === "win_rate" ? { min: 0, max: 1, axisLabel: { color: t.muted, formatter: (v: number) => `${Math.round(v * 100)}%` } } : { axisLabel: { color: t.muted, formatter: (v: number) => (metric === "n" ? `${v}` : `${v}R`) } }),
+      yAxis: valueAxis(t, metric === "win_rate" ? { min: 0, max: 1, axisLabel: { color: t.muted, formatter: (v: number) => `${Math.round(v * 100)}%` } } : { axisLabel: { color: t.muted, formatter: (v: number) => (metric === "n" ? `${v}` : metric === "pnl" ? fmtPnl(v).replace(".00", "") : `${v}R`) } }),
       series: [
         {
           id: "breakdown",
@@ -143,7 +143,7 @@ export function BreakdownChart({ groups, metric, label, dim }: { groups: Group[]
           barMaxWidth: 24,
           data: shown.map((g) => {
             const v = (g[metric] as number | null) ?? 0;
-            const signed = metric === "total_r" || metric === "avg_r";
+            const signed = metric === "pnl" || metric === "total_r" || metric === "avg_r";
             return { value: g[metric], itemStyle: { color: signed ? signTone(t, v) : t.series1, borderRadius: barRadius(v) } };
           }),
           label: { show: shown.length <= 8, position: "top", color: t.muted, fontFamily: t.font, fontSize: t.labelSize, formatter: (p: { value: number | null }) => fmt(p.value) },
@@ -159,14 +159,14 @@ export function BreakdownChart({ groups, metric, label, dim }: { groups: Group[]
       label={`Breakdown by ${label}`}
       option={option}
       summary={summary}
-      table={{ columns: [capital(label), "Trades", "Win rate", "Total R", "Avg R"], rows: shown.map((g) => [g.label, g.n, g.win_rate === null ? "—" : `${Math.round(g.win_rate * 100)}%`, fmtR(g.total_r), fmtR(g.avg_r)]) }}
+      table={{ columns: [capital(label), "Trades", "Win rate", "Net P&L", "Total R", "Avg R"], rows: shown.map((g) => [g.label, g.n, g.win_rate === null ? "—" : `${Math.round(g.win_rate * 100)}%`, fmtPnl(g.pnl), fmtR(g.total_r), fmtR(g.avg_r)]) }}
       height={220}
       dim={dim}
     />
   );
 }
 
-const metricName = (m: BreakdownMetric) => ({ total_r: "total R", win_rate: "win rate", avg_r: "average R", n: "trade count" })[m];
+const metricName = (m: BreakdownMetric) => ({ pnl: "net P&L", total_r: "total R", win_rate: "win rate", avg_r: "average R", n: "trade count" })[m];
 const capital = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 export function RDistributionChart({ bins, dim }: { bins: Bin[]; dim?: boolean }) {

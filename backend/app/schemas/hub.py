@@ -43,6 +43,7 @@ class WeekRecapOut(BaseModel):
     sessions: int
     trades: int
     total_r: float | None
+    total_pnl: float | None = None  # the $ headline (amends, Nov 2026); null when no trade has a P&L
     win_rate: float | None
     rules_kept_rate: float | None
     best_day: str | None  # weekday name of the best day by total R, e.g. "Wednesday"

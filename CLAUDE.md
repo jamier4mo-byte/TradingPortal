@@ -1,6 +1,6 @@
 # Trading Portal: notes for Claude Code
 
-A multi-tool web app for Jamie and a few mates: a **Hub** (greeting, today's news, launch islands, team calendar, live watchlist, streaks and bests), the **Replay Journal** (FX Replay import, ideal trades, backtests, analytics, Export for AI) and the **News Room** (calendar, timeline, event detail, week ahead, push alerts). v1 is complete (five build prompts, `docs/build/FINAL-REPORT.md`); the old Replay Journal repo was reference only.
+A multi-tool web app for Jamie and a few mates: a **Hub** (greeting, today's news, launch islands, live watchlist, streaks and bests), the **Replay Journal** (FX Replay import, ideal trades, backtests, analytics, Export for AI) and the **News Room** (calendar, timeline, event detail, week ahead, push alerts). v1 is complete (five build prompts, `docs/build/FINAL-REPORT.md`); the old Replay Journal repo was reference only. The team calendar was retired in the first amends (`docs/build/AMENDS-01-REPORT.md`): its API and tables stay, the UI is gone.
 
 ## Read first
 - `docs/planning/trading-portal-foundations.md`: what we're building, look and feel, motion, devices, and each tool's spec.
@@ -10,14 +10,14 @@ A multi-tool web app for Jamie and a few mates: a **Hub** (greeting, today's new
 
 ## Stack
 - `backend/`: FastAPI + SQLAlchemy 2 + Alembic + SQLite (WAL), on Python ≥ 3.12 (CI and Docker use 3.14). The venv is `backend/.venv`. Screenshots go through the `Storage` interface (`LocalStorage` or `S3Storage` for Tigris, `STORAGE_BACKEND=local|s3`). An in-app scheduler (DB lease) runs feeds, alerts, price reactions and the trash purge.
-- `frontend/`: React 19, Vite 8, Tailwind 4 (tokens in `src/index.css` `@theme`), React Router, TanStack Query, Radix, `motion` (the only animation library), ECharts (lazy), FullCalendar 6 (lazy, pinned 6.1.22), lucide icons, a hand-written service worker (`public/sw.js`: push + offline caching) and Playwright in `frontend/e2e`.
+- `frontend/`: React 19, Vite 8, Tailwind 4 (tokens in `src/index.css` `@theme`), React Router, TanStack Query, Radix, `motion` (the only animation library), ECharts (lazy), lucide icons, a hand-written service worker (`public/sw.js`: push + offline caching) and Playwright in `frontend/e2e`.
 - Deploy: Docker (with a pinned Litestream binary; `backend/entrypoint.sh` restores → migrates → replicates) → Fly.io from GitHub Actions on push to `main`. Deploys are skipped until the `FLY_API_TOKEN` secret exists. Runbook: `docs/DEPLOY.md`.
 
 ## Commands
 `make setup` · `make dev` (open :5173) · `make test` · `make lint` (ruff, oxlint, tsc, bundle budget) · `make build` · `make run` · `make smoke` · `make migrate`
 `make dev-secrets` (writes `TRADING_PORTAL_SECRET_KEY` into `.env`) · `make create-admin` · `make seed-dev` (fills `/tmp/tp-dev`: jamie/sam/alex, password `password-dev-1`) · `make icons` (favicons, iOS launch screens, manifest)
 `make vapid` · `make news-backfill` · `make migrate-screenshots` (local → S3, idempotent) · `make restore-test` (quarterly drill, `docs/ops/RESTORE-TEST.md`) · `make audit` (npm audit + pip-audit)
-Dev gallery of every shared component: `/dev/components`. Auth screens: `/login`, `/invite/:token`, `/reset/:token`. Tools: `/`, `/journal…`, `/news…`, `/calendar`, `/markets…`, `/settings`, `/admin…`.
+Dev gallery of every shared component: `/dev/components`. Auth screens: `/login`, `/invite/:token`, `/reset/:token`. Tools: `/`, `/journal…`, `/news…`, `/markets…`, `/settings`, `/admin…`.
 
 ## Rules
 - Data lives in `TRADING_PORTAL_DATA_DIR` (default `~/TradingPortal/data`), never in the repo. Test runs use `/tmp/...`.

@@ -52,7 +52,6 @@ const API_ALLOW = new Set([
   "/api/news/events",
   "/api/prices/quotes",
   "/api/prices/pins",
-  "/api/calendar/occurrences",
   "/api/journal/summary",
   "/api/auth/me",
 ]);
@@ -217,7 +216,7 @@ async function storeApi(cache, req, res) {
   await trimApi(cache);
 }
 
-/** Keep the API cache small: the oldest entries go first (calendar ranges can otherwise pile up). */
+/** Keep the API cache small: the oldest entries go first (date ranges can otherwise pile up). */
 async function trimApi(cache) {
   const keys = await cache.keys();
   if (keys.length <= API_MAX_ENTRIES) return;

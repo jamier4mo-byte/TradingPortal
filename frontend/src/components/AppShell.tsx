@@ -1,7 +1,6 @@
 import {
   Bell,
   BookOpen,
-  CalendarDays,
   ChevronsLeft,
   ChevronsRight,
   Home,
@@ -44,7 +43,6 @@ const TOOLS = [
   { to: "/", label: "Hub", icon: Home, end: true, dot: "live" },
   { to: "/journal", label: "Replay Journal", short: "Journal", icon: BookOpen, dot: "live" },
   { to: "/news", label: "News Room", short: "News", icon: Newspaper, dot: "live" },
-  { to: "/calendar", label: "Calendar", icon: CalendarDays, dot: "live" },
 ];
 
 const SECONDARY = [
@@ -59,7 +57,6 @@ const PAGE_TITLES: Record<string, string> = {
   "/news": "News Room",
   "/markets": "Markets",
   "/settings/alerts": "Alerts",
-  "/calendar": "Calendar",
   "/tags": "Tags",
   "/settings": "Settings",
   "/more": "More",

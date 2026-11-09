@@ -15,11 +15,11 @@ from sqlalchemy.orm import Session
 from ...models import Event, EventType, FeedRun, PriceReaction, Strategy, User
 from .. import market_prefs
 from ..journal_rules import UK_TZ, to_uk
-from . import catalogue, jblanked, store
+from . import bank_holidays, catalogue, jblanked, store
 from .parse import surprise as surprise_of
 
 IMPACT_LABEL = {"high": "High", "medium": "Med", "low": "Low", "holiday": "Holiday", "none": "None"}
-FEEDS = ("forex_factory", "jblanked", "backfill")
+FEEDS = ("forex_factory", "forex_factory_next", "jblanked", "backfill")
 SESSIONS = (
     ("Asia", time(0), time(8)),
     ("London", time(8), time(16, 30)),
@@ -134,6 +134,12 @@ def _between(
     return list(db.scalars(stmt.order_by(Event.at, Event.id)))
 
 
+def schedule_through(db: Session) -> str | None:
+    """The last date the Forex Factory schedule covers (this week's file plus next week's)."""
+    ends = [c["end_date"] for c in store.coverage_by_source(db) if c["source"] == "forex_factory"]
+    return max(ends).isoformat() if ends else None
+
+
 def last_updated_at(db: Session) -> datetime | None:
     return db.scalar(select(func.max(FeedRun.finished_at)).where(FeedRun.status == "ok"))
 
@@ -207,6 +213,8 @@ def list_events(
         "last_updated_at": iso(last_updated_at(db)),
         "window_minutes": ctx.window_minutes,
         "my_instruments": ctx.my_instruments,
+        "schedule_through": schedule_through(db),
+        "holidays": bank_holidays.between(start, end, sorted(wanted) if wanted is not None else None),
     }
 
 
@@ -245,12 +253,17 @@ def next_event(db: Session, user: User, now: datetime, *, mine: bool = True) -> 
     }
 
 
+WEEKEND_FROM = time(21)  # Friday 21:00 UK: New York has closed, the trading week is over (lib/time.ts)
+
+
 def week_start(now: datetime) -> tuple[date, bool]:
-    """Monday of this week; from Sunday 18:00 UK, next week's Monday (and the week-ahead is the default)."""
+    """Monday of this week; once the trading week is over (Friday 21:00 UK, all weekend), next week's Monday.
+    From Sunday 18:00 UK the week ahead is also the News Room's default view."""
     uk = to_uk(now)
     monday = uk.date() - timedelta(days=uk.weekday())
-    if uk.weekday() == 6 and uk.time() >= time(18):
-        return monday + timedelta(days=7), True
+    weekend = uk.weekday() in (5, 6) or (uk.weekday() == 4 and uk.time() >= WEEKEND_FROM)
+    if weekend:
+        return monday + timedelta(days=7), uk.weekday() == 6 and uk.time() >= time(18)
     return monday, False
 
 
@@ -267,6 +280,7 @@ def week_ahead(
     events = outs(
         db, _between(db, lo, hi, impacts={"high"}, currencies=ctx.my_currencies if mine else None), ctx
     )
+    hols = bank_holidays.between(monday, friday, sorted(ctx.my_currencies) if mine else None)
     days = []
     for i in range(5):
         d = monday + timedelta(days=i)
@@ -275,6 +289,7 @@ def week_ahead(
                 "date": d.isoformat(),
                 "label": f"{d:%a} {d.day} {d:%b}",
                 "events": [e for e in events if e["uk_date"] == d.isoformat()],
+                "holidays": [h for h in hols if h["date"] == d.isoformat()],
             }
         )
     return {
@@ -282,6 +297,7 @@ def week_ahead(
         "end": friday.isoformat(),
         "default_view": default_view,
         "days": days,
+        "schedule_through": schedule_through(db),
     }
 
 

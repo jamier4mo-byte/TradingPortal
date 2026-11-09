@@ -83,6 +83,7 @@ def around_news(rows: list[Row]) -> list[dict]:
             "win_rate": g["win_rate"],
             "avg_r": g["avg_r"],
             "total_r": g["total_r"],
+            "pnl": g["pnl"],
         }
 
     out = [stats(label, [r for r in rows if r.news_status == status]) for status, label in NEWS_GROUPS]
