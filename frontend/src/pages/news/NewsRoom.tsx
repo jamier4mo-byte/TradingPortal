@@ -11,7 +11,7 @@ import { ukParts } from "../../lib/time.ts";
 import { useDevice, useMediaQuery } from "../../lib/useMediaQuery.ts";
 import { useNow } from "../../lib/useNow.ts";
 import { NextUp } from "./NextUp.tsx";
-import { EventGroups, FilterControls, filterCount, type FilterState } from "./parts.tsx";
+import { BankHolidays, EventGroups, extraHolidays, FilterControls, filterCount, type FilterState } from "./parts.tsx";
 import { TradingDayTimeline } from "./Timeline.tsx";
 import { WeekAheadView } from "./WeekAhead.tsx";
 
@@ -113,7 +113,7 @@ export default function NewsRoom({ initialView }: { initialView?: View }) {
             subtitle="All times UK"
             className={compact ? "" : "laptop:col-span-8 desktop:col-span-9"}
           >
-            <EventList from={range.from} to={range.to} filters={filters} compact={!wideRows} multiDay={view === "week"} onClear={() => setFilters({ currencies: [], impacts: [], mine: false })} />
+            <EventList from={range.from} to={range.to} today={today} filters={filters} compact={!wideRows} multiDay={view === "week"} onClear={() => setFilters({ currencies: [], impacts: [], mine: false })} />
           </Card>
         </div>
       )}
@@ -139,19 +139,39 @@ export default function NewsRoom({ initialView }: { initialView?: View }) {
   );
 }
 
+/** ‹ [selected day or week] › and, away from today, a "Today" button back. The middle label always names the
+ * day being shown (it used to read "Today" whichever day you had stepped to). */
 function DateNav({ view, date, today, onDate }: { view: View; date: string; today: string; onDate: (d: string) => void }) {
   const step = view === "week" ? 7 : 1;
+  const onToday = view === "day" ? date === today : mondayOf(date) === mondayOf(today);
+  const label =
+    view === "day"
+      ? date === today
+        ? `Today · ${dayLabel(date, "short")}`
+        : date === addDays(today, 1)
+          ? `Tomorrow · ${dayLabel(date, "short")}`
+          : date === addDays(today, -1)
+            ? `Yesterday · ${dayLabel(date, "short")}`
+            : dayLabel(date, "short")
+      : onToday
+        ? `This week · from ${dayLabel(mondayOf(date), "short")}`
+        : `Week of ${dayLabel(mondayOf(date), "short")}`;
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex flex-wrap items-center gap-1">
       <button type="button" className="btn btn-ghost size-11 px-0" aria-label={view === "week" ? "Previous week" : "Previous day"} onClick={() => onDate(addDays(date, -step))}>
         <ChevronLeft aria-hidden className="size-5" />
       </button>
-      <button type="button" className="btn btn-secondary" onClick={() => onDate(today)} disabled={view === "day" ? date === today : mondayOf(date) === mondayOf(today)}>
-        Today
-      </button>
+      <p className="num min-w-36 text-center text-body font-medium" aria-live="polite">
+        {label}
+      </p>
       <button type="button" className="btn btn-ghost size-11 px-0" aria-label={view === "week" ? "Next week" : "Next day"} onClick={() => onDate(addDays(date, step))}>
         <ChevronRight aria-hidden className="size-5" />
       </button>
+      {onToday ? null : (
+        <button type="button" className="btn btn-secondary ml-1" onClick={() => onDate(today)}>
+          Today
+        </button>
+      )}
     </div>
   );
 }
@@ -175,6 +195,7 @@ function FeedStatus() {
 function EventList({
   from,
   to,
+  today,
   filters,
   compact,
   multiDay,
@@ -182,6 +203,7 @@ function EventList({
 }: {
   from: string;
   to: string;
+  today: string;
   filters: FilterState;
   compact: boolean;
   multiDay: boolean;
@@ -193,29 +215,53 @@ function EventList({
   if (q.isPending) return <SkeletonText lines={8} />;
   if (!q.data) return <ErrorState text={q.error?.message} onRetry={() => q.refetch()} />;
   const events = q.data.events;
+  const holidays = <BankHolidays holidays={extraHolidays(q.data.holidays ?? [], events)} showDates={multiDay} />;
+  // Days after the published schedule are empty because Forex Factory hasn't released them yet.
+  // No schedule loaded at all: anything after this week counts as not yet published.
+  const through = q.data.schedule_through ?? (to > addDays(mondayOf(today), 6) ? addDays(mondayOf(today), 6) : null);
+  const unpublished = through !== null && to > through;
+  const notPublished = unpublished ? (
+    <p role="note" className="rounded-panel border border-border p-3 text-body text-muted">
+      {from > through ? (
+        <>The news schedule for {multiDay ? "this week" : "this day"} isn&rsquo;t published yet.</>
+      ) : (
+        <>The news schedule is published up to {dayLabel(through)}; later days fill in once it&rsquo;s out.</>
+      )}{" "}
+      Forex Factory publishes the current week and the next one, so forecasts appear about a week ahead. Bank holidays are known in advance.
+    </p>
+  ) : null;
   if (events.length === 0) {
     const filtered = filterCount(filters) > 0;
     return (
-      <EmptyState
-        illustration={<CalendarEmpty />}
-        title={filtered ? "No events match these filters" : multiDay ? "No events this week yet" : "No events on this day"}
-        text={filtered ? "Try fewer currencies or impact levels." : "The schedule loads from Forex Factory each hour."}
-        action={
-          filtered ? (
-            <button type="button" className="btn btn-secondary" onClick={onClear}>
-              Clear filters
-            </button>
-          ) : undefined
-        }
-      />
+      <div className="flex flex-col gap-3">
+        {holidays}
+        {unpublished && from > through && !filtered ? (
+          notPublished
+        ) : (
+          <EmptyState
+            illustration={<CalendarEmpty />}
+            title={filtered ? "No events match these filters" : multiDay ? "No events this week yet" : "No events on this day"}
+            text={filtered ? "Try fewer currencies or impact levels." : "The schedule loads from Forex Factory each hour."}
+            action={
+              filtered ? (
+                <button type="button" className="btn btn-secondary" onClick={onClear}>
+                  Clear filters
+                </button>
+              ) : undefined
+            }
+          />
+        )}
+      </div>
     );
   }
   return (
     <div className="flex flex-col gap-3">
       {q.isError ? <RefreshFailed updatedAt={q.dataUpdatedAt} onRetry={() => q.refetch()} /> : null}
+      {holidays}
       <div className={q.isPlaceholderData || q.isError ? "opacity-60 transition-opacity duration-(--dur-standard)" : ""}>
         <EventGroups events={events} compact={compact} showDayHeadings={multiDay} />
       </div>
+      {notPublished}
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { CalendarEmpty } from "../../components/ui/Illustrations.tsx";
 import { EmptyState, ErrorState, OfflineState, SkeletonText, StatTile } from "../../components/ui/index.ts";
 import { offlinePending } from "../../lib/offline.ts";
 import { queryState, useHub, type WeekRecap } from "../../lib/hub.ts";
+import { fmtPnl } from "../../lib/journal.ts";
 import { signed } from "../../lib/markets.ts";
 import { dayLabel, useWeekAhead } from "../../lib/news.ts";
 import { StaleFigures } from "./StaleStamp.tsx";
@@ -48,11 +49,21 @@ function WeekBehind() {
 
 function Recap({ recap }: { recap: WeekRecap }) {
   const r = recap.total_r;
+  const usd = recap.total_pnl ?? null;
   return (
     <div className="grid grid-cols-2 gap-3 tablet:grid-cols-3">
       <StatTile label="Sessions" value={recap.sessions} />
       <StatTile label="Trades" value={recap.trades} />
-      <StatTile label="Total R" value={r === null ? "—" : signed(r, 1)} tone={r === null ? "neutral" : r > 0 ? "win" : r < 0 ? "loss" : "breakeven"} />
+      {usd === null ? (
+        <StatTile label="Total R" value={r === null ? "—" : signed(r, 1)} tone={r === null ? "neutral" : r > 0 ? "win" : r < 0 ? "loss" : "breakeven"} />
+      ) : (
+        <StatTile
+          label="Net P&L"
+          value={fmtPnl(usd)}
+          hint={r === null ? undefined : <span className="num">{signed(r, 1)} R</span>}
+          tone={usd > 0 ? "win" : usd < 0 ? "loss" : "breakeven"}
+        />
+      )}
       <StatTile label="Win rate" value={pct(recap.win_rate)} hint="Breakevens left out" />
       <StatTile label="Rules kept" value={pct(recap.rules_kept_rate)} hint="Trades with every rule followed" />
       <StatTile label="Best day" value={recap.best_day ?? "—"} hint={recap.best_day_r === null ? undefined : <span className="num">{signed(recap.best_day_r, 1)} R</span>} />

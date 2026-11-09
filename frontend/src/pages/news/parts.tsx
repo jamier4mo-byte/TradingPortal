@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Switch, ToggleChip } from "../../components/ui/Toggles.tsx";
 
 import { CurrencyTag, Figures, ImpactChip } from "../../components/news/NewsBits.tsx";
-import { CURRENCIES, dayLabel, type Impact, type NewsEvent } from "../../lib/news.ts";
+import { type BankHoliday, CURRENCIES, dayLabel, type Impact, type NewsEvent } from "../../lib/news.ts";
 import { vtName } from "../../lib/vt.ts";
 
 const IMPACT_FILTERS: { value: Impact; label: string; dot: string }[] = [
@@ -128,6 +128,35 @@ export function EventGroups({ events, compact, showDayHeadings }: { events: News
         );
       })}
     </div>
+  );
+}
+
+/** Library holidays the feed doesn't already list as a Forex Factory "Holiday" row for that currency and day. */
+export function extraHolidays(holidays: BankHoliday[], events: NewsEvent[]): BankHoliday[] {
+  const listed = new Set(events.filter((e) => e.impact === "holiday").map((e) => `${e.uk_date}:${e.currency}`));
+  return holidays.filter((h) => !listed.has(`${h.date}:${h.currency}`));
+}
+
+/** Bank holidays in the range: thin liquidity for that currency (amends, Nov 2026). Known years ahead, so
+ * they show even where the news schedule isn't published yet. */
+export function BankHolidays({ holidays, showDates }: { holidays: BankHoliday[]; showDates: boolean }) {
+  if (holidays.length === 0) return null;
+  return (
+    <section aria-label="Bank holidays" className="rounded-panel border border-border bg-surface-2 p-3 tablet:p-4">
+      <h3 className="mb-2 text-label font-semibold uppercase tracking-wide text-muted">Bank holidays</h3>
+      <ul className="flex flex-col gap-2">
+        {holidays.map((h) => (
+          <li key={`${h.date}-${h.currency}-${h.name}`} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-body">
+            {showDates ? <span className="num w-24 shrink-0 text-muted">{dayLabel(h.date, "short")}</span> : null}
+            <CurrencyTag currency={h.currency} />
+            <span className="font-medium">{h.name}</span>
+            <span className="text-label text-muted">
+              {h.centre} · thin {h.currency} liquidity
+            </span>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

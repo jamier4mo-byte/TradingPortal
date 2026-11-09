@@ -6,7 +6,7 @@ import { ADMIN, signIn } from "./helpers/auth.ts";
  * `script-src 'self'` (no inline script), ECharts canvases, the Monte Carlo Web Worker and the service
  * worker all under the policy. Any violation shows up as a "Refused to …" console error. */
 
-const SCREENS = ["/", "/journal/strategies/3?tab=analytics", "/news", "/calendar", "/settings"];
+const SCREENS = ["/", "/journal/strategies/3?tab=analytics", "/news", "/settings"];
 
 test("every response carries the security headers", async ({ request }) => {
   for (const path of ["/", "/api/health", "/sw.js", "/site.webmanifest"]) {
@@ -45,7 +45,7 @@ test("the CSP blocks nothing the app needs", async ({ page }) => {
   // The analytics tab draws ECharts canvases (lazily, when a chart scrolls into view) and spins up the
   // Monte Carlo worker: both must run under the policy.
   await page.goto("/journal/strategies/3?tab=analytics");
-  const equity = page.getByRole("img", { name: /Equity curve in R\./ });
+  const equity = page.getByRole("img", { name: /Equity curve in \$\./ });
   await expect(equity).toBeAttached();
   await equity.scrollIntoViewIfNeeded();
   await expect(equity.locator("canvas").first()).toBeVisible({ timeout: 15_000 });

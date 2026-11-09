@@ -38,6 +38,7 @@ export interface WeekRecap {
   sessions: number;
   trades: number;
   total_r: number | null;
+  total_pnl?: number | null;
   win_rate: number | null;
   rules_kept_rate: number | null;
   best_day: string | null;

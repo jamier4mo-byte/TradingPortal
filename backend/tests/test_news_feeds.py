@@ -229,7 +229,12 @@ def test_two_refresh_calls_a_minute_apart_make_one_jblanked_request(db, jb_key, 
     assert first["jblanked"]["status"] == "ok" and first["jblanked"]["reason"] == "evening"
     assert first["forex_factory"]["status"] == "ok"
     assert second == {"forex_factory": {"status": "not_due"}, "jblanked": {"status": "not_due"}}
-    assert len(jbr.requests) == 1 and len(ffr.requests) == 1
+    # Forex Factory: this week's file and next week's, once each
+    assert len(jbr.requests) == 1 and len(ffr.requests) == 2
+    assert sorted(str(r.url).rsplit("/", 1)[-1] for r in ffr.requests) == [
+        "ff_calendar_nextweek.json",
+        "ff_calendar_thisweek.json",
+    ]
 
 
 def test_daily_budget_counts_requests_per_utc_day(db, jb_key):
@@ -399,3 +404,21 @@ def test_backfill_respects_the_shared_daily_budget(db, jb_key):
                        transport=jb_transport([]).transport)  # fmt: skip
     assert out["status"] == "budget_used" and out["requests"] == 0
     assert "daily budget" in lines[0]
+
+
+def test_next_week_404_is_skipped_not_a_failure(db):
+    rec = Recorder(default=(200, fixture(FF_WEEK)), routes={"nextweek": (404, {"error": "nope"})})
+    out = ff.refresh_if_due(db, FRI_MORNING, rec.transport)
+    assert out["status"] == "ok" and out["next"]["status"] == "skipped"
+    run = db.scalar(select(FeedRun).where(FeedRun.feed == ff.FEED_NEXT))
+    assert run.status == "skipped" and run.http_status == 404
+    # its own interval: not asked again for an hour, and this week's file isn't refetched either
+    assert ff.refresh_if_due(db, FRI_MORNING + timedelta(minutes=30), rec.transport) == {"status": "not_due"}
+    assert len(rec.requests) == 2
+
+
+def test_next_week_can_be_turned_off(db, monkeypatch):
+    monkeypatch.setattr(get_settings(), "ff_calendar_next_url", "")
+    rec = ff_transport()
+    out = ff.refresh_if_due(db, FRI_MORNING, rec.transport)
+    assert out["status"] == "ok" and "next" not in out and len(rec.requests) == 1

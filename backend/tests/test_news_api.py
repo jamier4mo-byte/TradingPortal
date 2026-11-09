@@ -162,15 +162,19 @@ def test_next_high_impact_event(member_client, frozen, week):
     }
 
 
-def test_week_ahead_switches_to_next_week_on_sunday_evening(member_client, frozen, db):
+def test_week_ahead_rolls_to_next_week_once_the_trading_week_is_over(member_client, frozen, db):
     load_ff(db, datetime(2026, 10, 26, 9, 0, tzinfo=UTC), name="ff_week_2026-10-25.json")
     load_ff(db, datetime(2026, 11, 2, 9, 0, tzinfo=UTC), name=FF_WEEK)
-    frozen(datetime(2026, 11, 1, 17, 59, tzinfo=UTC))  # Sunday 17:59 UK: still this (past) week
+    frozen(datetime(2026, 10, 30, 20, 59, tzinfo=UTC))  # Friday 20:59 UK: New York still open, this week
     out = get(member_client, "/api/news/week-ahead")
     assert (out["start"], out["end"], out["default_view"]) == ("2026-10-26", "2026-10-30", False)
     gdp = next(e for d in out["days"] for e in d["events"] if e["title"] == "Advance GDP q/q")
     assert gdp["uk_time"] == "12:30"  # the gap week
-    frozen(datetime(2026, 11, 1, 18, 0, tzinfo=UTC))  # Sunday 18:00 UK: the week ahead
+    for weekend in (datetime(2026, 10, 30, 21, 0, tzinfo=UTC), datetime(2026, 10, 31, 12, 0, tzinfo=UTC)):
+        frozen(weekend)  # Friday 21:00 and Saturday UK: the coming week, not the one just finished
+        out = get(member_client, "/api/news/week-ahead")
+        assert (out["start"], out["default_view"]) == ("2026-11-02", False)
+    frozen(datetime(2026, 11, 1, 18, 0, tzinfo=UTC))  # Sunday 18:00 UK: the week ahead is the default view
     out = get(member_client, "/api/news/week-ahead")
     assert (out["start"], out["end"], out["default_view"]) == ("2026-11-02", "2026-11-06", True)
     assert [d["label"] for d in out["days"]] == [
@@ -297,7 +301,8 @@ def test_status_reports_feeds_coverage_and_jblanked(member_client, frozen, db, m
         "daily_budget": 1,
         "next_slot_at": None,
     }
-    assert {f["feed"] for f in out["feeds"]} == {"forex_factory", "jblanked", "backfill"}
+    feeds = {f["feed"] for f in out["feeds"]}
+    assert feeds == {"forex_factory", "forex_factory_next", "jblanked", "backfill"}
     load_ff(db, datetime(2026, 11, 6, 11, 0, tzinfo=UTC))
     monkeypatch.setattr(get_settings(), "jblanked_api_key", KEY)
     jblanked.try_fetch(
@@ -441,3 +446,29 @@ def test_seed_dev_style_flow_tags_trades(db, admin_client):
     tid = admin_client.post(f"/api/strategies/{s['id']}/trades", json=body).json()["id"]
     tagging.retag(db)
     assert admin_client.get(f"/api/trades/{tid}").json()["news_status"] == "outside"
+
+
+def test_events_carry_bank_holidays_and_how_far_the_schedule_reaches(member_client, frozen, db):
+    load_ff(db, datetime(2026, 11, 2, 9, 0, tzinfo=UTC), name=FF_WEEK)
+    frozen(datetime(2026, 11, 7, 12, 0, tzinfo=UTC))
+    out = get(member_client, "/api/news/events", **{"from": "2026-11-23", "to": "2026-11-27"})
+    assert out["schedule_through"] == "2026-11-07"  # nothing published for that week yet
+    thanksgiving = [h for h in out["holidays"] if h["currency"] == "USD"]
+    assert thanksgiving == [
+        {"date": "2026-11-26", "currency": "USD", "centre": "United States", "name": "Thanksgiving Day"}
+    ]
+    assert any(h["currency"] == "JPY" and h["date"] == "2026-11-23" for h in out["holidays"])
+    span = {"from": "2026-12-21", "to": "2026-12-31"}
+    only_gbp = get(member_client, "/api/news/events", **span, currencies="GBP")
+    assert {h["currency"] for h in only_gbp["holidays"]} == {"GBP"}
+    # Boxing Day falls on a Saturday, so the weekday holiday is the observed Monday
+    assert [h["date"] for h in only_gbp["holidays"]] == ["2026-12-25", "2026-12-28"]
+
+
+def test_week_ahead_days_list_their_bank_holidays(member_client, frozen):
+    frozen(datetime(2026, 11, 21, 12, 0, tzinfo=UTC))  # Saturday: the coming week is Thanksgiving week
+    out = get(member_client, "/api/news/week-ahead")
+    assert out["start"] == "2026-11-23"
+    thursday = out["days"][3]
+    assert thursday["date"] == "2026-11-26"
+    assert any(h["name"] == "Thanksgiving Day" for h in thursday["holidays"])

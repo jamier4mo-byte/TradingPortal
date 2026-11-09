@@ -1,6 +1,4 @@
 import { lazy } from "react";
-import { Link } from "react-router-dom";
-
 import Card from "../components/Card.tsx";
 import { LaunchOverlay } from "../components/launch/LaunchOverlay.tsx";
 import { useLaunch } from "../components/launch/useLaunch.ts";
@@ -9,27 +7,24 @@ import { useAuth } from "../lib/auth.tsx";
 import { INSTALL_DONE_KEY, isStandalone, queryState, remembered, useHub } from "../lib/hub.ts";
 import { useSummary } from "../lib/journal.ts";
 import { countdownText, useNextEvent } from "../lib/news.ts";
-import { useDevice } from "../lib/useMediaQuery.ts";
 import { Checklist } from "./hub/Checklist.tsx";
 import { Hero } from "./hub/Hero.tsx";
 import { LaunchIsland } from "./hub/LaunchIsland.tsx";
 import { LazyMount } from "./hub/LazyMount.tsx";
 import { TodaysNews } from "./hub/TodaysNews.tsx";
 
-// Below the fold: each is its own chunk, mounted when it scrolls near the viewport (F18). ECharts and
-// FullCalendar never reach this chunk; the calendar card is another build's component, imported lazily.
-const CalendarCard = lazy(() => import("../components/calendar/CalendarCard.tsx"));
+// Below the fold: each is its own chunk, mounted when it scrolls near the viewport (F18). ECharts never
+// reaches this chunk.
 const MarketPanel = lazy(() => import("./hub/MarketPanel.tsx"));
 const Streak = lazy(() => import("./hub/Streak.tsx"));
 const Bests = lazy(() => import("./hub/Bests.tsx"));
 const WeekPair = lazy(() => import("./hub/WeekPair.tsx"));
 
-/** The Hub (Foundations §1), top to bottom per 1.6: hero → today's news → launch islands → team calendar →
- * live market data, then the engagement cards. From 1440 px the market panel becomes a side column beside
+/** The Hub (Foundations §1), top to bottom per 1.6: hero → today's news → launch islands → live
+ * market data (the team calendar was retired in the Nov 2026 amends), then the engagement cards. From 1440 px the market panel becomes a side column beside
  * the hero, news and islands instead of a stretched full-width card. */
 export default function Hub() {
   const { user } = useAuth();
-  const device = useDevice();
   const hub = useHub();
   const summary = useSummary();
   const next = useNextEvent(true);
@@ -84,21 +79,6 @@ export default function Hub() {
           onLaunch={launch}
           className="col-span-2 tablet:col-span-4 laptop:col-span-6 desktop:col-span-4"
         />
-
-        <Card
-          title="Team calendar"
-          subtitle={device === "phone" ? "Today and the next two days" : "This week"}
-          className="col-span-full"
-          controls={
-            <Link to="/calendar" className="btn btn-ghost">
-              Open calendar
-            </Link>
-          }
-        >
-          <LazyMount fallback={<SkeletonText lines={4} />}>
-            <CalendarCard variant={device === "phone" ? "agenda" : "week"} />
-          </LazyMount>
-        </Card>
 
         {/* 1.5: from 1440 px this becomes the side column beside the hero, news and islands (extra panel, not a stretched card). */}
         <LazyMount

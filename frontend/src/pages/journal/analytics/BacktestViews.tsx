@@ -3,15 +3,16 @@ import { useState } from "react";
 import Card from "../../../components/Card.tsx";
 import { PillToggle } from "../../../components/ui/index.ts";
 import { type BacktestBlock, fmtMetric, type MetricMeta, type OwnerSplit, toneOf } from "../../../lib/analytics.ts";
-import { fmtR } from "../../../lib/journal.ts";
+import { fmtPnl, fmtR } from "../../../lib/journal.ts";
 import { BreakdownChart, type BreakdownMetric, DrawdownChart, EquityChart, ExcursionScatter, OwnerLines, OwnerSparkChart, RDistributionChart, RuleCostChart, RunsChart } from "./charts.tsx";
 import { MonteCarloCard } from "./MonteCarloCard.tsx";
 import { AllMetrics, KpiStrip, KpiTile } from "./parts.tsx";
 import { PnlCalendar } from "./PnlCalendar.tsx";
 
+// $ first: dollars are the headline in the Replay Journal, R the secondary read (amends, Nov 2026).
 const UNIT_OPTIONS = [
-  { value: "r" as const, label: "R" },
   { value: "usd" as const, label: "$" },
+  { value: "r" as const, label: "R" },
 ];
 const DIMENSIONS = [
   { value: "session" as const, label: "Session" },
@@ -21,25 +22,28 @@ const DIMENSIONS = [
   { value: "direction" as const, label: "Side" },
 ];
 const METRICS = [
+  { value: "pnl" as const, label: "Net $" },
   { value: "total_r" as const, label: "Total R" },
   { value: "win_rate" as const, label: "Win %" },
   { value: "avg_r" as const, label: "Avg R" },
 ];
 const DIM_LABEL = { session: "session", entry_model: "entry model", weekday: "weekday", hour: "entry hour", direction: "direction", instrument: "instrument" } as const;
 
-export const BACKTEST_KPIS = ["total_r", "win_rate", "profit_factor", "max_dd_r", "expectancy_r"];
+export const BACKTEST_KPIS = ["net_pnl", "win_rate", "profit_factor", "max_dd_pnl", "expectancy_pnl"];
+/** The R reading shown small under each $ headline. */
+const BACKTEST_R = { net_pnl: "total_r", max_dd_pnl: "max_dd_r", expectancy_pnl: "expectancy_r" };
 
 export function BacktestViews({ block, meta, registry, owners, dim }: { block: BacktestBlock; meta: Record<string, MetricMeta>; registry: MetricMeta[]; owners: OwnerSplit[] | null; dim: boolean }) {
-  const [unit, setUnit] = useState<"r" | "usd">("r");
+  const [unit, setUnit] = useState<"r" | "usd">("usd");
   const [dimension, setDimension] = useState<(typeof DIMENSIONS)[number]["value"]>("session");
-  const [metric, setMetric] = useState<BreakdownMetric>("total_r");
+  const [metric, setMetric] = useState<BreakdownMetric>("pnl");
   const [calUnit, setCalUnit] = useState<"usd" | "r">("usd");
   const k = block.kpis;
   const rb = block.rulebook;
 
   return (
     <div className="flex flex-col gap-4 laptop:gap-6">
-      <KpiStrip ids={BACKTEST_KPIS} kpis={k} meta={meta} signed={["total_r", "max_dd_r", "expectancy_r"]} phoneHidden={["expectancy_r"]} />
+      <KpiStrip ids={BACKTEST_KPIS} kpis={k} meta={meta} signed={["net_pnl", "max_dd_pnl", "expectancy_pnl"]} phoneHidden={["expectancy_pnl"]} secondary={BACKTEST_R} heroFirst />
 
       <Card title="Equity curve" subtitle="Cumulative result, trades booked at close" controls={<PillToggle size="sm" value={unit} onChange={setUnit} options={UNIT_OPTIONS} label="Equity unit" />}>
         <EquityChart equity={block.equity} unit={unit} dim={dim} />
@@ -90,12 +94,12 @@ export function BacktestViews({ block, meta, registry, owners, dim }: { block: B
       </Card>
 
       <div className="grid gap-4 laptop:grid-cols-2 laptop:gap-6">
-        <Card title="Rulebook" subtitle="R with every rule kept vs any rule broken, and what each broken rule cost">
+        <Card title="Rulebook" subtitle="Results with every rule kept vs any rule broken, and what each broken rule cost (in R)">
           {rb.marked ? (
             <div className="flex flex-col gap-4">
               <div className="grid grid-cols-2 gap-2">
-                <RuleGroup title="All rules kept" n={rb.all_kept.n} avg={rb.all_kept.avg_r} total={rb.all_kept.total_r} winRate={rb.all_kept.win_rate} />
-                <RuleGroup title="Any rule broken" n={rb.any_broken.n} avg={rb.any_broken.avg_r} total={rb.any_broken.total_r} winRate={rb.any_broken.win_rate} />
+                <RuleGroup title="All rules kept" n={rb.all_kept.n} pnl={rb.all_kept.pnl} avg={rb.all_kept.avg_r} total={rb.all_kept.total_r} winRate={rb.all_kept.win_rate} />
+                <RuleGroup title="Any rule broken" n={rb.any_broken.n} pnl={rb.any_broken.pnl} avg={rb.any_broken.avg_r} total={rb.any_broken.total_r} winRate={rb.any_broken.win_rate} />
               </div>
               <RuleCostChart rules={rb.rules} dim={dim} />
             </div>
@@ -127,14 +131,14 @@ export function BacktestViews({ block, meta, registry, owners, dim }: { block: B
   );
 }
 
-function RuleGroup({ title, n, avg, total, winRate }: { title: string; n: number; avg: number | null; total: number | null; winRate: number | null }) {
-  const tone = toneOf(avg);
+function RuleGroup({ title, n, pnl, avg, total, winRate }: { title: string; n: number; pnl: number | null; avg: number | null; total: number | null; winRate: number | null }) {
+  const tone = toneOf(pnl ?? avg);
   return (
     <div className="rounded-panel border border-border bg-surface-2 p-3">
       <p className="text-label text-muted">{title}</p>
-      <p className={`num mt-1 text-heading leading-none font-semibold ${tone === "win" ? "text-win" : tone === "loss" ? "text-loss" : ""}`}>{fmtR(avg)}</p>
+      <p className={`num mt-1 text-heading leading-none font-semibold ${tone === "win" ? "text-win" : tone === "loss" ? "text-loss" : ""}`}>{pnl === null ? fmtR(total) : fmtPnl(pnl)}</p>
       <p className="num mt-1 text-label text-muted">
-        avg · {n} trades · {fmtR(total)} · {fmtMetric("pct", winRate)} win
+        net · {n} trades · {fmtR(total)} · {fmtR(avg)} avg · {fmtMetric("pct", winRate)} win
       </p>
     </div>
   );
@@ -177,7 +181,7 @@ function OwnerHeader({ owner: o }: { owner: OwnerSplit }) {
       <span aria-hidden className={`h-0.5 w-4 rounded-pill ${OWNER_LINE[o.owner.colour_index % 8]}`} />
       <span className="text-body text-text">{o.owner.display_name}</span>
       <span className="text-muted">
-        {o.kpis.trades} trades · {fmtR(o.kpis.total_r)} · {fmtMetric("pct", o.kpis.win_rate)} win
+        {o.kpis.trades} trades · {fmtPnl(o.kpis.net_pnl)} · {fmtR(o.kpis.total_r)} · {fmtMetric("pct", o.kpis.win_rate)} win
       </span>
     </span>
   );

@@ -1,4 +1,5 @@
-"""Forex Factory weekly JSON (`settings.ff_calendar_url`): the schedule, impact, forecast and previous.
+"""Forex Factory weekly JSON (`settings.ff_calendar_url`, plus `ff_calendar_next_url` for next week): the
+schedule, impact, forecast and previous.
 
 The feed is an array of {"title","country","date","impact","forecast","previous"}; `country` is the
 currency code, `date` is ISO with a US Eastern offset ("2026-11-06T08:30:00-05:00", "-04:00" in US summer
@@ -22,6 +23,7 @@ from . import store
 log = logging.getLogger("trading_portal.news.ff")
 
 FEED = "forex_factory"
+FEED_NEXT = "forex_factory_next"  # next week's file: its own runs, so its schedule and errors stay separate
 RETRY_AFTER_ERROR = timedelta(minutes=15)
 IMPACT = {"high": "high", "medium": "medium", "low": "low", "holiday": "holiday", "non-economic": "none"}
 
@@ -70,11 +72,11 @@ def week_of(items: list[dict]) -> tuple[date, date] | None:
     return sunday, sunday + timedelta(days=6)
 
 
-def due(db: Session, now: datetime) -> bool:
+def due(db: Session, now: datetime, feed: str = FEED) -> bool:
     """At most once per interval after a success, and every 15 minutes after a failure."""
     last = db.execute(
         select(FeedRun.started_at, FeedRun.status)
-        .where(FeedRun.feed == FEED, FeedRun.made_request.is_(True))
+        .where(FeedRun.feed == feed, FeedRun.made_request.is_(True))
         .order_by(FeedRun.started_at.desc())
         .limit(1)
     ).first()
@@ -86,10 +88,17 @@ def due(db: Session, now: datetime) -> bool:
     return now - store.utc(last.started_at) >= wait
 
 
-def fetch(db: Session, now: datetime, transport: httpx.BaseTransport | None = None) -> dict:
+def fetch(
+    db: Session,
+    now: datetime,
+    transport: httpx.BaseTransport | None = None,
+    *,
+    feed: str = FEED,
+    url: str | None = None,
+) -> dict:
     """One request, upsert, coverage for the week. Every attempt leaves a `feed_runs` row."""
-    url = get_settings().ff_calendar_url
-    run = store.start_run(db, FEED, now)
+    url = url or get_settings().ff_calendar_url
+    run = store.start_run(db, feed, now)
     run.made_request = True
     db.commit()
     try:
@@ -98,6 +107,11 @@ def fetch(db: Session, now: datetime, transport: httpx.BaseTransport | None = No
     except (httpx.HTTPError, http.NetworkBlocked) as exc:
         store.finish_run(db, run, now, status="error", error=f"Request failed: {type(exc).__name__}: {exc}")
         return {"status": "error", "error": run.error}
+    if res.status_code == 404 and feed == FEED_NEXT:
+        # Next week's file isn't there yet (or the publisher dropped it): not a failure of the calendar.
+        msg = "Next week's schedule isn't published yet"
+        store.finish_run(db, run, now, status="skipped", error=msg, http_status=404)
+        return {"status": "skipped", "error": msg, "http_status": 404}
     if res.status_code != 200:
         msg = f"HTTP {res.status_code} from Forex Factory feed"
         store.finish_run(db, run, now, status="error", error=msg, http_status=res.status_code)
@@ -126,6 +140,15 @@ def fetch(db: Session, now: datetime, transport: httpx.BaseTransport | None = No
 
 
 def refresh_if_due(db: Session, now: datetime, transport: httpx.BaseTransport | None = None) -> dict:
-    if not due(db, now):
-        return {"status": "not_due"}
-    return fetch(db, now, transport)
+    """This week's file, then (when configured) next week's, each on its own interval. The result is this
+    week's, with next week's under "next" whenever that one made a request."""
+    out = fetch(db, now, transport) if due(db, now) else {"status": "not_due"}
+    next_url = get_settings().ff_calendar_next_url
+    if next_url and due(db, now, FEED_NEXT):
+        try:
+            out["next"] = fetch(db, now, transport, feed=FEED_NEXT, url=next_url)
+        except Exception as exc:  # noqa: BLE001 — next week failing never undoes this week
+            db.rollback()
+            log.exception("Forex Factory next-week fetch failed")
+            out["next"] = {"status": "error", "error": type(exc).__name__}
+    return out

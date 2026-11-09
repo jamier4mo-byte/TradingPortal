@@ -59,6 +59,10 @@ class Settings(BaseSettings):
     scheduler: bool = True
     scheduler_tick_seconds: int = 60
     ff_calendar_url: str = "https://nfs.faireconomy.media/ff_calendar_thisweek.json"
+    # Next week's schedule from the same publisher, so the Day/Week views and the Week ahead have future news
+    # from the weekend onwards (the "this week" file is Sunday–Saturday and only rolls over on Sunday).
+    # Empty string turns it off. A 404 means "not published yet" and is logged as skipped, not as a failure.
+    ff_calendar_next_url: str = "https://nfs.faireconomy.media/ff_calendar_nextweek.json"
     ff_min_interval_minutes: int = 60
     # JBlanked: never more than one request per interval, globally (a DB slot); plus a daily budget,
     # because the free tier allows one /calendar/today/ request a day (research, 6 Nov 2026).

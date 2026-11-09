@@ -3,7 +3,7 @@ import { expect, type Page, test } from "@playwright/test";
 import { expectNoAxeViolations, expectNoHorizontalScroll, expectTapTargets } from "./helpers/a11y.ts";
 import { ADMIN, signIn } from "./helpers/auth.ts";
 
-/** The Hub (Foundations §1): hero, today's news, launch islands, team calendar, live market data and the
+/** The Hub (Foundations §1): hero, today's news, launch islands, live market data and the
  * engagement cards. seed-dev gives Jamie strategies, sessions and a synthetic news week; the smoke backend
  * runs with the feeds off and the fake price provider. Playwright runs with reducedMotion: "reduce", so
  * motionLevel() is "reduced": the launch overlay is a plain fade but still holds for its minimum. */
@@ -53,9 +53,9 @@ test("the checklist lists five items and the streak card appears after scrolling
   await expect(bests).toBeVisible();
 });
 
-test("the team calendar and live market cards are on the page", async ({ page }) => {
-  await expect(page.getByRole("region", { name: "Team calendar" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Open calendar" })).toBeVisible();
+test("the live market card is on the page and the retired team calendar is gone", async ({ page }) => {
+  await expect(page.getByRole("region", { name: "Team calendar" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Open calendar" })).toHaveCount(0);
   const market = page.getByRole("region", { name: "Live market data" });
   await market.scrollIntoViewIfNeeded();
   await expect(market).toBeVisible();

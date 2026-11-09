@@ -16,7 +16,6 @@ const More = lazy(() => import("./pages/More.tsx"));
 const AdminUsers = lazy(() => import("./pages/admin/Users.tsx"));
 const Components = lazy(() => import("./pages/dev/Components.tsx"));
 const Placeholder = lazy(() => import("./pages/Placeholder.tsx"));
-const CalendarPage = lazy(() => import("./pages/calendar/Calendar.tsx"));
 const JournalIndex = lazy(() => import("./pages/journal/JournalIndex.tsx"));
 const StrategyPage = lazy(() => import("./pages/journal/StrategyPage.tsx"));
 const TradeDetail = lazy(() => import("./pages/journal/TradeDetail.tsx"));
@@ -68,7 +67,8 @@ export default function App() {
                     <Route path="/markets" element={<Markets />} />
                     <Route path="/markets/:symbol" element={<InstrumentView />} />
                     <Route path="/settings/alerts" element={<AlertsSettings />} />
-                    <Route path="/calendar" element={<CalendarPage />} />
+                    {/* The team calendar was retired (amends, Nov 2026): old links land on the Hub. */}
+                    <Route path="/calendar" element={<Navigate to="/" replace />} />
                     <Route path="/tags" element={<Tags />} />
                     <Route path="/settings" element={<Settings />} />
                     <Route path="/more" element={<More />} />

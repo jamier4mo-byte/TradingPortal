@@ -24,6 +24,33 @@ function ukMinute(iso: string, date: string): number {
 
 const pct = (m: number) => `${(m / DAY) * 100}%`;
 
+/** Markers closer than this (in minutes) would put their 44px targets on top of each other (a 24-hour
+ * track is ~1100–1500px wide, so 30 minutes is ~23–31px): they share one marker. */
+const CLUSTER_MINUTES = 30;
+
+/** Events clustered along the track. Each cluster sits at its most important event (`high` comes first in
+ * the input), opens it, and names every event in it. Low-impact clusters are returned first so high-impact
+ * markers paint on top. */
+function markersByMinute(events: TimelineData["events"], date: string): { minute: number; events: TimelineData["events"] }[] {
+  const timed = events.map((e, rank) => ({ e, rank, m: ukMinute(e.at, date) })).sort((a, b) => a.m - b.m || a.rank - b.rank);
+  // Chain clustering: a release joins the cluster when it's within 30 minutes of the previous one, so any two
+  // clusters (and so any two markers) are at least 30 minutes apart.
+  const clusters: { end: number; items: typeof timed }[] = [];
+  for (const t of timed) {
+    const last = clusters[clusters.length - 1];
+    if (last && t.m - last.end < CLUSTER_MINUTES) {
+      last.items.push(t);
+      last.end = t.m;
+    } else clusters.push({ end: t.m, items: [t] });
+  }
+  return clusters
+    .map((c) => {
+      const lead = [...c.items].sort((a, b) => a.rank - b.rank)[0];
+      return { minute: lead.m, events: [lead.e, ...c.items.filter((t) => t !== lead).map((t) => t.e)], high: lead.e.impact === "high" };
+    })
+    .sort((a, b) => Number(a.high) - Number(b.high));
+}
+
 /** Trading-day timeline (3.2): Asia, London and New York bands, high-impact windows shaded, event markers,
  * a moving "now" line and the current session softly highlighted. On the phone it scrolls sideways with
  * "now" centred. */
@@ -118,16 +145,19 @@ function TimelineBody({ data, isToday }: { data: TimelineData; isToday: boolean 
               );
             })}
             {/* event markers */}
-            {[...others, ...high].map((e) => {
-              const m = ukMinute(e.at, data.date);
+            {/* Releases within 30 minutes of each other share one marker (two 44px targets would overlap): it
+                opens the most important one and names them all with their times. */}
+            {markersByMinute([...high, ...others], data.date).map(({ minute: m, events: group }) => {
+              const e = group[0];
+              const names = group.map((g) => `${g.uk_time === e.uk_time ? "" : `${g.uk_time} `}${g.currency} ${g.name}`).join(", ");
               return (
                 <Link
                   key={e.id}
                   to={`/news/events/${e.id}`}
                   className="group absolute bottom-0 grid h-11 w-11 -translate-x-1/2 place-items-center"
                   style={{ left: pct(m) }}
-                  aria-label={`${e.uk_time} ${e.currency} ${e.name}, ${e.impact_label} impact`}
-                  title={`${e.uk_time} ${e.currency} ${e.name}`}
+                  aria-label={`${e.uk_time} ${names}, ${e.impact_label} impact${group.length > 1 ? `, ${group.length} events` : ""}`}
+                  title={`${e.uk_time} ${names}`}
                 >
                   <span
                     aria-hidden

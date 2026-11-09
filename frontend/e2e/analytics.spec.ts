@@ -48,8 +48,9 @@ test.describe("analytics behaviour", () => {
   test("backtest view: KPIs, charts with summaries and data tables, Monte Carlo", async ({ page }) => {
     await page.goto("/journal/strategies/3?tab=analytics");
     await expect(page.getByText("160 of 160 trades")).toBeVisible();
-    await expect(page.getByText("Total R", { exact: true }).first()).toBeVisible();
-    const equity = page.getByRole("img", { name: /Equity curve in R\. 160 trades, finishing at/ });
+    // $ is the headline (amends 01): Net P&L leads, R sits underneath, the equity curve opens in $.
+    await expect(page.getByText("Net P&L", { exact: true }).first()).toBeVisible();
+    const equity = page.getByRole("img", { name: /Equity curve in \$\. 160 trades, finishing at/ });
     await expect(equity).toBeAttached();
     // Charts start when they scroll into view, so the draw-in plays on first sight.
     await equity.scrollIntoViewIfNeeded();

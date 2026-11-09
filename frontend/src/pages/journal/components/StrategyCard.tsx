@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Chip, OwnerChip } from "../../../components/ui/index.ts";
 import { CountUp } from "../../../components/ui/CountUp.tsx";
 import { relativeTime } from "../../../lib/format.ts";
-import { fmtPct, fmtR, fmtRange, STAGE_LABEL, type Strategy } from "../../../lib/journal.ts";
+import { fmtPct, fmtPnl, fmtR, fmtRange, STAGE_LABEL, type Strategy } from "../../../lib/journal.ts";
 import { vtName } from "../../../lib/vt.ts";
 import { CoverageBar } from "./Coverage.tsx";
 import { Sparkline } from "./Sparkline.tsx";
@@ -49,8 +49,8 @@ export function StrategyCard({ strategy, countUp = false }: { strategy: Strategy
 
       {stats && stats.trades > 0 ? (
         <dl className="mt-4 grid grid-cols-3 gap-x-2 gap-y-2.5 rounded-panel border border-border bg-surface-2 p-2 text-center" aria-label="Backtest headline stats">
+          <Stat label="Net P&L" value={fmtPnl(stats.total_pnl)} tone={stats.total_pnl} />
           <Stat label="Win rate" value={fmtPct(stats.win_rate)} />
-          <Stat label="Avg R" value={fmtR(stats.avg_r)} tone={stats.avg_r} />
           <Stat label="Total R" value={fmtR(stats.total_r)} tone={stats.total_r} />
           <Stat label="Profit factor" value={stats.profit_factor === null || stats.profit_factor === undefined ? "—" : stats.profit_factor.toFixed(2)} />
           <Stat label="Max DD" value={fmtR(stats.max_dd_r ?? null)} tone={stats.max_dd_r} />

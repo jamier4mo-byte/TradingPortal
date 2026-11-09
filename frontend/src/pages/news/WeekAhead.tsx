@@ -8,9 +8,10 @@ import { offlinePending } from "../../lib/offline.ts";
 import { displaySymbol } from "../../lib/markets.ts";
 import { dayLabel, useWeekAhead } from "../../lib/news.ts";
 import { vtName } from "../../lib/vt.ts";
+import { BankHolidays } from "./parts.tsx";
 
 /** Week ahead (3.4): the key high-impact events by day with the instruments they move. The default view
- * from Sunday 18:00 UK, and a planning aid for the team calendar (quieter days for backtesting). */
+ * from Sunday 18:00 UK, and a planning aid (quieter days for backtesting). */
 export function WeekAheadView() {
   const q = useWeekAhead();
   if (offlinePending(q)) return <OfflineState what="The week ahead" />;
@@ -26,10 +27,20 @@ export function WeekAheadView() {
   if (!q.data) return <ErrorState title="The week ahead didn't load" text={q.error?.message} onRetry={() => q.refetch()} />;
   const days = q.data.days;
   const total = days.reduce((n, d) => n + d.events.length, 0);
-  if (total === 0) {
+  const through = q.data.schedule_through ?? null;
+  const unpublished = through === null || through < q.data.start;
+  if (total === 0 && unpublished) {
+    const hols = days.flatMap((d) => d.holidays ?? []);
     return (
       <Card title="Week ahead" subtitle={`${dayLabel(q.data.start)} – ${dayLabel(q.data.end)}`}>
-        <EmptyState illustration={<CalendarEmpty />} title="No high-impact events scheduled" text="The schedule for next week appears once Forex Factory publishes it, usually by Sunday evening." />
+        <div className="flex flex-col gap-3">
+          <EmptyState
+            illustration={<CalendarEmpty />}
+            title="Next week's schedule isn't published yet"
+            text="It appears here as soon as Forex Factory publishes it, usually over the weekend."
+          />
+          <BankHolidays holidays={hols} showDates />
+        </div>
       </Card>
     );
   }
@@ -40,10 +51,21 @@ export function WeekAheadView() {
       <p className="text-body text-muted">
         <span className="num">{total}</span> high-impact {total === 1 ? "event" : "events"} from {dayLabel(q.data.start)} to {dayLabel(q.data.end)}.{" "}
         {quietest ? <>Quietest day: {dayLabel(quietest.date)}, good for backtesting or reviews.</> : null}
+        {through && through < q.data.end ? <> Published up to {dayLabel(through)}.</> : null}
       </p>
       <div className="grid gap-4 tablet:grid-cols-2 laptop:grid-cols-3 desktop:grid-cols-5">
         {days.map((d) => (
           <Card key={d.date} title={d.label} subtitle={d.events.length ? `${d.events.length} high impact` : "Quiet"}>
+            {(d.holidays ?? []).length ? (
+              <ul className="mb-2 flex flex-col gap-1.5" aria-label={`Bank holidays on ${d.label}`}>
+                {d.holidays.map((h) => (
+                  <li key={`${h.currency}-${h.name}`} className="flex flex-wrap items-center gap-2 text-label text-muted">
+                    <CurrencyTag currency={h.currency} />
+                    <span>Bank holiday · {h.name}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
             {d.events.length === 0 ? (
               <p className="text-body text-muted">No high-impact events.</p>
             ) : (

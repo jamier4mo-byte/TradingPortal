@@ -302,6 +302,7 @@ def week_recap(db: Session, user: User, now: datetime) -> dict:
         "sessions": sessions,
         "trades": stats["trades"],
         "total_r": stats["total_r"],
+        "total_pnl": stats["total_pnl"],
         "win_rate": stats["win_rate"],
         "rules_kept_rate": stats["rules_followed_rate"],
         "best_day": WEEKDAYS[best_day[0].weekday()] if best_day else None,

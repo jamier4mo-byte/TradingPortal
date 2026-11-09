@@ -1,5 +1,6 @@
 import Card from "../../../components/Card.tsx";
 import type { AnalyticsResult, AroundNewsRow } from "../../../lib/analytics.ts";
+import { fmtPnl } from "../../../lib/journal.ts";
 
 const FIXED = ["Inside news window", "Outside", "No news data"];
 
@@ -18,6 +19,7 @@ function r(v: number | null): string {
 export function AroundNewsCard({ rows, status, note }: { rows: AroundNewsRow[]; status: AnalyticsResult["news_status"]; note: string | null }) {
   const fixed = FIXED.map((k) => rows.find((x) => x.key === k)).filter((x): x is AroundNewsRow => !!x && x.trades > 0);
   const types = rows.filter((x) => !FIXED.includes(x.key) && x.trades > 0);
+  const usd = rows.some((x) => x.pnl !== null && x.pnl !== undefined);
   return (
     <Card title="Around news" subtitle="Trades entered inside a news window vs outside, and by event">
       {status === "no_data" || rows.length === 0 ? (
@@ -31,6 +33,7 @@ export function AroundNewsCard({ rows, status, note }: { rows: AroundNewsRow[]; 
                 <th scope="col" className="sticky left-0 bg-surface-1 py-2 pr-3 font-normal">Group</th>
                 <th scope="col" className="py-2 pr-3 text-right font-normal">Trades</th>
                 <th scope="col" className="py-2 pr-3 text-right font-normal">Win rate</th>
+                {usd ? <th scope="col" className="py-2 pr-3 text-right font-normal">Net P&amp;L</th> : null}
                 <th scope="col" className="py-2 pr-3 text-right font-normal">Avg R</th>
                 <th scope="col" className="py-2 text-right font-normal">Total R</th>
               </tr>
@@ -43,6 +46,7 @@ export function AroundNewsCard({ rows, status, note }: { rows: AroundNewsRow[]; 
                   </th>
                   <td className="num py-2 pr-3 text-right">{row.trades}</td>
                   <td className="num py-2 pr-3 text-right">{row.win_rate === null ? "—" : `${Math.round(row.win_rate * 100)}%`}</td>
+                  {usd ? <td className="num py-2 pr-3 text-right font-medium">{fmtPnl(row.pnl)}</td> : null}
                   <td className="num py-2 pr-3 text-right">{r(row.avg_r)}</td>
                   <td className="num py-2 text-right">{r(row.total_r)}</td>
                 </tr>

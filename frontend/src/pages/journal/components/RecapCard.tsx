@@ -6,7 +6,7 @@ import Card from "../../../components/Card.tsx";
 import { Chip, SkeletonText, StatTile, useToast } from "../../../components/ui/index.ts";
 import { useSessionInsights } from "../../../lib/analytics.ts";
 import { api } from "../../../lib/api.ts";
-import { fmtPct, fmtR, fmtRange, type JournalSession, type Trade, useInvalidateJournal, useSessionTrades } from "../../../lib/journal.ts";
+import { fmtPct, fmtPnl, fmtR, fmtRange, type JournalSession, type Trade, useInvalidateJournal, useSessionTrades } from "../../../lib/journal.ts";
 import { dur, easeEnter, motionLevel } from "../../../lib/motion.ts";
 
 /** Session recap: trades, win rate, total R, rules followed, the best trade's screenshot, one thing to improve. */
@@ -44,9 +44,14 @@ export function RecapCard({ session, onClose, className = "" }: { session: Journ
         <div className="grid gap-4 laptop:grid-cols-[1fr_280px]">
           <div className="flex flex-col gap-4">
             <div className="grid grid-cols-2 gap-2 tablet:grid-cols-4">
+              <StatTile
+                label="Net P&L"
+                value={s.total_pnl === null ? fmtR(s.total_r) : fmtPnl(s.total_pnl)}
+                hint={s.total_pnl === null ? undefined : <span className="num">{fmtR(s.total_r)}</span>}
+                tone={((s.total_pnl ?? s.total_r) ?? 0) > 0 ? "win" : ((s.total_pnl ?? s.total_r) ?? 0) < 0 ? "loss" : "neutral"}
+              />
               <StatTile label="Trades" value={s.trades} />
               <StatTile label="Win rate" value={fmtPct(s.win_rate)} />
-              <StatTile label="Total R" value={fmtR(s.total_r)} tone={(s.total_r ?? 0) > 0 ? "win" : (s.total_r ?? 0) < 0 ? "loss" : "neutral"} />
               <StatTile label="Rules followed" value={fmtPct(s.rules_followed_rate)} hint={s.rules_followed_rate === null ? "Tick them in Annotate mode" : undefined} />
             </div>
             <SessionInsights sessionId={session.id} />

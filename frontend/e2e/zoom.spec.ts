@@ -14,7 +14,7 @@ import { ADMIN, signIn } from "./helpers/auth.ts";
 test.skip(({ isMobile }) => !!isMobile, "zoom emulation runs on the desktop project");
 test.use({ viewport: { width: 360, height: 450 }, deviceScaleFactor: 2 });
 
-const ROUTES = ["/", "/journal/strategies/3?tab=analytics", "/news", "/calendar"];
+const ROUTES = ["/", "/journal/strategies/3?tab=analytics", "/news", "/news?view=week"];
 
 test.beforeEach(async ({ page }) => {
   await signIn(page, ADMIN);

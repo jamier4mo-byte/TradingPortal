@@ -36,6 +36,14 @@ export interface NewsEvent {
   has_explanation: boolean;
 }
 
+/** A bank holiday in one currency's market centre (the `holidays` rules on the server). */
+export interface BankHoliday {
+  date: string;
+  currency: string;
+  centre: string;
+  name: string;
+}
+
 export interface EventsAnswer {
   events: NewsEvent[];
   from: string;
@@ -43,6 +51,9 @@ export interface EventsAnswer {
   last_updated_at: string | null;
   window_minutes: number;
   my_instruments: string[];
+  /** Last UK date the published schedule reaches (this week + next); later days have no events yet. */
+  schedule_through: string | null;
+  holidays: BankHoliday[];
 }
 
 export interface HorizonReaction {
@@ -87,7 +98,8 @@ export interface WeekAhead {
   start: string;
   end: string;
   default_view: boolean;
-  days: { date: string; label: string; events: NewsEvent[] }[];
+  days: { date: string; label: string; events: NewsEvent[]; holidays: BankHoliday[] }[];
+  schedule_through: string | null;
 }
 
 export interface Timeline {

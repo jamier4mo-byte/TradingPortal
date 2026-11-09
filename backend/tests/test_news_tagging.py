@@ -224,7 +224,7 @@ def test_around_news_breakdown(admin_client, tagged_strategy):
         "total_r"
     ] == pytest.approx(1.0)
     assert groups["German ZEW Economic Sentiment"]["trades"] == 1
-    assert set(inside) == {"key", "trades", "win_rate", "avg_r", "total_r"}
+    assert set(inside) == {"key", "trades", "win_rate", "avg_r", "total_r", "pnl"}
 
 
 def test_ideal_block_has_around_news_and_everything_known_is_ok(admin_client, news_week):
@@ -238,6 +238,7 @@ def test_ideal_block_has_around_news_and_everything_known_is_ok(admin_client, ne
         "win_rate": 1.0,
         "avg_r": 1.0,
         "total_r": 1.0,
+        "pnl": 100.0,
     }
 
 

@@ -23,12 +23,12 @@ test("the Hub still renders offline from the service worker's cache", async ({ p
   const hubCalls = Promise.all([
     page.waitForResponse((r) => r.url().includes("/api/hub") && r.ok()),
     page.waitForResponse((r) => r.url().includes("/api/news/today") && r.ok()),
-    page.waitForResponse((r) => r.url().includes("/api/calendar/occurrences") && r.ok()),
+    page.waitForResponse((r) => r.url().includes("/api/news/next") && r.ok()),
   ]);
   await page.reload();
   await hubCalls;
   await expect(page.getByRole("heading", { level: 1, name: HUB_HEADING })).toBeVisible();
-  // The lazy cards below the fold (streak, bests, calendar) mount when scrolled near: bring them in.
+  // The lazy cards below the fold (market data, streak, bests) mount when scrolled near: bring them in.
   await page.mouse.wheel(0, 4000);
   await expect(page.getByRole("region", { name: "Showing up" })).toBeVisible();
   await expect.poll(() => page.evaluate(async () => (await caches.open("tp-api-v1")).keys().then((k) => k.length)), { timeout: 10_000 }).toBeGreaterThanOrEqual(3);

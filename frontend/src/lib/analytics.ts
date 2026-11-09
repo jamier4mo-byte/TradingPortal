@@ -35,6 +35,8 @@ export interface AroundNewsRow {
   win_rate: number | null;
   avg_r: number | null;
   total_r: number | null;
+  /** Net $ (backtests); null for ideal trades, which have no P&L. */
+  pnl?: number | null;
 }
 
 export interface AnalyticsQuery {

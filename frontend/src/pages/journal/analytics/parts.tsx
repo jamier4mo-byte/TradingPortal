@@ -11,7 +11,23 @@ import { fmtPnl, fmtR, fmtUkDateTime } from "../../../lib/journal.ts";
 const TONE_TEXT = { win: "text-win", loss: "text-loss", breakeven: "text-breakeven", neutral: "" } as const;
 
 /** Signed metrics (R, $) get the reserved colour *and* an arrow; colour is never the only signal. */
-export function KpiTile({ meta, value, signed = false, className = "" }: { meta: MetricMeta | undefined; value: number | null | undefined; signed?: boolean; className?: string }) {
+export function KpiTile({
+  meta,
+  value,
+  signed = false,
+  className = "",
+  hero = false,
+  secondary,
+}: {
+  meta: MetricMeta | undefined;
+  value: number | null | undefined;
+  signed?: boolean;
+  className?: string;
+  /** The headline figure of a strip (net $ P&L): hero-size type. */
+  hero?: boolean;
+  /** The same result in another unit, small underneath ("+12.40R" under a $ figure). */
+  secondary?: { meta: MetricMeta | undefined; value: number | null | undefined };
+}) {
   const [open, setOpen] = useState(false);
   if (!meta) return null;
   const tone = signed ? toneOf(value) : "neutral";
@@ -32,10 +48,15 @@ export function KpiTile({ meta, value, signed = false, className = "" }: { meta:
           </span>
         </button>
       </div>
-      <p className={`num mt-0.5 flex items-center gap-1 text-heading leading-none font-semibold ${TONE_TEXT[tone]}`}>
-        {Icon ? <Icon aria-hidden className="size-5 shrink-0" strokeWidth={2} /> : null}
+      <p className={`num mt-0.5 flex items-center gap-1 leading-none font-semibold whitespace-nowrap ${hero ? "text-heading tablet:text-hero" : "text-heading"} ${TONE_TEXT[tone]}`}>
+        {Icon ? <Icon aria-hidden className={`${hero ? "size-6 tablet:size-8" : "size-5"} shrink-0`} strokeWidth={2} /> : null}
         <CountUp value={value} format={(v) => fmtMetric(meta.unit, v)} />
       </p>
+      {secondary?.meta ? (
+        <p className="num mt-1.5 text-label text-muted">
+          {fmtMetric(secondary.meta.unit, secondary.value)} <span className="sr-only">{secondary.meta.label}</span>
+        </p>
+      ) : null}
       {open ? <p className="mt-2 text-label text-muted">{meta.formula}</p> : null}
     </div>
   );
@@ -43,12 +64,42 @@ export function KpiTile({ meta, value, signed = false, className = "" }: { meta:
 
 const STRIP_COLS: Record<number, string> = { 3: "tablet:grid-cols-3", 4: "tablet:grid-cols-4", 5: "tablet:grid-cols-3 laptop:grid-cols-5" };
 
-export function KpiStrip({ ids, kpis, meta, signed = [], phoneHidden = [] }: { ids: string[]; kpis: Kpis; meta: Record<string, MetricMeta>; signed?: string[]; phoneHidden?: string[] }) {
+export function KpiStrip({
+  ids,
+  kpis,
+  meta,
+  signed = [],
+  phoneHidden = [],
+  secondary = {},
+  heroFirst = false,
+}: {
+  ids: string[];
+  kpis: Kpis;
+  meta: Record<string, MetricMeta>;
+  signed?: string[];
+  phoneHidden?: string[];
+  /** id → the metric shown small under it (the R equivalent of a $ figure). */
+  secondary?: Record<string, string>;
+  /** The first tile is the headline: hero type, and the full width of the phone grid. */
+  heroFirst?: boolean;
+}) {
   return (
-    <div className={`grid grid-cols-2 gap-2 ${STRIP_COLS[Math.min(Math.max(ids.length, 3), 5)]}`}>
-      {ids.map((id) => (
-        <KpiTile key={id} meta={meta[id]} value={kpis[id]} signed={signed.includes(id)} className={phoneHidden.includes(id) ? "hidden tablet:flex" : ""} />
-      ))}
+    <div className={`grid grid-cols-2 gap-2 ${heroFirst ? STRIP_COLS[Math.min(Math.max(ids.length - 1, 3), 5)] : STRIP_COLS[Math.min(Math.max(ids.length, 3), 5)]}`}>
+      {ids.map((id, i) => {
+        const hero = heroFirst && i === 0;
+        const extra = secondary[id];
+        return (
+          <KpiTile
+            key={id}
+            meta={meta[id]}
+            value={kpis[id]}
+            signed={signed.includes(id)}
+            hero={hero}
+            secondary={extra ? { meta: meta[extra], value: kpis[extra] } : undefined}
+            className={`${phoneHidden.includes(id) ? "hidden tablet:flex" : ""} ${hero ? "col-span-full" : ""}`}
+          />
+        );
+      })}
     </div>
   );
 }
@@ -159,7 +210,10 @@ export function TradeMiniList({ trades, total, limit = 40 }: { trades: TradeLine
                   {t.side === "buy" ? "Long" : "Short"} {t.instrument} · {t.entry_model ?? "—"} · {t.session_label || "—"}
                 </span>
               </span>
-              <span className={`num text-body font-medium ${TONE_TEXT[t.outcome ?? "neutral"]}`}>{fmtR(t.r)}</span>
+              <span className="flex shrink-0 flex-col items-end">
+                <span className={`num text-body font-medium ${TONE_TEXT[t.outcome ?? "neutral"]}`}>{t.pnl === null ? fmtR(t.r) : fmtPnl(t.pnl)}</span>
+                {t.pnl === null ? null : <span className="num text-label text-muted">{fmtR(t.r)}</span>}
+              </span>
             </Link>
           </li>
         ))}
